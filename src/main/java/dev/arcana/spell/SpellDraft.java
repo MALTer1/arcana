@@ -1,6 +1,7 @@
 package dev.arcana.spell;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -15,12 +16,36 @@ public final class SpellDraft {
         SpellComponent component = ComponentRegistry.get(id);
         if (component == null) return new AddResult(false, "Unknown component. Use /arcana components.");
         if (selected.contains(id)) return new AddResult(false, "That component is already selected.");
-        if (selected.size() >= MAX_COMPONENTS) return new AddResult(false, "The current prototype limit is five components.");
+        if (selected.size() >= MAX_COMPONENTS) return new AddResult(false, "Your grimoire draft limit is five components.");
         selected.add(id);
         return new AddResult(true, "Added " + component.displayName() + " (" + selected.size() + "/5).");
     }
+
     public boolean remove(String id) { return selected.remove(id); }
     public void clear() { selected.clear(); }
+
+    /** Returns component IDs in the Magic Writer's fixed category order. */
+    public List<String> selectedIds() {
+        return selected.stream()
+            .map(ComponentRegistry::get)
+            .sorted(Comparator.comparingInt((SpellComponent c) -> c.category().ordinal())
+                .thenComparing(SpellComponent::displayName))
+            .map(SpellComponent::id)
+            .toList();
+    }
+
+    public boolean isValid() { return !selected.isEmpty() && validationIssues().isEmpty(); }
+
+    public List<String> validationIssues() {
+        return validate(selected.stream().map(ComponentRegistry::get).toList());
+    }
+
+    public String behavior() {
+        return describe(selected.stream().map(ComponentRegistry::get)
+            .sorted(Comparator.comparingInt((SpellComponent c) -> c.category().ordinal())
+                .thenComparing(SpellComponent::displayName))
+            .toList());
+    }
 
     public List<String> preview() {
         List<String> lines = new ArrayList<>();
@@ -28,9 +53,13 @@ public final class SpellDraft {
             lines.add("Your spell draft is empty. Use /arcana select <component>.");
             return lines;
         }
-        List<SpellComponent> components = selected.stream().map(ComponentRegistry::get).toList();
-        List<String> issues = validate(components);
-        lines.add("=== SPELL PREVIEW ===");
+
+        List<SpellComponent> components = selected.stream().map(ComponentRegistry::get)
+            .sorted(Comparator.comparingInt((SpellComponent c) -> c.category().ordinal())
+                .thenComparing(SpellComponent::displayName))
+            .toList();
+        List<String> issues = validationIssues();
+        lines.add("=== MAGIC WRITER PREVIEW ===");
         lines.add("Components (" + components.size() + "/5): " +
             components.stream().map(SpellComponent::displayName).collect(Collectors.joining(" + ")));
         if (!issues.isEmpty()) {
@@ -38,9 +67,9 @@ public final class SpellDraft {
             issues.forEach(issue -> lines.add("- " + issue));
             return lines;
         }
-        lines.add("Status: VALID DRAFT");
+        lines.add("Status: READY TO ENGRAVE");
         lines.add("Behavior: " + describe(components));
-        lines.add("Preview only: engraving and casting are not implemented yet.");
+        lines.add("Use /arcana engrave <name> to save this spell in your spellbook.");
         return lines;
     }
 
