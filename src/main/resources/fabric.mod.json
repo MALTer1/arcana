@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "arcana",
+  "version": "${version}",
+  "name": "Arcana: The Lost Arts",
+  "description": "A component-based spellcrafting and Arcana system.",
+  "authors": ["Arcana Development"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": { "main": ["dev.arcana.ArcanaMod"] },
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
