@@ -1,0 +1,80 @@
+package dev.arcana.spell;
+
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public final class SpellDraft {
+    public static final int MAX_COMPONENTS = 5;
+    private final List<String> selected = new ArrayList<>();
+    public record AddResult(boolean success, String message) {}
+
+    public AddResult add(String id) {
+        SpellComponent component = ComponentRegistry.get(id);
+        if (component == null) return new AddResult(false, "Unknown component. Use /arcana components.");
+        if (selected.contains(id)) return new AddResult(false, "That component is already selected.");
+        if (selected.size() >= MAX_COMPONENTS) return new AddResult(false, "The current prototype limit is five components.");
+        selected.add(id);
+        return new AddResult(true, "Added " + component.displayName() + " (" + selected.size() + "/5).");
+    }
+    public boolean remove(String id) { return selected.remove(id); }
+    public void clear() { selected.clear(); }
+
+    public List<String> preview() {
+        List<String> lines = new ArrayList<>();
+        if (selected.isEmpty()) {
+            lines.add("Your spell draft is empty. Use /arcana select <component>.");
+            return lines;
+        }
+        List<SpellComponent> components = selected.stream().map(ComponentRegistry::get).toList();
+        List<String> issues = validate(components);
+        lines.add("=== SPELL PREVIEW ===");
+        lines.add("Components (" + components.size() + "/5): " +
+            components.stream().map(SpellComponent::displayName).collect(Collectors.joining(" + ")));
+        if (!issues.isEmpty()) {
+            lines.add("INVALID COMBINATION:");
+            issues.forEach(issue -> lines.add("- " + issue));
+            return lines;
+        }
+        lines.add("Status: VALID DRAFT");
+        lines.add("Behavior: " + describe(components));
+        lines.add("Preview only: engraving and casting are not implemented yet.");
+        return lines;
+    }
+
+    private List<String> validate(List<SpellComponent> components) {
+        List<String> issues = new ArrayList<>();
+        if (components.size() < 2) issues.add("Choose at least two components.");
+        Map<ComponentCategory, Long> counts = components.stream().collect(
+            Collectors.groupingBy(SpellComponent::category, () -> new EnumMap<>(ComponentCategory.class), Collectors.counting()));
+        if (counts.getOrDefault(ComponentCategory.DELIVERY, 0L) > 1) issues.add("Choose only one delivery/shape component.");
+        if (counts.getOrDefault(ComponentCategory.TARGET, 0L) > 1) issues.add("Choose only one target component.");
+        if (counts.getOrDefault(ComponentCategory.ELEMENT, 0L) > 2) issues.add("A spell can combine at most two elements.");
+        boolean healing = selected.contains("healing");
+        boolean explosion = selected.contains("explosion");
+        boolean teleport = selected.contains("teleportation");
+        boolean binding = selected.contains("binding");
+        boolean summoning = selected.contains("summoning");
+        if (healing && explosion) issues.add("Healing and Explosion cannot be combined.");
+        if (teleport && (selected.contains("projectile") || selected.contains("beam")))
+            issues.add("Teleportation cannot use Projectile or Beam delivery.");
+        if (summoning && selected.contains("self")) issues.add("Summoning cannot use Self as its target.");
+        if (binding && selected.contains("self")) issues.add("Binding cannot target the caster.");
+        return issues;
+    }
+
+    private String describe(List<SpellComponent> components) {
+        String elements = components.stream().filter(c -> c.category() == ComponentCategory.ELEMENT)
+            .map(SpellComponent::displayName).collect(Collectors.joining(" + "));
+        String delivery = components.stream().filter(c -> c.category() == ComponentCategory.DELIVERY)
+            .map(SpellComponent::displayName).findFirst().orElse("Direct magical effect");
+        String target = components.stream().filter(c -> c.category() == ComponentCategory.TARGET)
+            .map(SpellComponent::displayName).findFirst().orElse("an unspecified target");
+        String effects = components.stream().filter(c -> c.category() == ComponentCategory.EFFECT)
+            .map(SpellComponent::displayName).collect(Collectors.joining(" and "));
+        return delivery + (elements.isBlank() ? "" : " carrying " + elements) + " affecting " + target +
+            (effects.isBlank() ? "" : " with " + effects) + ".";
+    }
+}
