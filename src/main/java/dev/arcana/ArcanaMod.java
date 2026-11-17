@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ArcanaMod implements ModInitializer {
     private static final Map<UUID, SpellDraft> DRAFTS = new ConcurrentHashMap<>();
+    private static int hudSyncTicks;
 
     @Override
     public void onInitialize() {
@@ -35,7 +36,15 @@ public final class ArcanaMod implements ModInitializer {
         ArcanaItems.register();
         ArcanaBlocks.register();
 
-        ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            ArcanaResource.tick(server);
+            if (++hudSyncTicks >= 5) {
+                hudSyncTicks = 0;
+                for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                    GrimoireNetwork.syncHeldGrimoire(player);
+                }
+            }
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SpellBookStore.load(server);
             GrimoireStore.load(server);
