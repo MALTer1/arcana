@@ -64,13 +64,13 @@ public final class GrimoireHud {
     public static void render(DrawContext d,MinecraftClient c) {
         if(c.player==null)return;
         int sw=c.getWindow().getScaledWidth(), sh=c.getWindow().getScaledHeight();
-        int w=Math.min(620,sw-20), h=Math.min(202,Math.max(154,sh/3)), x=(sw-w)/2, y=sh-h-42, mid=x+w/2;
+        int w=Math.min(620,sw-20), h=Math.min(202,Math.max(154,sh/3)), x=(sw-w)/2, y=sh-h-112, mid=x+w/2;
         // A clear leather border and two equally sized parchment pages.
         d.fill(x+2,y+8,mid+5,y+h,0xFF170D20); d.fill(mid-5,y+8,x+w-2,y+h,0xFF170D20);
         d.fill(x,y+4,mid+2,y+h-3,0xFF4B245F); d.fill(mid-2,y+4,x+w,y+h-3,0xFF4B245F);
         d.fill(x+7,y+8,mid-3,y+h-8,0xFFFFF1D5); d.fill(mid+3,y+8,x+w-7,y+h-8,0xFFFFF1D5);
         d.fill(x+10,y+11,mid-6,y+h-11,0xFFF4E4C3); d.fill(mid+6,y+11,x+w-10,y+h-11,0xFFF4E4C3);
-        d.fill(mid-3,y+5,mid+3,y+h-6,0xFF8C6745);
+        d.fill(mid-5,y+5,mid+5,y+h-6,0xFF8C6745);\n        d.fill(mid-1,y+9,mid+1,y+h-10,0xFF5D422C);
         d.fill(x+7,y+8,x+12,y+h-8,0xFFB18A5C); d.fill(x+w-12,y+8,x+w-7,y+h-8,0xFFB18A5C);
 
         String tier=state.has("tier")?state.get("tier").getAsString():"Grimoire";
@@ -84,8 +84,8 @@ public final class GrimoireHud {
             d.drawCenteredTextWithShadow(c.textRenderer,labels[i],tx+(tabWidth-3)/2,y+1,i==tab?0xFFFFEAC8:0xFFD7C4A4);
         }
 
-        int pageInset=19, lx=x+pageInset, rx=mid+pageInset, ty=y+32;
-        int leftWidth=mid-x-2*pageInset-5, rightWidth=x+w-mid-2*pageInset-5;
+        int pageInset=22, lx=x+pageInset, rx=mid+pageInset, ty=y+32;
+        int leftWidth=mid-x-2*pageInset-8, rightWidth=x+w-mid-2*pageInset-8;
         int ink=0xFF302015, accent=0xFF572B70, muted=0xFF76583A;
         if(tab==0){
             line(d,c,"SPELL INDEX",lx,ty,muted);
@@ -112,7 +112,7 @@ public final class GrimoireHud {
                 wrapped(d,c,behavior,rx+8,ty+79,rightWidth-16,ink,Math.max(2,(h-125)/11));
                 line(d,c,removeMode?"ENTER: tear out page":"ENTER: cast selected spell",rx+8,y+h-25,accent);
             }
-            line(d,c,"← / →  CHANGE SPELL",lx,y+h-25,muted);
+            
         } else if(tab==1){
             line(d,c,"UNBOUND SPELL PAGES",lx,ty,muted);
             line(d,c,"PAGE PREVIEW",rx,ty,muted);
@@ -131,7 +131,7 @@ public final class GrimoireHud {
                 wrapped(d,c,"This loose page can be inserted into your current grimoire if it has room.",rx+8,ty+53,rightWidth-16,ink,4);
                 line(d,c,"ENTER: insert selected page",rx+8,y+h-25,accent);
             }
-            line(d,c,"← / →  CHANGE PAGE",lx,y+h-25,muted);
+            
         } else if(tab==2){
             int v=state.has("arcana")?state.get("arcana").getAsInt():0,m=state.has("maxArcana")?state.get("maxArcana").getAsInt():100;
             line(d,c,"ARCANA RESERVE",lx,ty,muted);
@@ -140,7 +140,7 @@ public final class GrimoireHud {
             d.fill(lx+2,ty+30,lx+2+(leftWidth-12)*v/Math.max(1,m),ty+41,0xFF75409A);
             line(d,c,v+" / "+m+" ARCANA",lx,ty+54,ink);
             wrapped(d,c,"Casting a spell consumes Arcana. The cost is based on the number of components in that spell.",rx+8,ty+27,rightWidth-16,ink,6);
-            line(d,c,"↑ / ↓  CHANGE TAB",lx,y+h-25,muted);
+            
         } else {
             line(d,c,"YOUR GRIMOIRE",lx,ty,muted);
             line(d,c,"CAPABILITIES",rx,ty,muted);
