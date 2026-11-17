@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
+import dev.arcana.network.GrimoireNetwork;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.GrimoireStore;
@@ -29,6 +30,7 @@ public final class ArcanaMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
+        GrimoireNetwork.initialize();
         GrimoireCommands.register();
         ArcanaItems.register();
         ArcanaBlocks.register();
