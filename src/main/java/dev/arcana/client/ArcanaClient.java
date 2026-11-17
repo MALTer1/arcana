@@ -14,6 +14,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 import org.lwjgl.glfw.GLFW;
 
 public final class ArcanaClient implements ClientModInitializer {
@@ -60,12 +61,12 @@ public final class ArcanaClient implements ClientModInitializer {
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient || !player.isSneaking() || activeTier(MinecraftClient.getInstance()) == null) {
-                return ActionResult.PASS;
+                return TypedActionResult.pass(player.getStackInHand(hand));
             }
             // Shift + right-click casts the selected page from the active grimoire.
             // The server still validates that the spell belongs to that grimoire.
             GrimoireHud.castSelected();
-            return ActionResult.SUCCESS;
+            return TypedActionResult.success(player.getStackInHand(hand), true);
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
