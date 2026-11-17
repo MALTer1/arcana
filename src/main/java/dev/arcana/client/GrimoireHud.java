@@ -113,9 +113,9 @@ public final class GrimoireHud {
         int screenHeight = client.getWindow().getScaledHeight();
 
         // Independent side panels: never draw a single connected book across the centre.
-        int panelWidth = Math.max(132, Math.min(204, (screenWidth - 36) / 2));
-        panelWidth = Math.min(panelWidth, Math.max(112, (screenWidth - 20) / 2));
-        int panelHeight = Math.min(224, Math.max(176, screenHeight - 28));
+        int panelWidth = Math.max(144, Math.min(176, (screenWidth - 36) / 2));
+        panelWidth = Math.min(panelWidth, Math.max(120, (screenWidth - 20) / 2));
+        int panelHeight = Math.min(196, Math.max(164, screenHeight - 28));
         int y = Math.max(8, (screenHeight - panelHeight) / 2);
         int leftX = 8;
         int rightX = screenWidth - panelWidth - 8;
