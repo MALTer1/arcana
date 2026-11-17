@@ -2,7 +2,9 @@ package dev.arcana.client;
 
 import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.GrimoireTier;
+import dev.arcana.network.GrimoireNetwork;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
@@ -12,11 +14,15 @@ import net.minecraft.util.TypedActionResult;
 public final class ArcanaClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID, (payload, context) ->
+            context.client().execute(() -> GrimoireScreen.receiveState(payload.json())));
+
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient || GrimoireTier.fromItem(player.getStackInHand(hand).getItem()) == null) {
                 return TypedActionResult.pass(player.getStackInHand(hand));
             }
             MinecraftClient.getInstance().setScreen(new GrimoireScreen());
+            ClientPlayNetworking.send(new GrimoireNetwork.ActionPayload("refresh", ""));
             return TypedActionResult.success(player.getStackInHand(hand));
         });
 
