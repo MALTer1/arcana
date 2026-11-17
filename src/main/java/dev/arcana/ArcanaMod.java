@@ -29,6 +29,7 @@ public final class ArcanaMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
+        GrimoireCommands.register();
         ArcanaItems.register();
         ArcanaBlocks.register();
 
