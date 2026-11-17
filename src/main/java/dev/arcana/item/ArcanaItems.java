@@ -10,6 +10,11 @@ import net.minecraft.util.Identifier;
 public final class ArcanaItems {
     public static final Item MAGIC_DUST = register("magic_dust");
     public static final Item MAGIC_PAPER = register("magic_paper");
+    public static final Item SPELL_PAGE = register("spell_page");
+    public static final Item NOVICE_GRIMOIRE = register("novice_grimoire");
+    public static final Item APPRENTICE_GRIMOIRE = register("apprentice_grimoire");
+    public static final Item ADEPT_GRIMOIRE = register("adept_grimoire");
+    public static final Item MASTER_GRIMOIRE = register("master_grimoire");
 
     private ArcanaItems() {}
 
@@ -21,6 +26,13 @@ public final class ArcanaItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> {
             entries.add(MAGIC_DUST);
             entries.add(MAGIC_PAPER);
+            entries.add(SPELL_PAGE);
+        });
+        ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
+            entries.add(NOVICE_GRIMOIRE);
+            entries.add(APPRENTICE_GRIMOIRE);
+            entries.add(ADEPT_GRIMOIRE);
+            entries.add(MASTER_GRIMOIRE);
         });
     }
 }
