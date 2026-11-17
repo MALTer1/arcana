@@ -41,7 +41,7 @@ public final class SpellCaster {
         boolean teleport = parts.contains("teleportation");
 
         List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single);
-        if (targets.isEmpty() && !teleport) {
+        if (targets.isEmpty() && !teleport && !parts.contains("summoning")) {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
 
