@@ -118,7 +118,8 @@ public final class GrimoireScreen extends Screen {
             JsonArray spells = array("spells");
             context.drawText(textRenderer, "Your engraved spells", left + 22, top + 54, 0xFF5A3D28, false);
             if (spells.size() == 0) {
-                context.drawTextWrapped(textRenderer, "This book is empty. Engrave a spell page at the Magic Writer, then place it in the Pages tab.", left + 25, top + 88, 165, 0xFF5A3D28);
+                context.drawText(textRenderer, "This book is empty.", left + 25, top + 88, 0xFF5A3D28, false);
+                context.drawText(textRenderer, "Engrave pages at the Magic Writer.", left + 25, top + 101, 0xFF5A3D28, false);
             } else if (selected < spells.size()) {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
@@ -126,15 +127,16 @@ public final class GrimoireScreen extends Screen {
                 context.fill(left + 278, top + 83, left + 362, top + 166, 0xFFDFD0B0);
                 context.drawCenteredTextWithShadow(textRenderer, "✦", left + 320, top + 105, 0xFF7545A0);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL SIGIL", left + 320, top + 145, 0xFF684D36);
-                context.drawTextWrapped(textRenderer, spell.has("behavior") ? spell.get("behavior").getAsString() : "", left + 235, top + 172, 180, 0xFF4A3020);
+                context.drawText(textRenderer, spell.has("behavior") ? spell.get("behavior").getAsString() : "", left + 235, top + 172, 0xFF4A3020, false);
                 JsonArray components = spell.has("components") ? spell.getAsJsonArray("components") : new JsonArray();
                 context.drawText(textRenderer, "Components: " + components.size(), left + 235, top + 205, 0xFF684D36, false);
                 context.drawText(textRenderer, "Arcana cost: " + (10 + components.size() * 5), left + 235, top + 217, 0xFF684D36, false);
             }
         } else if (tab == 1) {
             context.drawText(textRenderer, "Spell pages in your inventory", left + 24, top + 55, 0xFF5A3D28, false);
-            if (array("loosePages").isEmpty()) context.drawTextWrapped(textRenderer, "No loose Spell Pages. Engrave a spell at the Magic Writer first.", left + 28, top + 88, 170, 0xFF5A3D28);
-            context.drawTextWrapped(textRenderer, "Select a page on the right to insert it into this grimoire. Capacity and component limits are checked.", left + 235, top + 85, 170, 0xFF5A3D28);
+            if (array("loosePages").isEmpty()) context.drawText(textRenderer, "No loose Spell Pages.", left + 28, top + 88, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "Select a page on the left", left + 235, top + 85, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "to insert it into this book.", left + 235, top + 98, 0xFF5A3D28, false);
         } else if (tab == 2) {
             int current = state.has("arcana") ? state.get("arcana").getAsInt() : 0;
             int max = state.has("maxArcana") ? state.get("maxArcana").getAsInt() : 100;
@@ -142,7 +144,8 @@ public final class GrimoireScreen extends Screen {
             context.fill(left + 28, top + 92, left + 190, top + 105, 0xFF8B8175);
             context.fill(left + 28, top + 92, left + 28 + (int)(162.0 * current / Math.max(1,max)), top + 105, 0xFF7950A0);
             context.drawText(textRenderer, current + " / " + max, left + 28, top + 116, 0xFF5A3D28, false);
-            context.drawTextWrapped(textRenderer, "Arcana regenerates naturally over time. Casting a spell consumes Arcana based on its component count.", left + 235, top + 80, 170, 0xFF5A3D28);
+            context.drawText(textRenderer, "Arcana regenerates over time.", left + 235, top + 80, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "Casting spends Arcana.", left + 235, top + 94, 0xFF5A3D28, false);
         } else {
             context.drawText(textRenderer, "A grimoire holds engraved spell pages.", left + 28, top + 72, 0xFF5A3D28, false);
             context.drawText(textRenderer, "Pages: " + array("spells").size() + " / " + (state.has("slots") ? state.get("slots").getAsInt() : 0), left + 28, top + 98, 0xFF5A3D28, false);
