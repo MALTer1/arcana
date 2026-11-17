@@ -113,7 +113,7 @@ public final class ArcanaMod implements ModInitializer {
                             name, spellDraft.selectedIds(), spellDraft.behavior());
                         SpellBookStore.add(player.getUuid(), spell);
                         net.minecraft.item.ItemStack page = new net.minecraft.item.ItemStack(ArcanaItems.SPELL_PAGE);
-                        page.setCustomName(Text.literal(name));
+                        page.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(name));
                         if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
                         spellDraft.clear();
                         SpellBookStore.save(player.getServer());
@@ -199,7 +199,7 @@ public final class ArcanaMod implements ModInitializer {
     private static boolean hasSpellPage(ServerPlayerEntity player, String name) {
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
-            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) return true;
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME) && stack.getName().getString().equalsIgnoreCase(name)) return true;
         }
         return false;
     }
