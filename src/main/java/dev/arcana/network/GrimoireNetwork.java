@@ -46,9 +46,9 @@ public final class GrimoireNetwork {
     }
 
     private static void handle(ServerPlayerEntity player, String action, String name) {
-        GrimoireTier tier = GrimoireTier.fromItem(player.getMainHandStack().getItem());
+        GrimoireTier tier = activeTier(player);
         if (tier == null) {
-            send(player, new JsonObject(), "Hold a grimoire in your main hand.");
+            send(player, new JsonObject(), "Hold a grimoire in either hand.");
             return;
         }
         String message = "";
@@ -83,6 +83,16 @@ public final class GrimoireNetwork {
             }
         }
         send(player, buildState(player, tier), message);
+    }
+
+    public static void syncHeldGrimoire(ServerPlayerEntity player) {
+        GrimoireTier tier = activeTier(player);
+        if (tier != null) send(player, buildState(player, tier), "");
+    }
+
+    private static GrimoireTier activeTier(ServerPlayerEntity player) {
+        GrimoireTier offhand = GrimoireTier.fromItem(player.getOffHandStack().getItem());
+        return offhand != null ? offhand : GrimoireTier.fromItem(player.getMainHandStack().getItem());
     }
 
     private static JsonObject buildState(ServerPlayerEntity player, GrimoireTier tier) {
