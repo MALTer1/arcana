@@ -80,38 +80,53 @@ public final class SpellCaster {
     private static List<LivingEntity> selectTargets(ServerPlayerEntity player, List<String> parts,
                                                      boolean self, boolean area, boolean multiple, boolean single) {
         List<LivingEntity> result = new ArrayList<>();
-        if (self) {
-            result.add(player);
-            return result;
-        }
+        if (self) result.add(player);
 
         double range = parts.contains("beam") ? 24.0 : parts.contains("projectile") ? 18.0 : 12.0;
         double radius = parts.contains("field") || parts.contains("barrier") ? 5.0
             : parts.contains("wave") ? 4.0 : 2.5;
-        Box search = player.getBoundingBox().expand(range, 6.0, range);
         Vec3d look = player.getRotationVec(1.0F).normalize();
         Vec3d origin = player.getEyePos();
-
+        // Area spells resolve around the aimed endpoint; wave spells cover a
+        // forward corridor, so Projectile + Area + Wave can be composed.
+        Vec3d impact = origin.add(look.multiply(range));
+        Box search = player.getBoundingBox().expand(range, 6.0, range);
         List<LivingEntity> candidates = player.getWorld().getEntitiesByClass(
             LivingEntity.class, search, entity -> entity != player && entity.isAlive());
 
-        if (area || parts.contains("field") || parts.contains("wave")) {
-            candidates.stream()
-                .filter(entity -> entity.squaredDistanceTo(player) <= radius * radius)
-                .forEach(result::add);
-        } else {
-            candidates.stream()
-                .filter(entity -> {
-                    Vec3d to = entity.getBoundingBox().getCenter().subtract(origin);
-                    double distance = to.length();
-                    return distance <= range && distance > 0.0
-                        && look.dotProduct(to.normalize()) >= (parts.contains("beam") ? 0.94 : 0.82);
-                })
-                .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
-                .limit(single || !multiple ? 1 : 5)
-                .forEach(result::add);
+        if (!self) {
+            if (area) {
+                candidates.stream()
+                    .filter(entity -> entity.getBoundingBox().getCenter().squaredDistanceTo(impact) <= radius * radius)
+                    .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(impact)))
+                    .limit(multiple ? 5 : 1)
+                    .forEach(result::add);
+            } else if (parts.contains("wave")) {
+                candidates.stream()
+                    .filter(entity -> {
+                        Vec3d offset = entity.getBoundingBox().getCenter().subtract(origin);
+                        double distance = offset.length();
+                        if (distance <= 0.0 || distance > range) return false;
+                        double forward = offset.dotProduct(look);
+                        Vec3d lateral = offset.subtract(look.multiply(forward));
+                        return forward > 0.0 && lateral.lengthSquared() <= radius * radius;
+                    })
+                    .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
+                    .limit(multiple ? 5 : 1)
+                    .forEach(result::add);
+            } else {
+                candidates.stream()
+                    .filter(entity -> {
+                        Vec3d to = entity.getBoundingBox().getCenter().subtract(origin);
+                        double distance = to.length();
+                        return distance <= range && distance > 0.0
+                            && look.dotProduct(to.normalize()) >= (parts.contains("beam") ? 0.94 : 0.82);
+                    })
+                    .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
+                    .limit(multiple ? 5 : 1)
+                    .forEach(result::add);
+            }
         }
-
         if (parts.contains("barrier") && result.isEmpty()) result.add(player);
         return result;
     }
