@@ -7,11 +7,11 @@
   "item.arcana.adept_grimoire": "Adept Grimoire",
   "item.arcana.master_grimoire": "Master Grimoire",
   "block.arcana.magic_writer": "Magic Writer",
-  "key.arcana.previous_page": "Previous Grimoire Page",
-  "key.arcana.next_page": "Next Grimoire Page",
-  "key.arcana.previous_tab": "Previous Grimoire Tab",
-  "key.arcana.next_tab": "Next Grimoire Tab",
-  "key.arcana.use_page": "Use Grimoire Page",
-  "key.arcana.remove_mode": "Toggle Page Removal",
+  "key.arcana.previous_page": "Previous Grimoire Page (Page Up)",
+  "key.arcana.next_page": "Next Grimoire Page (Page Down)",
+  "key.arcana.previous_tab": "Previous Grimoire Tab (Home)",
+  "key.arcana.next_tab": "Next Grimoire Tab (End)",
+  "key.arcana.use_page": "Use Grimoire Page (Enter)",
+  "key.arcana.remove_mode": "Toggle Page Removal (Delete)",
   "category.arcana.grimoire": "Arcana Grimoire"
 }
