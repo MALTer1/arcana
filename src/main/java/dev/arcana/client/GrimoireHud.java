@@ -70,7 +70,8 @@ public final class GrimoireHud {
         d.fill(x,y+4,mid+2,y+h-3,0xFF4B245F); d.fill(mid-2,y+4,x+w,y+h-3,0xFF4B245F);
         d.fill(x+7,y+8,mid-3,y+h-8,0xFFFFF1D5); d.fill(mid+3,y+8,x+w-7,y+h-8,0xFFFFF1D5);
         d.fill(x+10,y+11,mid-6,y+h-11,0xFFF4E4C3); d.fill(mid+6,y+11,x+w-10,y+h-11,0xFFF4E4C3);
-        d.fill(mid-5,y+5,mid+5,y+h-6,0xFF8C6745);\n        d.fill(mid-1,y+9,mid+1,y+h-10,0xFF5D422C);
+        d.fill(mid-5,y+5,mid+5,y+h-6,0xFF8C6745);
+        d.fill(mid-1,y+9,mid+1,y+h-10,0xFF5D422C);
         d.fill(x+7,y+8,x+12,y+h-8,0xFFB18A5C); d.fill(x+w-12,y+8,x+w-7,y+h-8,0xFFB18A5C);
 
         String tier=state.has("tier")?state.get("tier").getAsString():"Grimoire";
