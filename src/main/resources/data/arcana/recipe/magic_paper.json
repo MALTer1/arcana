@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "DDD",
+    "DPD",
+    "DDD"
+  ],
+  "key": {
+    "D": { "item": "arcana:magic_dust" },
+    "P": { "item": "minecraft:paper" }
+  },
+  "result": {
+    "item": "arcana:magic_paper",
+    "count": 1
+  }
+}
