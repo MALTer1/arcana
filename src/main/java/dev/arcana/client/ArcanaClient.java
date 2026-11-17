@@ -21,12 +21,14 @@ public final class ArcanaClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        previousPage = key("key.arcana.previous_page", GLFW.GLFW_KEY_LEFT);
-        nextPage = key("key.arcana.next_page", GLFW.GLFW_KEY_RIGHT);
-        previousTab = key("key.arcana.previous_tab", GLFW.GLFW_KEY_UP);
-        nextTab = key("key.arcana.next_tab", GLFW.GLFW_KEY_DOWN);
+        // Defaults deliberately avoid WASD, Q (drop), E (inventory), mouse buttons,
+        // attack/use, and the common hotbar keys. Every binding remains configurable.
+        previousPage = key("key.arcana.previous_page", GLFW.GLFW_KEY_PAGE_UP);
+        nextPage = key("key.arcana.next_page", GLFW.GLFW_KEY_PAGE_DOWN);
+        previousTab = key("key.arcana.previous_tab", GLFW.GLFW_KEY_HOME);
+        nextTab = key("key.arcana.next_tab", GLFW.GLFW_KEY_END);
         usePage = key("key.arcana.use_page", GLFW.GLFW_KEY_ENTER);
-        removeMode = key("key.arcana.remove_mode", GLFW.GLFW_KEY_X);
+        removeMode = key("key.arcana.remove_mode", GLFW.GLFW_KEY_DELETE);
 
         ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID, (payload, context) ->
             context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
@@ -35,7 +37,7 @@ public final class ArcanaClient implements ClientModInitializer {
             boolean holding = client.player != null && GrimoireTier.fromItem(client.player.getMainHandStack().getItem()) != null;
             if (holding && !wasHoldingGrimoire) GrimoireHud.refresh();
             wasHoldingGrimoire = holding;
-            if (!holding) return;
+            if (!holding || client.currentScreen != null) return;
             while (previousPage.wasPressed()) GrimoireHud.previousPage();
             while (nextPage.wasPressed()) GrimoireHud.nextPage();
             while (previousTab.wasPressed()) GrimoireHud.previousTab();
