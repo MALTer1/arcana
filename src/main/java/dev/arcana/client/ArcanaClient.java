@@ -21,14 +21,14 @@ public final class ArcanaClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // Defaults deliberately avoid WASD, Q (drop), E (inventory), mouse buttons,
-        // attack/use, and the common hotbar keys. Every binding remains configurable.
-        previousPage = key("key.arcana.previous_page", GLFW.GLFW_KEY_PAGE_UP);
-        nextPage = key("key.arcana.next_page", GLFW.GLFW_KEY_PAGE_DOWN);
-        previousTab = key("key.arcana.previous_tab", GLFW.GLFW_KEY_HOME);
-        nextTab = key("key.arcana.next_tab", GLFW.GLFW_KEY_END);
+        // Restore the original, intuitive arrow-key controls. These do not replace
+        // Better MC's WASD, attack, use, inventory, drop, or hotbar controls.
+        previousPage = key("key.arcana.previous_page", GLFW.GLFW_KEY_LEFT);
+        nextPage = key("key.arcana.next_page", GLFW.GLFW_KEY_RIGHT);
+        previousTab = key("key.arcana.previous_tab", GLFW.GLFW_KEY_UP);
+        nextTab = key("key.arcana.next_tab", GLFW.GLFW_KEY_DOWN);
         usePage = key("key.arcana.use_page", GLFW.GLFW_KEY_ENTER);
-        removeMode = key("key.arcana.remove_mode", GLFW.GLFW_KEY_DELETE);
+        removeMode = key("key.arcana.remove_mode", GLFW.GLFW_KEY_X);
 
         ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID, (payload, context) ->
             context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
