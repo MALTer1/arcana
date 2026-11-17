@@ -85,7 +85,7 @@ public final class GrimoireCommands {
     private static void consumePage(ServerPlayerEntity player, String name) {
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
-            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) {
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME) && stack.getName().getString().equalsIgnoreCase(name)) {
                 stack.decrement(1);
                 return;
             }
