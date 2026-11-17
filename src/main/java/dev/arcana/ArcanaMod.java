@@ -3,8 +3,10 @@ package dev.arcana;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
+import dev.arcana.item.GrimoireTier;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
+import dev.arcana.spell.GrimoireStore;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
 import dev.arcana.spell.SpellDraft;
@@ -33,10 +35,12 @@ public final class ArcanaMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SpellBookStore.load(server);
+            GrimoireStore.load(server);
             ArcanaResource.load(server);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             SpellBookStore.save(server);
+            GrimoireStore.save(server);
             ArcanaResource.save(server);
         });
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ArcanaResource.save(server));
@@ -106,9 +110,12 @@ public final class ArcanaMod implements ModInitializer {
                         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
                             name, spellDraft.selectedIds(), spellDraft.behavior());
                         SpellBookStore.add(player.getUuid(), spell);
+                        net.minecraft.item.ItemStack page = new net.minecraft.item.ItemStack(ArcanaItems.SPELL_PAGE);
+                        page.setCustomName(Text.literal(name));
+                        if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
                         spellDraft.clear();
                         SpellBookStore.save(player.getServer());
-                        player.sendMessage(Text.literal("Engraved '" + name + "' and added it to your spellbook."), false);
+                        player.sendMessage(Text.literal("Engraved '" + name + "' onto a Spell Page. Insert it with /arcana grimoire insert " + name + "."), false);
                         return 1;
                     })))
                 .then(CommandManager.literal("spells").executes(context -> {
@@ -185,6 +192,24 @@ public final class ArcanaMod implements ModInitializer {
             }
         }
         return false;
+    }
+
+    private static boolean hasSpellPage(ServerPlayerEntity player, String name) {
+        for (int slot = 0; slot < player.getInventory().size(); slot++) {
+            net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) return true;
+        }
+        return false;
+    }
+
+    private static void consumeSpellPage(ServerPlayerEntity player, String name) {
+        for (int slot = 0; slot < player.getInventory().size(); slot++) {
+            net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) {
+                stack.decrement(1);
+                return;
+            }
+        }
     }
 
     private static String normalizeName(String name) {
