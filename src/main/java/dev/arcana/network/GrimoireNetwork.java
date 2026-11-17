@@ -52,7 +52,9 @@ public final class GrimoireNetwork {
             return;
         }
         String message = "";
-        if ("cast".equals(action)) {
+        if ("refresh".equals(action)) {
+            // Send the current grimoire and loose-page state without changing anything.
+        } else if ("cast".equals(action)) {
             SpellBookStore.StoredSpell spell = GrimoireStore.find(player.getUuid(), tier, name);
             if (spell == null) message = "That spell is not in this grimoire.";
             else {
