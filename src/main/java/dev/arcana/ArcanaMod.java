@@ -10,6 +10,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -26,8 +27,15 @@ public final class ArcanaMod implements ModInitializer {
         ComponentRegistry.bootstrap();
 
         ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
-        ServerLifecycleEvents.SERVER_STARTED.register(SpellBookStore::load);
-        ServerLifecycleEvents.SERVER_STOPPING.register(SpellBookStore::save);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            SpellBookStore.load(server);
+            ArcanaResource.load(server);
+        });
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            SpellBookStore.save(server);
+            ArcanaResource.save(server);
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> ArcanaResource.save(server));
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             dispatcher.register(CommandManager.literal("arcana")
@@ -121,7 +129,7 @@ public final class ArcanaMod implements ModInitializer {
                         player.sendMessage(Text.literal("=== " + spell.name + " ==="), false);
                         player.sendMessage(Text.literal("Components: " + String.join(" + ", spell.components)), false);
                         player.sendMessage(Text.literal("Behavior: " + spell.behavior), false);
-                        player.sendMessage(Text.literal("Engraved spells are stored; casting is not implemented yet."), false);
+                        player.sendMessage(Text.literal("This spell is stored in your spellbook. Use /arcana cast " + spell.name + " to cast it."), false);
                         return 1;
                     })))
                 .then(CommandManager.literal("forget")
