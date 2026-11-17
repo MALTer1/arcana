@@ -56,8 +56,12 @@ public final class GrimoireScreen extends Screen {
             for (int i = start; i < Math.min(start + 5, spells.size()); i++) {
                 final int index = i;
                 String name = spells.get(i).getAsJsonObject().get("name").getAsString();
-                addDrawableChild(ButtonWidget.builder(Text.literal((selected == i ? "◆ " : "") + name),
-                    b -> { selected = index; rebuild(); })
+                addDrawableChild(ButtonWidget.builder(Text.literal((selected == i ? "◆ " : "▤ ") + name),
+                    b -> {
+                        selected = index;
+                        if (removeMode) send("remove", name);
+                        else send("cast", name);
+                    })
                     .dimensions(left + 20, top + 64 + (i - start) * 25, 174, 21).build());
             }
             addDrawableChild(ButtonWidget.builder(Text.literal("‹"), b -> { listPage = Math.max(0, listPage - 1); rebuild(); })
@@ -67,13 +71,6 @@ public final class GrimoireScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE MODE: ON" : "Fold corner: remove"),
                 b -> { removeMode = !removeMode; notice = removeMode ? "Choose a spell page to remove." : "Removal mode off."; rebuild(); })
                 .dimensions(left + 250, top + 30, 158, 20).build());
-            if (spells.size() > 0 && selected < spells.size()) {
-                JsonObject spell = spells.get(selected).getAsJsonObject();
-                String name = spell.get("name").getAsString();
-                addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "Tear out page" : "Cast this spell"),
-                    b -> { send(removeMode ? "remove" : "cast", name); })
-                    .dimensions(left + 252, top + 198, 156, 20).build());
-            }
         } else if (tab == 1) {
             JsonArray pages = array("loosePages");
             for (int i=0;i<Math.min(6,pages.size());i++) {
@@ -116,7 +113,7 @@ public final class GrimoireScreen extends Screen {
 
         if (tab == 0) {
             JsonArray spells = array("spells");
-            context.drawText(textRenderer, "Your engraved spells", left + 22, top + 54, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "Press a spell page to cast it", left + 22, top + 54, 0xFF5A3D28, false);
             if (spells.size() == 0) {
                 context.drawText(textRenderer, "This book is empty.", left + 25, top + 88, 0xFF5A3D28, false);
                 context.drawText(textRenderer, "Engrave pages at the Magic Writer.", left + 25, top + 101, 0xFF5A3D28, false);
