@@ -7,7 +7,6 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.util.Identifier;
 
-/** Registers Arcana's basic spellcrafting materials. */
 public final class ArcanaItems {
     public static final Item MAGIC_DUST = register("magic_dust");
     public static final Item MAGIC_PAPER = register("magic_paper");
