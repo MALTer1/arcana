@@ -57,6 +57,12 @@ public final class GrimoireHud {
         }
     }
 
+    public static void castSelected() {
+        if (tab != 0 || spells().isEmpty() || removeMode) return;
+        JsonObject spell = spells().get(selectedSpell).getAsJsonObject();
+        send("cast", spell.get("name").getAsString());
+    }
+
     private static void send(String action, String name) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player != null && client.getNetworkHandler() != null) {
@@ -72,7 +78,9 @@ public final class GrimoireHud {
             ? state.getAsJsonArray("loosePages") : new JsonArray();
     }
     private static void line(DrawContext draw, MinecraftClient client, String value, int x, int y, int color) {
-        draw.drawTextWithShadow(client.textRenderer, value, x, y, color);
+        // Vanilla's shadow pass softens the small HUD glyphs. Draw the base font
+        // directly for sharper edges and more consistent readability.
+        draw.drawText(client.textRenderer, value, x, y, color, false);
     }
     private static void wrapped(DrawContext draw, MinecraftClient client, String value,
                                 int x, int y, int width, int color, int maxLines) {
@@ -98,12 +106,12 @@ public final class GrimoireHud {
 
     private static void panel(DrawContext draw, int x, int y, int width, int height, boolean right) {
         // 0xE6 alpha leaves the parchment and frame approximately 10% transparent.
-        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0xE6170D20);
-        draw.fill(x, y, x + width, y + height, 0xE64B245F);
-        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0xE6FFF1D5);
+        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0xD9170D20);
+        draw.fill(x, y, x + width, y + height, 0xD94B245F);
+        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0xD9FFF1D5);
         draw.fill(x + 7, y + 7, x + width - 7, y + height - 7,
-            right ? 0xE6F7EBD4 : 0xE6F4E4C3);
-        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0xE6B18A5C);
+            right ? 0xD9F7EBD4 : 0xD9F4E4C3);
+        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0xD9B18A5C);
         draw.fill(x + 7, y + height - 9, x + width - 7, y + height - 7, 0xE6B18A5C);
     }
 
@@ -146,7 +154,7 @@ public final class GrimoireHud {
             default -> "BOOK DETAILS";
         };
         line(draw, client, rightTitle, rightX + innerX, y + 12, accent);
-        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0xE6B89A70);
+        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0xD9B89A70);
 
         if (tab == 0) {
             line(draw, client, "SPELL INDEX", leftX + innerX, top, muted);
@@ -203,9 +211,9 @@ public final class GrimoireHud {
             int value = state.has("arcana") ? state.get("arcana").getAsInt() : 0;
             int maximum = state.has("maxArcana") ? state.get("maxArcana").getAsInt() : 100;
             line(draw, client, "CURRENT RESERVE", leftX + innerX, top, muted);
-            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0xE6B9A88C);
+            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0xD9B9A88C);
             int barWidth = Math.max(0, (contentWidth - 4) * value / Math.max(1, maximum));
-            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0xE675409A);
+            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0xD975409A);
             line(draw, client, value + " / " + maximum, leftX + innerX, top + 47, ink);
             wrapped(draw, client, "Arcana regenerates over time. Casting spends Arcana based on spell complexity.",
                 rightX + innerX, top + 8, contentWidth, ink, 7);
