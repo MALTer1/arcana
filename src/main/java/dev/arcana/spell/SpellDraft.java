@@ -76,11 +76,8 @@ public final class SpellDraft {
     private List<String> validate(List<SpellComponent> components) {
         List<String> issues = new ArrayList<>();
         if (components.size() < 2) issues.add("Choose at least two components.");
-        Map<ComponentCategory, Long> counts = components.stream().collect(
-            Collectors.groupingBy(SpellComponent::category, () -> new EnumMap<>(ComponentCategory.class), Collectors.counting()));
-        if (counts.getOrDefault(ComponentCategory.DELIVERY, 0L) > 1) issues.add("Choose only one delivery/shape component.");
-        if (counts.getOrDefault(ComponentCategory.TARGET, 0L) > 1) issues.add("Choose only one target component.");
-        if (counts.getOrDefault(ComponentCategory.ELEMENT, 0L) > 2) issues.add("A spell can combine at most two elements.");
+        // Components are composable: a spell may combine several deliveries,
+        // targets, and elements. Duplicate IDs are still rejected by add().
         boolean healing = selected.contains("healing");
         boolean explosion = selected.contains("explosion");
         boolean teleport = selected.contains("teleportation");
@@ -98,11 +95,13 @@ public final class SpellDraft {
         String elements = components.stream().filter(c -> c.category() == ComponentCategory.ELEMENT)
             .map(SpellComponent::displayName).collect(Collectors.joining(" + "));
         String delivery = components.stream().filter(c -> c.category() == ComponentCategory.DELIVERY)
-            .map(SpellComponent::displayName).findFirst().orElse("Direct magical effect");
+            .map(SpellComponent::displayName).collect(Collectors.joining(" + "));
+        if (delivery.isBlank()) delivery = "Direct magical effect";
         String target = components.stream().filter(c -> c.category() == ComponentCategory.TARGET)
-            .map(SpellComponent::displayName).findFirst().orElse("an unspecified target");
+            .map(SpellComponent::displayName).collect(Collectors.joining(" + "));
+        if (target.isBlank()) target = "an unspecified target";
         String effects = components.stream().filter(c -> c.category() == ComponentCategory.EFFECT)
-            .map(SpellComponent::displayName).collect(Collectors.joining(" and "));
+            .map(SpellComponent::displayName).collect(Collectors.joining(" + "));
         return delivery + (elements.isBlank() ? "" : " carrying " + elements) + " affecting " + target +
             (effects.isBlank() ? "" : " with " + effects) + ".";
     }
