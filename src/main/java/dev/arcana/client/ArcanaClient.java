@@ -34,7 +34,7 @@ public final class ArcanaClient implements ClientModInitializer {
             context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            boolean holding = client.player != null && GrimoireTier.fromItem(client.player.getMainHandStack().getItem()) != null;
+            boolean holding = client.player != null && activeTier(client) != null;
             if (holding && !wasHoldingGrimoire) GrimoireHud.refresh();
             wasHoldingGrimoire = holding;
             if (!holding || client.currentScreen != null) return;
@@ -48,7 +48,7 @@ public final class ArcanaClient implements ClientModInitializer {
 
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            if (client.player != null && GrimoireTier.fromItem(client.player.getMainHandStack().getItem()) != null) {
+            if (client.player != null && activeTier(client) != null) {
                 GrimoireHud.render(drawContext, client);
             }
         });
@@ -58,6 +58,11 @@ public final class ArcanaClient implements ClientModInitializer {
             MinecraftClient.getInstance().setScreen(new MagicWriterScreen());
             return ActionResult.SUCCESS;
         });
+    }
+
+    private static GrimoireTier activeTier(MinecraftClient client) {
+        GrimoireTier offhand = GrimoireTier.fromItem(client.player.getOffHandStack().getItem());
+        return offhand != null ? offhand : GrimoireTier.fromItem(client.player.getMainHandStack().getItem());
     }
 
     private static KeyBinding key(String id, int code) {
