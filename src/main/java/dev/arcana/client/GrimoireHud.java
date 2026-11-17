@@ -286,25 +286,25 @@ public final class GrimoireHud {
 
     private static String spellGlyph(JsonObject spell) {
         if (!spell.has("components") || !spell.get("components").isJsonArray()
-            || spell.getAsJsonArray("components").isEmpty()) return "✦";
+            || spell.getAsJsonArray("components").isEmpty()) return "SP";
         String first = spell.getAsJsonArray("components").get(0).getAsString();
         return switch (first) {
-            case "fire" -> "F";
-            case "water" -> "W";
-            case "wind" -> "A";
-            case "earth" -> "E";
-            case "lightning" -> "⚡";
-            case "ice" -> "I";
-            case "explosion" -> "✹";
-            case "healing" -> "+";
-            case "summoning" -> "S";
-            case "teleportation" -> "↗";
-            case "binding" -> "⌘";
-            case "projectile" -> "➤";
-            case "beam" -> "━";
-            case "wave" -> "≋";
-            case "barrier" -> "▣";
-            case "field" -> "◉";
+            case "fire" -> "FR";
+            case "water" -> "WT";
+            case "wind" -> "WN";
+            case "earth" -> "ER";
+            case "lightning" -> "LT";
+            case "ice" -> "IC";
+            case "explosion" -> "EX";
+            case "healing" -> "HL";
+            case "summoning" -> "SM";
+            case "teleportation" -> "TP";
+            case "binding" -> "BD";
+            case "projectile" -> "PJ";
+            case "beam" -> "BM";
+            case "wave" -> "WV";
+            case "barrier" -> "BR";
+            case "field" -> "FD";
             default -> first.substring(0, 1).toUpperCase();
         };
     }
