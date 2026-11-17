@@ -1,12 +1,15 @@
 package dev.arcana;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.SpellBookStore;
+import dev.arcana.spell.SpellCaster;
 import dev.arcana.spell.SpellDraft;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -17,12 +20,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class ArcanaMod implements ModInitializer {
     private static final Map<UUID, SpellDraft> DRAFTS = new ConcurrentHashMap<>();
-    private static final Map<UUID, Integer> ARCANA = new ConcurrentHashMap<>();
 
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
 
+        ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(SpellBookStore::load);
         ServerLifecycleEvents.SERVER_STOPPING.register(SpellBookStore::save);
 
@@ -132,10 +135,23 @@ public final class ArcanaMod implements ModInitializer {
                             : "No spell named '" + name + "' exists in your spellbook."), false);
                         return removed ? 1 : 0;
                     })))
+                .then(CommandManager.literal("cast")
+                    .then(CommandManager.argument("name", StringArgumentType.greedyString()).executes(context -> {
+                        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                        String name = normalizeName(StringArgumentType.getString(context, "name"));
+                        SpellBookStore.StoredSpell spell = SpellBookStore.find(player.getUuid(), name);
+                        if (spell == null) {
+                            player.sendMessage(Text.literal("No spell named '" + name + "' exists in your spellbook."), false);
+                            return 0;
+                        }
+                        SpellCaster.CastResult result = SpellCaster.cast(player, spell);
+                        player.sendMessage(Text.literal(result.message()), false);
+                        return result.success() ? 1 : 0;
+                    })))
                 .then(CommandManager.literal("status").executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-                    int current = ARCANA.computeIfAbsent(player.getUuid(), ignored -> 100);
-                    player.sendMessage(Text.literal("Arcana: " + current + "/100 (casting and regeneration are not implemented yet)"), false);
+                    player.sendMessage(Text.literal("Arcana: " + ArcanaResource.current(player) + "/" +
+                        ArcanaResource.MAX_ARCANA + " (regenerates 2 Arcana per second)"), false);
                     return 1;
                 }))
             )
