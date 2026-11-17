@@ -52,7 +52,7 @@ public final class GrimoireCommands {
                             SpellBookStore.StoredSpell spell = GrimoireStore.remove(player.getUuid(), tier, name);
                             if (spell == null) { player.sendMessage(Text.literal("That grimoire does not contain '" + name + "'."), false); return 0; }
                             ItemStack page = new ItemStack(ArcanaItems.SPELL_PAGE);
-                            page.setCustomName(Text.literal(spell.name));
+                            page.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(spell.name));
                             if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
                             GrimoireStore.save(player.getServer());
                             player.sendMessage(Text.literal("Removed '" + name + "' and returned its Spell Page."), false);
@@ -77,7 +77,7 @@ public final class GrimoireCommands {
     private static boolean hasPage(ServerPlayerEntity player, String name) {
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
-            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) return true;
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME) && stack.getName().getString().equalsIgnoreCase(name)) return true;
         }
         return false;
     }
