@@ -1,5 +1,6 @@
 package dev.arcana.spell;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 import java.util.Map;
@@ -19,12 +20,14 @@ public final class ArcanaResource {
         return CURRENT.computeIfAbsent(player.getUuid(), ignored -> MAX_ARCANA);
     }
 
-    public static synchronized void tick(ServerPlayerEntity player) {
+    public static synchronized void tick(MinecraftServer server) {
         tickCounter++;
         if (tickCounter < 20) return;
         tickCounter = 0;
-        CURRENT.compute(player.getUuid(), (id, value) ->
-            Math.min(MAX_ARCANA, (value == null ? MAX_ARCANA : value) + REGEN_PER_SECOND));
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            CURRENT.compute(player.getUuid(), (id, value) ->
+                Math.min(MAX_ARCANA, (value == null ? MAX_ARCANA : value) + REGEN_PER_SECOND));
+        }
     }
 
     public static boolean trySpend(ServerPlayerEntity player, int amount) {
