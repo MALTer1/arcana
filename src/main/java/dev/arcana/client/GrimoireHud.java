@@ -238,9 +238,75 @@ public final class GrimoireHud {
         } else if (tab == 1) {
             line(draw, client, "ENTER: INSERT PAGE", rightX + innerX, controlY - 13, accent);
         }
+        renderSpellWheel(draw, client, screenWidth, screenHeight);
+
         if (System.currentTimeMillis() < noticeUntil && !notice.isBlank()) {
             draw.drawCenteredTextWithShadow(client.textRenderer, notice, screenWidth / 2, Math.max(4, y - 13), 0xFFFFFFFF);
         }
+    }
+
+    /**
+     * Compact radial spell selector around the crosshair. The selected spell
+     * remains the same index used by the open-page panel and Enter / shift-use.
+     */
+    private static void renderSpellWheel(DrawContext draw, MinecraftClient client, int width, int height) {
+        if (tab != 0 || spells().isEmpty()) return;
+        int centerX = width / 2;
+        int centerY = height / 2;
+        int size = 22;
+        int radius = 43;
+        int[][] directions = {
+            {0, -1}, {1, -1}, {1, 0}, {1, 1},
+            {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}
+        };
+        for (int i = 0; i < directions.length; i++) {
+            int spellIndex = Math.floorMod(selectedSpell + i - 2, spells().size());
+            JsonObject spell = spells().get(spellIndex).getAsJsonObject();
+            int x = centerX + directions[i][0] * radius - size / 2;
+            int y = centerY + directions[i][1] * radius - size / 2;
+            boolean selected = i == 2;
+            draw.fill(x - 2, y - 2, x + size + 2, y + size + 2, selected ? 0xE6E0B45D : 0xB84B245F);
+            draw.fill(x, y, x + size, y + size, selected ? 0xD9FFF0C9 : 0xBFD9C9A8);
+            draw.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0xBFAE9877);
+            String glyph = spellGlyph(spell);
+            int glyphWidth = client.textRenderer.getWidth(glyph);
+            draw.drawText(client.textRenderer, glyph, x + (size - glyphWidth) / 2, y + 7,
+                selected ? 0xFF43205A : 0xFF302015, false);
+        }
+        JsonObject selected = spells().get(selectedSpell).getAsJsonObject();
+        String name = selected.get("name").getAsString();
+        int maxWidth = Math.min(150, width - 24);
+        String label = client.textRenderer.trimToWidth(name, maxWidth);
+        int labelWidth = client.textRenderer.getWidth(label);
+        int labelX = centerX - labelWidth / 2;
+        int labelY = centerY + radius + size / 2 + 8;
+        draw.fill(labelX - 5, labelY - 3, labelX + labelWidth + 5, labelY + 12, 0xB8201427);
+        draw.drawText(client.textRenderer, label, labelX, labelY, 0xFFFFEAC8, false);
+    }
+
+    private static String spellGlyph(JsonObject spell) {
+        if (!spell.has("components") || !spell.get("components").isJsonArray()
+            || spell.getAsJsonArray("components").isEmpty()) return "✦";
+        String first = spell.getAsJsonArray("components").get(0).getAsString();
+        return switch (first) {
+            case "fire" -> "F";
+            case "water" -> "W";
+            case "wind" -> "A";
+            case "earth" -> "E";
+            case "lightning" -> "⚡";
+            case "ice" -> "I";
+            case "explosion" -> "✹";
+            case "healing" -> "+";
+            case "summoning" -> "S";
+            case "teleportation" -> "↗";
+            case "binding" -> "⌘";
+            case "projectile" -> "➤";
+            case "beam" -> "━";
+            case "wave" -> "≋";
+            case "barrier" -> "▣";
+            case "field" -> "◉";
+            default -> first.substring(0, 1).toUpperCase();
+        };
     }
 
     private static String trimToWidth(MinecraftClient client, String text, int width) {
