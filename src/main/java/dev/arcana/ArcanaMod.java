@@ -95,12 +95,17 @@ public final class ArcanaMod implements ModInitializer {
                             player.sendMessage(Text.literal("This draft cannot be engraved. Use /arcana preview to see what needs fixing."), false);
                             return 0;
                         }
-                        SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
-                            name, spellDraft.selectedIds(), spellDraft.behavior());
-                        if (!SpellBookStore.add(player.getUuid(), spell)) {
+                        if (SpellBookStore.find(player.getUuid(), name) != null) {
                             player.sendMessage(Text.literal("You already have a spell named '" + name + "'. Choose another name."), false);
                             return 0;
                         }
+                        if (!consumeMagicPaper(player)) {
+                            player.sendMessage(Text.literal("You need one Magic Paper to engrave a spell."), false);
+                            return 0;
+                        }
+                        SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
+                            name, spellDraft.selectedIds(), spellDraft.behavior());
+                        SpellBookStore.add(player.getUuid(), spell);
                         spellDraft.clear();
                         SpellBookStore.save(player.getServer());
                         player.sendMessage(Text.literal("Engraved '" + name + "' and added it to your spellbook."), false);
@@ -169,6 +174,17 @@ public final class ArcanaMod implements ModInitializer {
 
     private static SpellDraft draft(ServerPlayerEntity player) {
         return DRAFTS.computeIfAbsent(player.getUuid(), ignored -> new SpellDraft());
+    }
+
+    private static boolean consumeMagicPaper(ServerPlayerEntity player) {
+        for (int slot = 0; slot < player.getInventory().size(); slot++) {
+            net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
+            if (stack.isOf(ArcanaItems.MAGIC_PAPER)) {
+                stack.decrement(1);
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String normalizeName(String name) {
