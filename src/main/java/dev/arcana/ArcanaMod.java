@@ -206,7 +206,7 @@ public final class ArcanaMod implements ModInitializer {
     private static void consumeSpellPage(ServerPlayerEntity player, String name) {
         for (int slot = 0; slot < player.getInventory().size(); slot++) {
             net.minecraft.item.ItemStack stack = player.getInventory().getStack(slot);
-            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.hasCustomName() && stack.getName().getString().equalsIgnoreCase(name)) {
+            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.contains(net.minecraft.component.DataComponentTypes.CUSTOM_NAME) && stack.getName().getString().equalsIgnoreCase(name)) {
                 stack.decrement(1);
                 return;
             }
