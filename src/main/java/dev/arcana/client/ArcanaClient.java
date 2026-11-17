@@ -7,16 +7,17 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.TypedActionResult;
 
 public final class ArcanaClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (!world.isClient || GrimoireTier.fromItem(player.getStackInHand(hand).getItem()) == null) {
-                return ActionResult.PASS;
+                return TypedActionResult.pass(player.getStackInHand(hand));
             }
             MinecraftClient.getInstance().setScreen(new GrimoireScreen());
-            return ActionResult.SUCCESS;
+            return TypedActionResult.success(player.getStackInHand(hand));
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
