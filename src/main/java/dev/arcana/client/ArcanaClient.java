@@ -9,6 +9,7 @@ import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
@@ -55,6 +56,16 @@ public final class ArcanaClient implements ClientModInitializer {
             if (client.player != null && activeTier(client) != null) {
                 GrimoireHud.render(drawContext, client);
             }
+        });
+
+        UseItemCallback.EVENT.register((player, world, hand) -> {
+            if (!world.isClient || !player.isSneaking() || activeTier(MinecraftClient.getInstance()) == null) {
+                return ActionResult.PASS;
+            }
+            // Shift + right-click casts the selected page from the active grimoire.
+            // The server still validates that the spell belongs to that grimoire.
+            GrimoireHud.castSelected();
+            return ActionResult.SUCCESS;
         });
 
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
