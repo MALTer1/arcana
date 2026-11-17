@@ -1,6 +1,7 @@
 package dev.arcana;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.SpellBookStore;
@@ -25,6 +26,7 @@ public final class ArcanaMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
+        ArcanaItems.register();
 
         ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
