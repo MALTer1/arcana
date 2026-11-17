@@ -1,6 +1,7 @@
 package dev.arcana;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
@@ -27,6 +28,7 @@ public final class ArcanaMod implements ModInitializer {
     public void onInitialize() {
         ComponentRegistry.bootstrap();
         ArcanaItems.register();
+        ArcanaBlocks.register();
 
         ServerTickEvents.END_SERVER_TICK.register(ArcanaResource::tick);
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -88,20 +90,17 @@ public final class ArcanaMod implements ModInitializer {
                             player.sendMessage(Text.literal("Spell names must contain 1–32 characters."), false);
                             return 0;
                         }
-
                         SpellDraft spellDraft = draft(player);
                         if (!spellDraft.isValid()) {
                             player.sendMessage(Text.literal("This draft cannot be engraved. Use /arcana preview to see what needs fixing."), false);
                             return 0;
                         }
-
                         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
                             name, spellDraft.selectedIds(), spellDraft.behavior());
                         if (!SpellBookStore.add(player.getUuid(), spell)) {
                             player.sendMessage(Text.literal("You already have a spell named '" + name + "'. Choose another name."), false);
                             return 0;
                         }
-
                         spellDraft.clear();
                         SpellBookStore.save(player.getServer());
                         player.sendMessage(Text.literal("Engraved '" + name + "' and added it to your spellbook."), false);
