@@ -18,6 +18,7 @@ import org.lwjgl.glfw.GLFW;
 public final class ArcanaClient implements ClientModInitializer {
     private static KeyBinding previousPage, nextPage, previousTab, nextTab, usePage, removeMode;
     private static boolean wasHoldingGrimoire;
+    private static int syncTicks;
 
     @Override
     public void onInitializeClient() {
@@ -36,6 +37,9 @@ public final class ArcanaClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             boolean holding = client.player != null && activeTier(client) != null;
             if (holding && !wasHoldingGrimoire) GrimoireHud.refresh();
+            // Arcana regenerates on the server; refresh the active book twice
+            // per second so its meter stays live even when no spell is cast.
+            if (holding && client.player.age % 10 == 0) GrimoireHud.refresh();
             wasHoldingGrimoire = holding;
             if (!holding || client.currentScreen != null) return;
             while (previousPage.wasPressed()) GrimoireHud.previousPage();
