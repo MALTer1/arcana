@@ -93,7 +93,7 @@ public final class GrimoireHud {
                 line(draw, client, current.toString(), x, y + row * 11, color);
                 if (++row >= maxLines) return;
                 current.setLength(0);
-                current.append(word);
+                current.append(client.textRenderer.trimToWidth(word, width));
             } else {
                 if (current.length() > 0) current.append(' ');
                 current.append(word);
@@ -106,13 +106,13 @@ public final class GrimoireHud {
 
     private static void panel(DrawContext draw, int x, int y, int width, int height, boolean right) {
         // 0xE6 alpha leaves the parchment and frame approximately 10% transparent.
-        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0xD9170D20);
-        draw.fill(x, y, x + width, y + height, 0xD94B245F);
-        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0xD9FFF1D5);
+        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0x90170D20);
+        draw.fill(x, y, x + width, y + height, 0xA04B245F);
+        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0xA0FFF1D5);
         draw.fill(x + 7, y + 7, x + width - 7, y + height - 7,
-            right ? 0xD9F7EBD4 : 0xD9F4E4C3);
-        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0xD9B18A5C);
-        draw.fill(x + 7, y + height - 9, x + width - 7, y + height - 7, 0xE6B18A5C);
+            right ? 0xA0F7EBD4 : 0xA0F4E4C3);
+        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0xA0B18A5C);
+        draw.fill(x + 7, y + height - 9, x + width - 7, y + height - 7, 0xB0B18A5C);
     }
 
     public static void render(DrawContext draw, MinecraftClient client) {
@@ -143,7 +143,7 @@ public final class GrimoireHud {
         int tabWidth = Math.max(26, contentWidth / 4);
         for (int i = 0; i < labels.length; i++) {
             int tx = leftX + innerX + i * tabWidth;
-            if (i == tab) draw.fill(tx - 1, y + 24, tx + tabWidth - 2, y + 35, 0xE64B245F);
+            if (i == tab) draw.fill(tx - 1, y + 24, tx + tabWidth - 2, y + 35, 0xB04B245F);
             line(draw, client, trimToWidth(client, labels[i], tabWidth - 3), tx, y + 25, i == tab ? 0xFFFFEAC8 : muted);
         }
 
@@ -154,15 +154,15 @@ public final class GrimoireHud {
             default -> "BOOK DETAILS";
         };
         line(draw, client, rightTitle, rightX + innerX, y + 12, accent);
-        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0xD9B89A70);
+        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0xA0B89A70);
 
         if (tab == 0) {
             line(draw, client, "SPELL INDEX", leftX + innerX, top, muted);
             if (spells().isEmpty()) {
                 wrapped(draw, client, "No spells stored. Create a spell and engrave a page at the Magic Writer.",
-                    leftX + innerX, top + 20, contentWidth, ink, 7);
+                    leftX + innerX, top + 20, contentWidth, ink, Math.max(1, (panelHeight - 100) / 11));
                 wrapped(draw, client, "Select a spell to see its components, behavior and Arcana cost here.",
-                    rightX + innerX, top + 24, contentWidth, ink, 7);
+                    rightX + innerX, top + 24, contentWidth, ink, Math.max(1, (panelHeight - 104) / 11));
             } else {
                 int visible = Math.max(1, Math.min(8, (panelHeight - 76) / 15));
                 int start = Math.max(0, Math.min(selectedSpell - visible / 2, spells().size() - visible));
@@ -177,16 +177,28 @@ public final class GrimoireHud {
                 line(draw, client, trimToWidth(client, name, contentWidth), rightX + innerX, top + 8, accent);
                 JsonArray components = selected.has("components") ? selected.getAsJsonArray("components") : new JsonArray();
                 line(draw, client, "Components (" + components.size() + ")", rightX + innerX, top + 27, muted);
-                int componentY = top + 42;
-                for (int i = 0; i < components.size() && i < 6; i++) {
+                // Reserve the bottom of the page for controls. Show only as many
+                // component rows as fit, then allocate the remaining space to behavior.
+                int componentY = top + 39;
+                int visibleComponents = Math.min(components.size(), Math.max(2, Math.min(4, (panelHeight - 130) / 15)));
+                for (int i = 0; i < visibleComponents; i++) {
                     line(draw, client, trimToWidth(client, "• " + components.get(i).getAsString(), contentWidth),
-                        rightX + innerX, componentY + i * 12, ink);
+                        rightX + innerX, componentY + i * 10, ink);
                 }
+                if (components.size() > visibleComponents) {
+                    line(draw, client, "+" + (components.size() - visibleComponents) + " more components",
+                        rightX + innerX, componentY + visibleComponents * 10, muted);
+                }
+                int shownRows = visibleComponents + (components.size() > visibleComponents ? 1 : 0);
+                int costY = componentY + shownRows * 10 + 4;
                 int cost = 10 + components.size() * 5;
-                line(draw, client, "Cost: " + cost + " Arcana", rightX + innerX, componentY + Math.min(components.size(), 6) * 12 + 5, accent);
+                line(draw, client, "Cost: " + cost + " Arcana", rightX + innerX, costY, accent);
                 String behavior = selected.has("behavior") ? selected.get("behavior").getAsString() : "No description available.";
-                wrapped(draw, client, behavior, rightX + innerX, componentY + Math.min(components.size(), 6) * 12 + 20,
-                    contentWidth, ink, Math.max(2, (panelHeight - 118) / 11));
+                int behaviorY = costY + 14;
+                int lastSafeY = y + panelHeight - 43;
+                int behaviorLines = Math.max(1, (lastSafeY - behaviorY) / 11 + 1);
+                wrapped(draw, client, behavior, rightX + innerX, behaviorY,
+                    contentWidth, ink, behaviorLines);
             }
         } else if (tab == 1) {
             line(draw, client, "LOOSE SPELL PAGES", leftX + innerX, top, muted);
@@ -205,15 +217,15 @@ public final class GrimoireHud {
                 line(draw, client, trimToWidth(client, pages().get(selectedLoosePage).getAsString(), contentWidth),
                     rightX + innerX, top + 12, accent);
                 wrapped(draw, client, "Press Enter to insert this page into the held grimoire. The book must have an open slot.",
-                    rightX + innerX, top + 34, contentWidth, ink, 7);
+                    rightX + innerX, top + 34, contentWidth, ink, Math.max(1, (panelHeight - 114) / 11));
             }
         } else if (tab == 2) {
             int value = state.has("arcana") ? state.get("arcana").getAsInt() : 0;
             int maximum = state.has("maxArcana") ? state.get("maxArcana").getAsInt() : 100;
             line(draw, client, "CURRENT RESERVE", leftX + innerX, top, muted);
-            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0xD9B9A88C);
+            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0xA0B9A88C);
             int barWidth = Math.max(0, (contentWidth - 4) * value / Math.max(1, maximum));
-            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0xD975409A);
+            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0xA075409A);
             line(draw, client, value + " / " + maximum, leftX + innerX, top + 47, ink);
             wrapped(draw, client, "Arcana regenerates over time. Casting spends Arcana based on spell complexity.",
                 rightX + innerX, top + 8, contentWidth, ink, 7);
@@ -266,7 +278,7 @@ public final class GrimoireHud {
             int y = centerY + directions[i][1] * radius - size / 2;
             boolean selected = i == 2;
             draw.fill(x - 2, y - 2, x + size + 2, y + size + 2, selected ? 0xE6E0B45D : 0xB84B245F);
-            draw.fill(x, y, x + size, y + size, selected ? 0xD9FFF0C9 : 0xBFD9C9A8);
+            draw.fill(x, y, x + size, y + size, selected ? 0xA0FFF0C9 : 0xBFD9C9A8);
             draw.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0xBFAE9877);
             String glyph = spellGlyph(spell);
             int glyphWidth = client.textRenderer.getWidth(glyph);
