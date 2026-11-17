@@ -64,12 +64,12 @@ public final class GrimoireHud {
     public static void render(DrawContext d,MinecraftClient c) {
         if(c.player==null)return;
         int sw=c.getWindow().getScaledWidth(), sh=c.getWindow().getScaledHeight();
-        int w=Math.min(620,sw-20), h=Math.min(202,Math.max(154,sh/3)), x=(sw-w)/2, y=sh-h-112, mid=x+w/2;
+        int w=Math.min(900,sw-24), h=Math.min(226,Math.max(176,sh/3)), x=(sw-w)/2, y=sh-h-112, mid=x+w/2;
         // A clear leather border and two equally sized parchment pages.
         d.fill(x+2,y+8,mid+5,y+h,0xFF170D20); d.fill(mid-5,y+8,x+w-2,y+h,0xFF170D20);
         d.fill(x,y+4,mid+2,y+h-3,0xFF4B245F); d.fill(mid-2,y+4,x+w,y+h-3,0xFF4B245F);
-        d.fill(x+7,y+8,mid-3,y+h-8,0xFFFFF1D5); d.fill(mid+3,y+8,x+w-7,y+h-8,0xFFFFF1D5);
-        d.fill(x+10,y+11,mid-6,y+h-11,0xFFF4E4C3); d.fill(mid+6,y+11,x+w-10,y+h-11,0xFFF4E4C3);
+        d.fill(x+7,y+8,mid-8,y+h-8,0xFFFFF1D5); d.fill(mid+8,y+8,x+w-7,y+h-8,0xFFFFF1D5);
+        d.fill(x+10,y+11,mid-12,y+h-11,0xFFF4E4C3); d.fill(mid+12,y+11,x+w-10,y+h-11,0xFFF7EBD4);
         d.fill(mid-5,y+5,mid+5,y+h-6,0xFF8C6745);
         d.fill(mid-1,y+9,mid+1,y+h-10,0xFF5D422C);
         d.fill(x+7,y+8,x+12,y+h-8,0xFFB18A5C); d.fill(x+w-12,y+8,x+w-7,y+h-8,0xFFB18A5C);
@@ -85,8 +85,8 @@ public final class GrimoireHud {
             d.drawCenteredTextWithShadow(c.textRenderer,labels[i],tx+(tabWidth-3)/2,y+1,i==tab?0xFFFFEAC8:0xFFD7C4A4);
         }
 
-        int pageInset=22, lx=x+pageInset, rx=mid+pageInset, ty=y+32;
-        int leftWidth=mid-x-2*pageInset-8, rightWidth=x+w-mid-2*pageInset-8;
+        int pageInset=28, lx=x+pageInset, rx=mid+pageInset, ty=y+36;
+        int leftWidth=mid-x-2*pageInset-14, rightWidth=x+w-mid-2*pageInset-14;
         int ink=0xFF302015, accent=0xFF572B70, muted=0xFF76583A;
         if(tab==0){
             line(d,c,"SPELL INDEX",lx,ty,muted);
