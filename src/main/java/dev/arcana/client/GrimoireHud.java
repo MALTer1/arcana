@@ -113,9 +113,9 @@ public final class GrimoireHud {
         int screenHeight = client.getWindow().getScaledHeight();
 
         // Independent side panels: never draw a single connected book across the centre.
-        int panelWidth = Math.max(145, Math.min(252, (screenWidth - 28) / 2));
-        panelWidth = Math.min(panelWidth, Math.max(120, (screenWidth - 20) / 2));
-        int panelHeight = Math.min(244, Math.max(184, screenHeight - 32));
+        int panelWidth = Math.max(132, Math.min(204, (screenWidth - 36) / 2));
+        panelWidth = Math.min(panelWidth, Math.max(112, (screenWidth - 20) / 2));
+        int panelHeight = Math.min(224, Math.max(176, screenHeight - 28));
         int y = Math.max(8, (screenHeight - panelHeight) / 2);
         int leftX = 8;
         int rightX = screenWidth - panelWidth - 8;
@@ -131,12 +131,12 @@ public final class GrimoireHud {
 
         String tier = state.has("tier") ? state.get("tier").getAsString() : "Grimoire";
         line(draw, client, tier.toUpperCase(), leftX + innerX, y + 11, accent);
-        String[] labels = {"SPELLS", "PAGES", "ARCANA", "BOOK"};
-        int tabWidth = Math.max(30, (contentWidth) / 4);
+        String[] labels = {"SPELL", "PAGES", "ARC", "BOOK"};
+        int tabWidth = Math.max(26, contentWidth / 4);
         for (int i = 0; i < labels.length; i++) {
             int tx = leftX + innerX + i * tabWidth;
             if (i == tab) draw.fill(tx - 1, y + 24, tx + tabWidth - 2, y + 35, 0xE64B245F);
-            line(draw, client, labels[i], tx, y + 25, i == tab ? 0xFFFFEAC8 : muted);
+            line(draw, client, trimToWidth(client, labels[i], tabWidth - 3), tx, y + 25, i == tab ? 0xFFFFEAC8 : muted);
         }
 
         String rightTitle = switch (tab) {
@@ -156,7 +156,7 @@ public final class GrimoireHud {
                 wrapped(draw, client, "Select a spell to see its components, behavior and Arcana cost here.",
                     rightX + innerX, top + 24, contentWidth, ink, 7);
             } else {
-                int visible = Math.max(1, Math.min(10, (panelHeight - 76) / 15));
+                int visible = Math.max(1, Math.min(8, (panelHeight - 76) / 15));
                 int start = Math.max(0, Math.min(selectedSpell - visible / 2, spells().size() - visible));
                 for (int i = start; i < Math.min(start + visible, spells().size()); i++) {
                     String name = spells().get(i).getAsJsonObject().get("name").getAsString();
