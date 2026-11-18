@@ -3,6 +3,7 @@ package dev.arcana.spell;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import dev.arcana.entity.ArcanaProjectileEntity;
+import dev.arcana.entity.ArcanaFieldEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -46,8 +47,10 @@ public final class SpellCaster {
 
         boolean launchesProjectile = (parts.contains("projectile") || parts.contains("arc"))
             && !self && !parts.contains("self_and_nearby");
+        boolean launchesPersistentDelivery = !launchesProjectile && parts.stream().anyMatch(id ->
+            List.of("field", "rune", "barrier", "wall", "orbit", "tether").contains(id));
         List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single, composition);
-        if (targets.isEmpty() && !launchesProjectile && !teleport
+        if (targets.isEmpty() && !launchesProjectile && !launchesPersistentDelivery && !teleport
             && !parts.contains("summoning") && !hasWorldUtility(parts)) {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
@@ -67,6 +70,21 @@ public final class SpellCaster {
             return new CastResult(true, "Launched '" + spell.name
                 + "'. Its components will combine when the projectile hits. Cost: " + cost
                 + " Arcana. Remaining Arcana: " + ArcanaResource.current(player) + ".", cost);
+        }
+        if (launchesPersistentDelivery) {
+            if (!ArcanaFieldEntity.launch(player, spell, composition)) {
+                ArcanaResource.restore(player, cost);
+                return new CastResult(false, "The persistent magical delivery could not be created; Arcana was refunded.", cost);
+            }
+            if (parts.contains("barrier")) {
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, 1));
+                player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
+            }
+            return new CastResult(true, "Created '" + spell.name
+                + "' as a persistent " + parts.stream().filter(id ->
+                    List.of("field", "rune", "barrier", "wall", "orbit", "tether").contains(id))
+                    .findFirst().orElse("field") + ". It lasts up to 10 seconds and affects each target once. Cost: "
+                + cost + " Arcana. Remaining Arcana: " + ArcanaResource.current(player) + ".", cost);
         }
         int affected = 0;
         boolean didSummon = false;
@@ -109,9 +127,20 @@ public final class SpellCaster {
     /** Applies a projectile's complete spell composition at its server-side impact. */
     public static void impactProjectile(ServerPlayerEntity caster, SpellBookStore.StoredSpell spell,
                                         LivingEntity target) {
+        applyDeliveryImpact(caster, spell, target, true);
+    }
+
+    public static void impactDelivery(ServerPlayerEntity caster, SpellBookStore.StoredSpell spell,
+                                      LivingEntity target) {
+        applyDeliveryImpact(caster, spell, target, false);
+    }
+
+    private static void applyDeliveryImpact(ServerPlayerEntity caster, SpellBookStore.StoredSpell spell,
+                                            LivingEntity target, boolean executeWorldActions) {
         if (caster == null || target == null || target.isRemoved() || !target.isAlive()) return;
         List<String> parts = spell.components;
-        if (parts.contains("ally") && !target.isTeammate(caster)) return;
+        if (target == caster && !parts.contains("self") && !parts.contains("self_and_nearby")) return;
+        if (parts.contains("ally") && target != caster && !target.isTeammate(caster)) return;
         if (parts.contains("hostile") && !isHostileTarget(target, caster)) return;
         SpellCompositionEngine.Plan plan = SpellCompositionEngine.compose(parts,
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
@@ -119,8 +148,14 @@ public final class SpellCaster {
         applyElements(caster, target, parts, reactions, plan.durationMultiplier());
         applyEffects(caster, target, parts, plan.durationMultiplier());
         applyCompositionInteractions(caster, target, plan);
-        SpellWorldEffects.apply(caster, parts);
-        if (parts.contains("summoning")) summon(caster);
+        if (executeWorldActions) {
+            SpellWorldEffects.apply(caster, parts);
+            if (parts.contains("summoning")) summon(caster);
+        }
+        if (executeWorldActions && parts.stream().anyMatch(id ->
+            List.of("field", "rune", "barrier", "wall", "orbit", "tether").contains(id))) {
+            ArcanaFieldEntity.launchAt(caster, spell, target.getPos());
+        }
     }
 
     private static List<LivingEntity> selectTargets(ServerPlayerEntity player, List<String> parts,
