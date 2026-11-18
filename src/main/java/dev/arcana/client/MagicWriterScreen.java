@@ -4,6 +4,7 @@ import dev.arcana.network.MagicWriterNetwork;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellPageStore;
+import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.screen.MagicWriterScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
@@ -22,17 +23,11 @@ import java.util.Set;
 
 public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHandler> {
     private record Choice(String id, String label) {}
-    private static final List<Choice> CHOICES = List.of(
-        new Choice("projectile","Projectile"), new Choice("beam","Beam"), new Choice("wave","Wave"),
-        new Choice("barrier","Barrier"), new Choice("field","Field"), new Choice("fire","Fire"),
-        new Choice("water","Water"), new Choice("wind","Wind"), new Choice("earth","Earth"),
-        new Choice("lightning","Lightning"), new Choice("ice","Ice"), new Choice("single_target","Single"),
-        new Choice("multiple_targets","Multi"), new Choice("self","Self"), new Choice("area","Area"),
-        new Choice("explosion","Explosion"), new Choice("healing","Healing"), new Choice("summoning","Summoning"),
-        new Choice("enhancement","Enhance"), new Choice("teleportation","Teleport"), new Choice("binding","Binding"),
-        new Choice("night_vision","Night Vision"), new Choice("water_breathing","Water Breath"),
-        new Choice("slow_falling","Slow Falling")
-    );
+    private static List<Choice> choices() {
+        return ComponentRegistry.all().stream()
+            .map(component -> new Choice(component.id(), component.displayName()))
+            .toList();
+    }
     private static final int COLUMNS = 3, VISIBLE_ROWS = 4;
     private static final int COMPONENT_X = 330, COMPONENT_Y = 43, BUTTON_W = 70, COLUMN_GAP = 73, ROW_GAP = 20;
     private final Set<String> selected = new LinkedHashSet<>();
@@ -53,9 +48,10 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     @Override protected void init() {
         super.init();
         componentButtons.clear();
-        int rows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
+        List<Choice> choices = choices();
+        int rows = (choices.size() + COLUMNS - 1) / COLUMNS;
         scrollRow = Math.max(0, Math.min(scrollRow, Math.max(0, rows - VISIBLE_ROWS)));
-        for (Choice choice : CHOICES) {
+        for (Choice choice : choices) {
             ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> toggle(choice))
                 .dimensions(x + COMPONENT_X, y + COMPONENT_Y, BUTTON_W, 18).build();
             componentButtons.add(button);
@@ -97,10 +93,10 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         refreshButtons();
     }
     private void refreshButtons() {
-        for (int i = 0; i < componentButtons.size(); i++) componentButtons.get(i).setMessage(buttonText(CHOICES.get(i)));
+        for (int i = 0; i < componentButtons.size(); i++) componentButtons.get(i).setMessage(buttonText(choices().get(i)));
     }
     private void scrollComponents(int amount) {
-        int rows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
+        int rows = (choices().size() + COLUMNS - 1) / COLUMNS;
         scrollRow = Math.max(0, Math.min(Math.max(0, rows - VISIBLE_ROWS), scrollRow + amount));
         positionComponentButtons();
     }
@@ -127,7 +123,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         c.fill(x + 3, y + 281, x + 557, y + 283, 0xFFE1B76C);
         c.fill(x + 3, y + 3, x + 5, y + 283, 0xFFE1B76C);
         c.fill(x + 555, y + 3, x + 557, y + 283, 0xFFE1B76C);
-        int totalRows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
+        int totalRows = (choices().size() + COLUMNS - 1) / COLUMNS;
         int maxRows = Math.max(0, totalRows - VISIBLE_ROWS);
         c.fill(x + 545, y + 43, x + 548, y + 119, 0xFF211727);
         int thumb = Math.max(12, 76 * VISIBLE_ROWS / Math.max(VISIBLE_ROWS, totalRows));
