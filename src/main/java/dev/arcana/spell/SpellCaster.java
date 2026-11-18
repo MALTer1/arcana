@@ -99,8 +99,10 @@ public final class SpellCaster {
         List<LivingEntity> result = new ArrayList<>();
         if (self) result.add(player);
 
+        double travelReach = (parts.contains("projectile") || parts.contains("arc"))
+            ? composition.travelSpeedMultiplier() : 1.0;
         double range = (parts.contains("beam") ? 24.0 : parts.contains("projectile") ? 18.0 : 12.0)
-            * composition.rangeMultiplier();
+            * composition.rangeMultiplier() * travelReach;
         Vec3d look = player.getRotationVec(1.0F).normalize();
         Vec3d origin = player.getEyePos();
         Vec3d impact = origin.add(look.multiply(range));
