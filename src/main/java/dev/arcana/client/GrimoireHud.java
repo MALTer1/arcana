@@ -311,18 +311,20 @@ public final class GrimoireHud {
         if (tab != 0 || spells().isEmpty()) return;
         int centerX = width / 2;
         int centerY = height / 2;
-        int size = 22;
-        int radius = 43;
+        int size = 18;
+        int innerRadius = 32;
+        int cornerRadius = 42;
         int[][] directions = {
             {0, -1}, {1, -1}, {1, 0}, {1, 1},
             {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}
         };
         for (int i = 0; i < directions.length; i++) {
-            int spellIndex = Math.floorMod(selectedSpell + i - 2, spells().size());
+            int spellIndex = Math.floorMod(selectedSpell + i, spells().size());
             JsonObject spell = spells().get(spellIndex).getAsJsonObject();
+            int radius = directions[i][0] != 0 && directions[i][1] != 0 ? cornerRadius : innerRadius;
             int x = centerX + directions[i][0] * radius - size / 2;
             int y = centerY + directions[i][1] * radius - size / 2;
-            boolean selected = i == 2;
+            boolean selected = i == 0;
             draw.fill(x - 2, y - 2, x + size + 2, y + size + 2, selected ? 0xE6E0B45D : 0xB84B245F);
             draw.fill(x, y, x + size, y + size, selected ? 0x66FFF0C9 : 0xBFD9C9A8);
             draw.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0xBFAE9877);
@@ -337,7 +339,7 @@ public final class GrimoireHud {
         String label = client.textRenderer.trimToWidth(name, maxWidth);
         int labelWidth = client.textRenderer.getWidth(label);
         int labelX = centerX - labelWidth / 2;
-        int labelY = centerY + radius + size / 2 + 8;
+        int labelY = centerY + cornerRadius + size / 2 + 8;
         draw.fill(labelX - 5, labelY - 3, labelX + labelWidth + 5, labelY + 12, 0xB8201427);
         draw.drawText(client.textRenderer, label, labelX, labelY, 0xFFFFEAC8, false);
     }

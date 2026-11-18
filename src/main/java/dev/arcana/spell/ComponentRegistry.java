@@ -33,6 +33,9 @@ public final class ComponentRegistry {
         register("enhancement", ComponentCategory.EFFECT, "Enhancement", "Improves a target's capability.");
         register("teleportation", ComponentCategory.EFFECT, "Teleportation", "Moves the caster or a target.");
         register("binding", ComponentCategory.EFFECT, "Binding", "Restrains or holds a target.");
+        register("night_vision", ComponentCategory.EFFECT, "Night Vision", "Lets the caster see clearly in darkness.");
+        register("water_breathing", ComponentCategory.EFFECT, "Water Breathing", "Allows the caster to breathe underwater.");
+        register("slow_falling", ComponentCategory.EFFECT, "Slow Falling", "Softens falls for a short time.");
         bootstrapped = true;
     }
 

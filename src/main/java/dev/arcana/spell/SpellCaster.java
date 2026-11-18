@@ -179,6 +179,15 @@ public final class SpellCaster {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 8, 5));
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 20 * 8, 128));
         }
+        if (parts.contains("night_vision")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 20 * 60, 0));
+        }
+        if (parts.contains("water_breathing")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 20 * 60, 0));
+        }
+        if (parts.contains("slow_falling")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 20 * 20, 0));
+        }
     }
 
     private static boolean summon(ServerPlayerEntity player) {
