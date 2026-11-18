@@ -162,67 +162,65 @@ public final class SpellCaster {
         double distance = offset.length();
         if (distance <= 0.0 || distance > range) return false;
 
-        if (parts.contains("pulse") || parts.contains("orbit")) {
-            double radius = (parts.contains("orbit") ? 5.0 : 6.0) * composition.areaMultiplier();
-            double distanceFromCaster = point.distanceTo(origin);
-            return distanceFromCaster <= radius;
-        }
+        double areaScale = composition.areaMultiplier();
+        double forward = offset.dotProduct(look);
+        Vec3d lateral = offset.subtract(look.multiply(forward));
+
+        // Composite delivery is a union of its selected shapes. A spell with
+        // Cone + Ring, for example, can affect either region rather than one
+        // delivery silently taking precedence over the other.
+        if ((parts.contains("pulse") || parts.contains("orbit"))
+            && point.distanceTo(origin) <= (parts.contains("orbit") ? 5.0 : 6.0) * areaScale) return true;
 
         if (parts.contains("ring")) {
             double radius = point.distanceTo(impact);
-            return radius >= 2.0 * composition.areaMultiplier()
-                && radius <= 4.5 * composition.areaMultiplier();
+            if (radius >= 2.0 * areaScale && radius <= 4.5 * areaScale) return true;
         }
 
         if (parts.contains("rune") || parts.contains("field") || parts.contains("area")) {
-            double radius = (parts.contains("rune") ? 3.0 : 2.5) * composition.areaMultiplier();
-            return point.squaredDistanceTo(impact) <= radius * radius;
+            double radius = (parts.contains("rune") ? 3.0 : 2.5) * areaScale;
+            if (point.squaredDistanceTo(impact) <= radius * radius) return true;
         }
 
         if (parts.contains("column")) {
-            double horizontal = Math.sqrt(
-                Math.pow(point.x - impact.x, 2) + Math.pow(point.z - impact.z, 2));
-            return horizontal <= 2.5 * composition.areaMultiplier()
-                && Math.abs(point.y - impact.y) <= 6.0 * composition.areaMultiplier();
+            double horizontal = Math.sqrt(Math.pow(point.x - impact.x, 2) + Math.pow(point.z - impact.z, 2));
+            if (horizontal <= 2.5 * areaScale
+                && Math.abs(point.y - impact.y) <= 6.0 * areaScale) return true;
         }
 
         if (parts.contains("wall")) {
             Vec3d fromImpact = point.subtract(impact);
             double depth = Math.abs(fromImpact.dotProduct(look));
-            Vec3d lateral = fromImpact.subtract(look.multiply(fromImpact.dotProduct(look)));
-            return depth <= 2.0 * composition.areaMultiplier()
-                && lateral.horizontalLength() <= 5.0 * composition.areaMultiplier()
-                && Math.abs(fromImpact.y) <= 3.0 * composition.areaMultiplier();
+            Vec3d wallLateral = fromImpact.subtract(look.multiply(fromImpact.dotProduct(look)));
+            if (depth <= 2.0 * areaScale && wallLateral.horizontalLength() <= 5.0 * areaScale
+                && Math.abs(fromImpact.y) <= 3.0 * areaScale) return true;
         }
 
-        double forward = offset.dotProduct(look);
-        Vec3d lateral = offset.subtract(look.multiply(forward));
-        if (parts.contains("cone")) {
-            return forward > 0.0 && forward <= range
-                && lateral.length() <= Math.max(1.0, forward * 0.55);
-        }
+        if (parts.contains("cone") && forward > 0.0 && forward <= range
+            && lateral.length() <= Math.max(1.0, forward * 0.55 * areaScale)) return true;
 
-        if (parts.contains("arc")) {
+        if (parts.contains("arc") && forward > 0.0) {
             double t = Math.max(0.0, Math.min(1.0, forward / range));
             Vec3d arcPoint = origin.add(look.multiply(forward))
                 .add(0.0, Math.sin(t * Math.PI) * 2.5, 0.0);
-            return forward > 0.0 && lateral.length() <= 2.5 * composition.areaMultiplier()
-                && point.squaredDistanceTo(arcPoint) <= Math.pow(3.5 * composition.areaMultiplier(), 2);
+            if (lateral.length() <= 2.5 * areaScale
+                && point.squaredDistanceTo(arcPoint) <= Math.pow(3.5 * areaScale, 2)) return true;
         }
 
-        if (parts.contains("tether")) {
-            return forward > 0.0 && forward <= range && lateral.length() <= 1.75 * composition.areaMultiplier();
+        if (forward > 0.0 && forward <= range) {
+            if (parts.contains("tether") && lateral.length() <= 1.75 * areaScale) return true;
+            if (parts.contains("wave") && lateral.length() <= 4.0 * areaScale) return true;
+            double lineWidth = (parts.contains("beam") ? 0.9 : parts.contains("projectile") ? 1.4 : 2.5)
+                * areaScale;
+            if ((!parts.contains("cone") && !parts.contains("arc") && !parts.contains("tether")
+                && !parts.contains("wave") && !parts.contains("ring") && !parts.contains("pulse")
+                && !parts.contains("orbit") && !parts.contains("field") && !parts.contains("rune")
+                && !parts.contains("wall") && !parts.contains("column"))
+                || parts.contains("beam") || parts.contains("projectile")) {
+                if (lateral.length() <= lineWidth) return true;
+            }
         }
-
-        if (parts.contains("wave")) {
-            return forward > 0.0 && forward <= range && lateral.length() <= 4.0 * composition.areaMultiplier();
-        }
-
-        // Projectile and beam use a narrow line; the default direct delivery
-        // uses a slightly wider line so ordinary spells remain forgiving.
-        double width = (parts.contains("beam") ? 0.9 : parts.contains("projectile") ? 1.4 : 2.5)
-            * composition.areaMultiplier();
-        return forward > 0.0 && forward <= range && lateral.length() <= width;
+        return false;
     }
 
     private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
