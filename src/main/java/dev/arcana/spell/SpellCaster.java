@@ -67,6 +67,9 @@ public final class SpellCaster {
             affected++;
         }
 
+        // Execute server-authoritative block and loose-item actions once per cast.
+        affected += SpellWorldEffects.apply(player, parts);
+
         if (parts.contains("summoning")) didSummon = summon(player);
         if (teleport && (self || targets.contains(player))) {
             teleportForward(player, parts.contains("wind") ? 10.0 : 6.0);
