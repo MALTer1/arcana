@@ -140,7 +140,8 @@ public final class ArcanaFieldEntity extends Entity {
         if (shape.equals("tether")) {
             Vec3d start = owner.getEyePos();
             Vec3d end = getPos();
-            return new Box(start, end).expand(1.5);
+            return new Box(Math.min(start.x, end.x), Math.min(start.y, end.y), Math.min(start.z, end.z),
+                Math.max(start.x, end.x), Math.max(start.y, end.y), Math.max(start.z, end.z)).expand(1.5);
         }
         if (shape.equals("wall")) return getBoundingBox().expand(radius, 3.0, radius);
         return getBoundingBox().expand(radius + 1.0);
