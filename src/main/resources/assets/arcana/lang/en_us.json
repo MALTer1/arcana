@@ -13,5 +13,6 @@
   "key.arcana.next_tab": "Next Grimoire Tab (Down Arrow)",
   "key.arcana.use_page": "Use Grimoire Page (Enter)",
   "key.arcana.remove_mode": "Toggle Page Removal (X)",
-  "category.arcana.grimoire": "Arcana Grimoire"
+  "category.arcana.grimoire": "Arcana Grimoire",
+  "container.arcana.magic_writer": "Magic Writer"
 }
