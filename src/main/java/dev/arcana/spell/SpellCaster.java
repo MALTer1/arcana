@@ -36,6 +36,7 @@ public final class SpellCaster {
         }
 
         List<String> parts = spell.components;
+        if (!parts.contains("recall")) SpellRecallStore.record(player);
         boolean self = parts.contains("self");
         boolean area = parts.contains("area");
         boolean multiple = parts.contains("multiple_targets");
@@ -70,6 +71,7 @@ public final class SpellCaster {
         // Execute server-authoritative block and loose-item actions once per cast.
         affected += SpellWorldEffects.apply(player, parts);
 
+        if (parts.contains("recall") && SpellRecallStore.recall(player)) affected++;
         if (parts.contains("summoning")) didSummon = summon(player);
         if (teleport && (self || targets.contains(player))) {
             teleportForward(player, parts.contains("wind") ? 10.0 : 6.0);
@@ -469,9 +471,6 @@ public final class SpellCaster {
         if (parts.contains("echo")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
         if (parts.contains("reveal") || parts.contains("tracking") || parts.contains("waypoint") || parts.contains("dimension_sense"))
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 300, 0));
-        if (parts.contains("recall")) {
-            target.requestTeleport(caster.getX(), caster.getY(), caster.getZ());
-        }
         if (parts.contains("anchor")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 160, 0));
         if (parts.contains("float") || parts.contains("glide")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 300, 0));
         if (parts.contains("water_walking")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, 300, 0));
