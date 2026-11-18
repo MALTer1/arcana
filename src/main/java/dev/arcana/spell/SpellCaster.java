@@ -36,7 +36,6 @@ public final class SpellCaster {
         }
 
         List<String> parts = spell.components;
-        if (!parts.contains("recall")) SpellRecallStore.record(player);
         boolean self = parts.contains("self");
         boolean area = parts.contains("area");
         boolean multiple = parts.contains("multiple_targets");
@@ -55,6 +54,7 @@ public final class SpellCaster {
                 ArcanaResource.current(player) + ".", cost);
         }
 
+        if (!parts.contains("recall")) SpellRecallStore.record(player);
         int affected = 0;
         boolean didSummon = false;
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
