@@ -28,6 +28,10 @@ public final class SpellCompositionEngine {
         INVENTORY, LUCK, MAGNETIC, DECOY, ALARMING
     }
 
+    public record Context(boolean targetWet, boolean targetBurning, boolean targetAirborne) {
+        public static Context neutral() { return new Context(false, false, false); }
+    }
+
     public record Plan(
         Set<Property> properties,
         double travelSpeedMultiplier,
@@ -48,6 +52,10 @@ public final class SpellCompositionEngine {
     }
 
     public static Plan compose(List<String> componentIds) {
+        return compose(componentIds, Context.neutral());
+    }
+
+    public static Plan compose(List<String> componentIds, Context context) {
         Set<String> ids = new LinkedHashSet<>(componentIds);
         Set<Property> properties = new LinkedHashSet<>();
         List<String> interactions = new ArrayList<>();
@@ -165,6 +173,28 @@ public final class SpellCompositionEngine {
         if (ids.contains("fire") && ids.contains("ice")) {
             interactions.add("Thermal conflict");
             explanations.add("Fire and ice oppose each other; the spell should resolve them as a controlled thermal clash rather than blindly stacking both.");
+        }
+
+        // Situation-aware interactions: the same spell can resolve differently
+        // depending on the target's current physical state.
+        if (context.targetWet() && ids.contains("lightning")) {
+            damage += 1.0;
+            stun = Math.max(stun, ids.contains("binding") ? 80 : 35);
+            interactions.add("Wet-target conduction");
+            explanations.add("The target is wet, so lightning conducts more effectively and causes a stronger interruption.");
+        }
+        if (context.targetWet() && ids.contains("ice")) {
+            slow = Math.max(slow, 150);
+            interactions.add("Surface freezing");
+            explanations.add("Existing moisture gives the ice component more material to freeze.");
+        }
+        if (context.targetAirborne() && ids.contains("gravity")) {
+            interactions.add("Airborne gravity control");
+            explanations.add("The target is airborne, so gravity can influence its vertical movement instead of only slowing it.");
+        }
+        if (context.targetBurning() && ids.contains("water")) {
+            interactions.add("Flame suppression");
+            explanations.add("The target is already burning; the water component prioritizes extinguishing and cooling.");
         }
 
         // Multiple components in a category are composed, not rejected.
