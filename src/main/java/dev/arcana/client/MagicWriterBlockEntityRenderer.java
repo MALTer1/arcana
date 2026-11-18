@@ -22,14 +22,17 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
     public void render(MagicWriterBlockEntity entity, float tickDelta, MatrixStack matrices,
                        VertexConsumerProvider vertexConsumers, int light, int overlay) {
         if (entity.getWorld() == null) return;
+
         ItemStack book = entity.getStack(0);
         ItemStack page = entity.getStack(1);
 
+        // The lower block model's writing surface is at 9/16 of a block.
+        // Ground-mode item transforms lie flat on that surface instead of hovering above it.
         if (!book.isEmpty()) {
             matrices.push();
-            matrices.translate(0.5, 1.015, 0.5);
+            matrices.translate(0.5, 0.575, 0.5);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
-            matrices.scale(0.58F, 0.58F, 0.58F);
+            matrices.scale(0.68F, 0.68F, 0.68F);
             itemRenderer.renderItem(book, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 0);
             matrices.pop();
@@ -37,23 +40,23 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
 
         if (!page.isEmpty()) {
             matrices.push();
-            matrices.translate(0.5, book.isEmpty() ? 1.02 : 1.075, 0.5);
+            matrices.translate(0.5, book.isEmpty() ? 0.575 : 0.595, 0.5);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
-            float scale = book.isEmpty() ? 0.62F : 0.42F;
-            matrices.scale(scale, scale, scale);
+            matrices.scale(book.isEmpty() ? 0.68F : 0.46F, book.isEmpty() ? 0.68F : 0.46F,
+                book.isEmpty() ? 0.68F : 0.46F);
             itemRenderer.renderItem(page, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 1);
             matrices.pop();
         }
 
-        // A glowing stylus rocks over the writing surface like a small engraving arm.
+        // The stylus is kept close to the writing surface; the upper model's
+        // supported arm reaches over it.
         float time = entity.getWorld().getTime() + tickDelta;
-        float swing = (float) Math.sin(time * 0.12F) * 13.0F;
+        float swing = (float) Math.sin(time * 0.12F) * 9.0F;
         matrices.push();
-        matrices.translate(0.5, 1.48, 0.34);
+        matrices.translate(0.5, 0.86, 0.30);
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(swing));
-        matrices.translate(0.0, -0.12, 0.0);
-        matrices.scale(0.22F, 0.22F, 0.22F);
+        matrices.scale(0.18F, 0.18F, 0.18F);
         itemRenderer.renderItem(new ItemStack(Items.END_ROD), ModelTransformationMode.GROUND,
             light, overlay, matrices, vertexConsumers, entity.getWorld(), 2);
         matrices.pop();
