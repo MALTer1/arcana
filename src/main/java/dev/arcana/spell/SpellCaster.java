@@ -536,6 +536,9 @@ public final class SpellCaster {
         if (parts.contains("portal")) {
             Vec3d destination = caster.getPos().add(caster.getRotationVec(1.0F).multiply(6.0));
             teleportSafely(target, destination);
+        } else if (parts.contains("teleportation") && target != caster) {
+            Vec3d destination = caster.getPos().add(caster.getRotationVec(1.0F).multiply(2.0));
+            teleportSafely(target, destination);
         }
         if (parts.contains("memory")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(60, durationScale), 0));
         if (parts.contains("alarm")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(400, durationScale), 0));
