@@ -61,7 +61,9 @@ public final class SpellCaster {
             if (target.isRemoved()) continue;
             applyElements(player, target, parts, reactions);
             applyEffects(player, target, parts);
-            applyCompositionInteractions(player, target, composition);
+            SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
+                new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
+            applyCompositionInteractions(player, target, targetComposition);
             affected++;
         }
 
