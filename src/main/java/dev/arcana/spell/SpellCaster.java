@@ -72,9 +72,13 @@ public final class SpellCaster {
             return new CastResult(false, "The spell had no valid effect; Arcana was refunded.", cost);
         }
 
+        SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(spell.name, parts);
         String detail = didSummon ? " A magical helper was summoned." : "";
-        return new CastResult(true, "Cast '" + spell.name + "' for " + cost +
-            " Arcana. Affected " + affected + " target(s)." + detail +
+        String reactionText = analysis.reactions().isEmpty() ? "" :
+            " Reactions: " + analysis.reactions().stream().map(ElementalReactionEngine.Reaction::name)
+                .collect(java.util.stream.Collectors.joining(", ")) + ".";
+        return new CastResult(true, "Cast '" + spell.name + "'. " + analysis.summary() +
+            " Cost: " + cost + " Arcana. Affected " + affected + " target(s)." + detail + reactionText +
             " Remaining Arcana: " + ArcanaResource.current(player) + ".", cost);
     }
 
@@ -91,7 +95,14 @@ public final class SpellCaster {
         List<LivingEntity> candidates = player.getWorld().getEntitiesByClass(
             LivingEntity.class, search, entity -> entity != player && entity.isAlive());
 
-        if (!self) {
+        if (parts.contains("self_and_nearby")) {
+            result.add(player);
+            candidates.stream().filter(entity -> entity.isTeammate(player))
+                .filter(entity -> entity.squaredDistanceTo(player) <= 8.0 * 8.0)
+                .limit(4).forEach(result::add);
+        }
+
+        if (!self && !parts.contains("self_and_nearby")) {
             if (parts.contains("chain")) {
                 LivingEntity current = null;
                 Vec3d from = origin;
@@ -110,16 +121,31 @@ public final class SpellCaster {
             } else {
                 candidates.stream()
                     .filter(entity -> matchesDeliveryShape(entity, parts, origin, impact, look, range))
+                    .filter(entity -> !parts.contains("ally") || entity.isTeammate(player))
+                    .filter(entity -> !parts.contains("hostile") || !entity.isTeammate(player))
                     .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
                     .limit(multiple ? 5 : 1)
                     .forEach(result::add);
             }
         }
 
-        if ((parts.contains("barrier") || parts.contains("pulse") || parts.contains("orbit")) && result.isEmpty()) {
+        if ((parts.contains("barrier") || parts.contains("pulse") || parts.contains("orbit")
+            || parts.contains("ground") || parts.contains("block") || parts.contains("projectile_target")
+            || hasSelfUtility(parts)) && result.isEmpty()) {
             result.add(player);
         }
         return result;
+    }
+
+    private static boolean hasSelfUtility(List<String> parts) {
+        return parts.stream().anyMatch(id -> List.of("illumination", "invisibility", "disguise",
+            "levitation", "dash", "haste", "fatigue", "silence", "recall", "anchor", "float",
+            "water_walking", "climb", "jump", "sprint", "glide", "temperature", "weather",
+            "growth", "harvest", "repair", "cleanse", "purify", "ward", "reflection",
+            "resistance", "absorption", "regeneration", "stamina", "focus", "fortune",
+            "magnetism", "repulsion", "storage", "transmutation", "duplication", "decoy",
+            "barrier_reinforcement", "portal", "dimension_sense", "memory", "alarm",
+            "night_vision", "water_breathing", "slow_falling").contains(id));
     }
 
     private static boolean matchesDeliveryShape(LivingEntity entity, List<String> parts,
@@ -191,24 +217,20 @@ public final class SpellCaster {
     private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                       List<ElementalReactionEngine.Reaction> reactions) {
         java.util.Set<String> consumed = ElementalReactionEngine.consumedElements(reactions);
-
-        // Resolve combined elements first. Their ingredients are not also applied
-        // independently, preventing Fire + Water from simultaneously burning and
-        // extinguishing the same target.
         for (ElementalReactionEngine.Reaction reaction : reactions) {
             switch (reaction.id()) {
                 case "storm_steam" -> {
                     target.damage(caster.getDamageSources().magic(), 4.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
                 }
                 case "steam" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 45, 0));
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
                 }
                 case "charged_water" -> {
                     target.damage(caster.getDamageSources().magic(), 4.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
                 }
                 case "magma" -> {
                     target.setOnFireFor(5);
@@ -216,9 +238,8 @@ public final class SpellCaster {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
                 }
                 case "frozen_water" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 6, 2));
-                    target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2,
-                        target.getFrozenTicks() + 100));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
+                    target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 100));
                 }
                 case "sandstorm" -> {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
@@ -230,11 +251,10 @@ public final class SpellCaster {
                     target.addVelocity(push.x, 0.3, push.z);
                     target.velocityModified = true;
                 }
-                case "lunar_tide" -> target.addStatusEffect(
-                    new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 4, 0));
+                case "lunar_tide" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
                 case "solar_flare" -> {
                     target.setOnFireFor(7);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
                 }
                 default -> { }
             }
@@ -251,51 +271,148 @@ public final class SpellCaster {
             target.velocityModified = true;
         }
         if (parts.contains("earth") && !consumed.contains("earth")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 20 * 5, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 3, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
         }
         if (parts.contains("lightning") && !consumed.contains("lightning")) {
             target.damage(caster.getDamageSources().magic(), 4.0F);
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
         }
         if (parts.contains("ice") && !consumed.contains("ice")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 6, 2));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
             target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 100));
+        }
+
+        // Additional registered elements have concrete first-pass status behavior.
+        if (parts.contains("light")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 200, 0));
+        if (parts.contains("shadow")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 100, 0));
+        if (parts.contains("nature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
+        if (parts.contains("metal")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 120, 1));
+        if (parts.contains("crystal")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 160, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 80, 0));
+        }
+        if (parts.contains("magma") && !parts.contains("fire") && !consumed.contains("magma")) {
+            target.setOnFireFor(6);
+            target.damage(caster.getDamageSources().magic(), 3.0F);
+        }
+        if (parts.contains("smoke")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0));
+        if (parts.contains("sound")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 80, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 0));
+        }
+        if (parts.contains("gravity")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 0));
+            target.addVelocity(0.0, target.isOnGround() ? 0.45 : -0.35, 0.0);
+            target.velocityModified = true;
+        }
+        if (parts.contains("time")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 2));
+        if (parts.contains("space")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 100, 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 0));
+        }
+        if (parts.contains("poison")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 100, 0));
+        if (parts.contains("sand")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+        }
+        if (parts.contains("wood")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 60, 0));
+        }
+        if (parts.contains("moon")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 200, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+        }
+        if (parts.contains("sun")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 120, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 100, 0));
         }
     }
 
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts) {
-        if (parts.contains("healing")) {
-            target.heal(6.0F);
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 20 * 4, 0));
-        }
+        if (parts.contains("healing")) { target.heal(6.0F); target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0)); }
         if (parts.contains("enhancement")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 20 * 12, 1));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 20 * 12, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 240, 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 240, 0));
         }
-        if (parts.contains("barrier")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 20 * 10, 1));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 20 * 10, 0));
+        if (parts.contains("barrier") || parts.contains("ward") || parts.contains("barrier_reinforcement")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, parts.contains("barrier_reinforcement") ? 2 : 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
         }
         if (parts.contains("explosion")) {
             target.damage(caster.getDamageSources().magic(), 8.0F);
             Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.4);
-            target.addVelocity(away.x, 0.55, away.z);
-            target.velocityModified = true;
+            target.addVelocity(away.x, 0.55, away.z); target.velocityModified = true;
         }
         if (parts.contains("binding")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 8, 5));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 20 * 8, 128));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 160, 5));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 160, 128));
         }
-        if (parts.contains("night_vision")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 20 * 60, 0));
+        if (parts.contains("night_vision")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 1200, 0));
+        if (parts.contains("water_breathing")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 1200, 0));
+        if (parts.contains("slow_falling")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 400, 0));
+
+        if (parts.contains("illumination")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 240, 0));
+        if (parts.contains("invisibility")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 240, 0));
+        if (parts.contains("disguise")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 100, 0));
+        if (parts.contains("levitation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 80, 0));
+        if (parts.contains("dash")) {
+            Vec3d v = target.getRotationVec(1.0F).multiply(1.8);
+            target.addVelocity(v.x, 0.2, v.z); target.velocityModified = true;
         }
-        if (parts.contains("water_breathing")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 20 * 60, 0));
+        if (parts.contains("haste") || parts.contains("focus")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 300, 1));
+        if (parts.contains("fatigue")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 200, 1));
+        if (parts.contains("silence")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
+        if (parts.contains("echo")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
+        if (parts.contains("reveal") || parts.contains("tracking") || parts.contains("waypoint") || parts.contains("dimension_sense"))
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 300, 0));
+        if (parts.contains("recall")) {
+            target.requestTeleport(caster.getX(), caster.getY(), caster.getZ());
         }
-        if (parts.contains("slow_falling")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 20 * 20, 0));
+        if (parts.contains("anchor")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 160, 0));
+        if (parts.contains("float") || parts.contains("glide")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 300, 0));
+        if (parts.contains("water_walking")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, 300, 0));
+        if (parts.contains("climb")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 240, 1));
+        if (parts.contains("jump")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 240, 2));
+        if (parts.contains("sprint")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 240, 2));
+        if (parts.contains("temperature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 240, 0));
+        if (parts.contains("weather")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 240, 0));
+        if (parts.contains("growth")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 160, 1));
+        if (parts.contains("harvest")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
+        if (parts.contains("repair")) target.heal(10.0F);
+        if (parts.contains("cleanse") || parts.contains("purify")) {
+            target.removeStatusEffect(StatusEffects.POISON);
+            target.removeStatusEffect(StatusEffects.WITHER);
+            target.removeStatusEffect(StatusEffects.SLOWNESS);
+            target.removeStatusEffect(StatusEffects.MINING_FATIGUE);
+            target.removeStatusEffect(StatusEffects.BLINDNESS);
+            target.removeStatusEffect(StatusEffects.NAUSEA);
         }
+        if (parts.contains("reflection")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 240, 2));
+        if (parts.contains("resistance")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
+        if (parts.contains("absorption")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 300, 2));
+        if (parts.contains("regeneration")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 300, 1));
+        if (parts.contains("stamina")) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 160, 0));
+        }
+        if (parts.contains("fortune")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 600, 0));
+        if (parts.contains("magnetism")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 200, 0));
+        if (parts.contains("repulsion")) {
+            Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.2);
+            target.addVelocity(away.x, 0.25, away.z); target.velocityModified = true;
+        }
+        if (parts.contains("storage")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 0));
+        if (parts.contains("transmutation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
+        if (parts.contains("duplication")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 200, 1));
+        if (parts.contains("decoy")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 80, 0));
+        if (parts.contains("portal")) {
+            Vec3d destination = caster.getPos().add(caster.getRotationVec(1.0F).multiply(6.0));
+            target.requestTeleport(destination.x, destination.y, destination.z);
+        }
+        if (parts.contains("memory")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60, 0));
+        if (parts.contains("alarm")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 400, 0));
     }
 
     private static boolean summon(ServerPlayerEntity player) {
