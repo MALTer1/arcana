@@ -189,7 +189,6 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.drawTextWithShadow(textRenderer, "COMPONENTS  " + selected.size() + "/5", 130, 20, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "SCROLL TO BROWSE", 270, 132, 0xFFD7C19F);
         context.drawTextWithShadow(textRenderer, "SPELL NAME", 274, 145, 0xFFFFD98D);
-        context.drawTextWithShadow(textRenderer, "Your inventory", 16, 145, 0xFFD8C4A4);
     }
 
     @Override
