@@ -12,6 +12,8 @@ Arcana is a Minecraft **1.21.1 Fabric** magic-mod prototype. Its spell system is
 - Spell Intelligence validates component selections and explains detected interactions.
 - A whole-spell composition engine maps all registered components to semantic properties and calculates bounded modifiers for travel reach, area, and effect duration.
 - Delivery shapes can combine; target selection supports single/multiple targets, allies, hostile mobs, and projectile interception.
+- `projectile` and `arc` now create visible, independently moving server-authoritative spell entities with block/entity collision and full component-combination impacts.
+- `field`, `rune`, `barrier`, `wall`, `orbit`, and `tether` create persistent delivery zones for up to 10 seconds. Zones affect each entity once; barriers also deflect incoming projectiles.
 - Context-aware interactions account for conditions such as wet, burning, and airborne targets.
 - Elemental reactions support specific multi-element reactions and independent overlapping reactions.
 - Implemented world actions include crop growth and harvesting, held-item repair, dropped-item collection/storage, item attraction/repulsion, supported block transmutations, projectile deflection, and safe same-dimension recall.
@@ -22,7 +24,7 @@ Arcana is a Minecraft **1.21.1 Fabric** magic-mod prototype. Its spell system is
 
 This is still a prototype, not a finished gameplay system. Some registered concepts remain approximations or need dedicated systems:
 
-- `projectile` and related moving delivery shapes currently use server-side targeting simulation; they do not yet create fully animated, independently ticking magical projectiles.
+- `beam`, `wave`, `cone`, `ring`, `pulse`, and `column` still use instant server-side shape resolution rather than animated, travelling entities. Persistent zones currently use a shared bounded lifetime and simple particle visuals; advanced per-shape visuals and richer repeated/continuous effects remain future work.
 - `portal` is currently a safe one-shot teleport, not a persistent two-way portal.
 - `weather`, `temperature`, `disguise`, `decoy`, `echo`, `memory`, `alarm`, and `dimension_sense` still need their full world or entity systems.
 - `waypoint`, `tracking`, and `reveal` currently rely on entity highlighting rather than a complete navigation/marking interface.
