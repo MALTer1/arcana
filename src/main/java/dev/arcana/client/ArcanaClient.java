@@ -1,6 +1,7 @@
 package dev.arcana.client;
 
 import dev.arcana.item.GrimoireTier;
+import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.network.GrimoireNetwork;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.HandledScreens;
+import net.minecraft.client.render.block.entity.BlockEntityRendererFactories;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
@@ -33,7 +35,8 @@ public final class ArcanaClient implements ClientModInitializer {
         usePage = key("key.arcana.use_page", GLFW.GLFW_KEY_ENTER);
         removeMode = key("key.arcana.remove_mode", GLFW.GLFW_KEY_X);
 
-        HandledScreens.register(dev.arcana.block.ArcanaBlocks.MAGIC_WRITER_SCREEN_HANDLER, MagicWriterScreen::new);
+        HandledScreens.register(ArcanaBlocks.MAGIC_WRITER_SCREEN_HANDLER, MagicWriterScreen::new);
+        BlockEntityRendererFactories.register(ArcanaBlocks.MAGIC_WRITER_ENTITY, MagicWriterBlockEntityRenderer::new);
         ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID,
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
 

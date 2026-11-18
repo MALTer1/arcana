@@ -16,7 +16,7 @@ import net.minecraft.util.Identifier;
 
 public final class ArcanaBlocks {
     public static final Block MAGIC_WRITER = register("magic_writer",
-        new MagicWriterBlock(Block.Settings.copy(Blocks.ENCHANTING_TABLE).strength(3.5f)));
+        new MagicWriterBlock(Block.Settings.copy(Blocks.ENCHANTING_TABLE).strength(3.5f).nonOpaque()));
 
     public static final BlockEntityType<MagicWriterBlockEntity> MAGIC_WRITER_ENTITY = Registry.register(
         Registries.BLOCK_ENTITY_TYPE,

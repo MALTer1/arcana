@@ -2,11 +2,15 @@ package dev.arcana.block;
 
 import com.mojang.serialization.MapCodec;
 import dev.arcana.block.entity.MagicWriterBlockEntity;
-import net.minecraft.block.BlockRenderType;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.BlockWithEntity;
+import net.minecraft.block.*;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemPlacementContext;
+import net.minecraft.item.ItemStack;
+import net.minecraft.state.StateManager;
+import net.minecraft.state.property.EnumProperty;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
@@ -15,20 +19,46 @@ import net.minecraft.world.World;
 
 public final class MagicWriterBlock extends BlockWithEntity {
     public static final MapCodec<MagicWriterBlock> CODEC = createCodec(MagicWriterBlock::new);
+    public static final EnumProperty<DoubleBlockHalf> HALF = EnumProperty.of("half", DoubleBlockHalf.class);
 
-    public MagicWriterBlock(Settings settings) { super(settings); }
+    public MagicWriterBlock(Settings settings) {
+        super(settings);
+        setDefaultState(getStateManager().getDefaultState().with(HALF, DoubleBlockHalf.LOWER));
+    }
 
     @Override public MapCodec<MagicWriterBlock> getCodec() { return CODEC; }
 
-    @Override public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
-        return new MagicWriterBlockEntity(pos, state);
+    @Override
+    protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
+        builder.add(HALF);
+    }
+
+    @Override
+    public BlockState getPlacementState(ItemPlacementContext context) {
+        return context.getWorld().getBlockState(context.getBlockPos().up()).canReplace(context)
+            ? getDefaultState().with(HALF, DoubleBlockHalf.LOWER) : null;
+    }
+
+    @Override
+    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+        return state.get(HALF) == DoubleBlockHalf.LOWER
+            ? new MagicWriterBlockEntity(pos, state) : null;
+    }
+
+    @Override
+    public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.onPlaced(world, pos, state, placer, stack);
+        if (!world.isClient && state.get(HALF) == DoubleBlockHalf.LOWER) {
+            world.setBlockState(pos.up(), state.with(HALF, DoubleBlockHalf.UPPER), Block.NOTIFY_ALL);
+        }
     }
 
     @Override
     protected ActionResult onUse(BlockState state, World world, BlockPos pos,
                                  PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) return ActionResult.SUCCESS;
-        BlockEntity entity = world.getBlockEntity(pos);
+        BlockPos lowerPos = state.get(HALF) == DoubleBlockHalf.UPPER ? pos.down() : pos;
+        BlockEntity entity = world.getBlockEntity(lowerPos);
         if (entity instanceof MagicWriterBlockEntity writer) player.openHandledScreen(writer);
         return ActionResult.CONSUME;
     }
@@ -37,10 +67,13 @@ public final class MagicWriterBlock extends BlockWithEntity {
     protected void onStateReplaced(BlockState state, World world, BlockPos pos,
                                    BlockState newState, boolean moved) {
         if (!state.isOf(newState.getBlock())) {
-            BlockEntity entity = world.getBlockEntity(pos);
-            if (entity instanceof MagicWriterBlockEntity writer) {
-                ItemScatterer.spawn(world, pos, writer);
-                world.updateComparators(pos, this);
+            BlockPos otherPos = state.get(HALF) == DoubleBlockHalf.LOWER ? pos.up() : pos.down();
+            if (world.getBlockState(otherPos).isOf(this)) {
+                world.setBlockState(otherPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
+            }
+            if (state.get(HALF) == DoubleBlockHalf.LOWER) {
+                BlockEntity entity = world.getBlockEntity(pos);
+                if (entity instanceof MagicWriterBlockEntity writer) ItemScatterer.spawn(world, pos, writer);
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
