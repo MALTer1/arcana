@@ -293,6 +293,43 @@ public final class SpellCaster {
                     target.setOnFireFor(7);
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
                 }
+                case "blizzard" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 140, 2));
+                    target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 120));
+                }
+                case "mist" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 70, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 50, 0));
+                }
+                case "mud" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 1));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 100, 0));
+                }
+                case "thermal_shock" -> {
+                    target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 1));
+                }
+                case "eclipse" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 40, 0));
+                }
+                case "resonance" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 140, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 60, 0));
+                }
+                case "verdant_surge" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 180, 1));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
+                }
+                case "magnetic_arc" -> {
+                    target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                }
+                case "solar_eclipse" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 100, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 100, 0));
+                }
                 default -> { }
             }
         }
