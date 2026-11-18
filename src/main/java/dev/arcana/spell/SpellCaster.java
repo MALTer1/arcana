@@ -163,33 +163,36 @@ public final class SpellCaster {
         if (distance <= 0.0 || distance > range) return false;
 
         if (parts.contains("pulse") || parts.contains("orbit")) {
-            double radius = parts.contains("orbit") ? 5.0 : 6.0;
+            double radius = (parts.contains("orbit") ? 5.0 : 6.0) * composition.areaMultiplier();
             double distanceFromCaster = point.distanceTo(origin);
             return distanceFromCaster <= radius;
         }
 
         if (parts.contains("ring")) {
             double radius = point.distanceTo(impact);
-            return radius >= 2.0 && radius <= 4.5;
+            return radius >= 2.0 * composition.areaMultiplier()
+                && radius <= 4.5 * composition.areaMultiplier();
         }
 
         if (parts.contains("rune") || parts.contains("field") || parts.contains("area")) {
-            double radius = parts.contains("rune") ? 3.0 : 2.5;
+            double radius = (parts.contains("rune") ? 3.0 : 2.5) * composition.areaMultiplier();
             return point.squaredDistanceTo(impact) <= radius * radius;
         }
 
         if (parts.contains("column")) {
             double horizontal = Math.sqrt(
                 Math.pow(point.x - impact.x, 2) + Math.pow(point.z - impact.z, 2));
-            return horizontal <= 2.5 && Math.abs(point.y - impact.y) <= 6.0;
+            return horizontal <= 2.5 * composition.areaMultiplier()
+                && Math.abs(point.y - impact.y) <= 6.0 * composition.areaMultiplier();
         }
 
         if (parts.contains("wall")) {
             Vec3d fromImpact = point.subtract(impact);
             double depth = Math.abs(fromImpact.dotProduct(look));
             Vec3d lateral = fromImpact.subtract(look.multiply(fromImpact.dotProduct(look)));
-            return depth <= 2.0 && lateral.horizontalLength() <= 5.0
-                && Math.abs(fromImpact.y) <= 3.0;
+            return depth <= 2.0 * composition.areaMultiplier()
+                && lateral.horizontalLength() <= 5.0 * composition.areaMultiplier()
+                && Math.abs(fromImpact.y) <= 3.0 * composition.areaMultiplier();
         }
 
         double forward = offset.dotProduct(look);
