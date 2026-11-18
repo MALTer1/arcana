@@ -122,7 +122,7 @@ public final class SpellCaster {
                     LivingEntity next = candidates.stream()
                         .filter(entity -> !result.contains(entity))
                         .filter(entity -> !parts.contains("ally") || entity.isTeammate(player))
-                        .filter(entity -> !parts.contains("hostile") || !entity.isTeammate(player))
+                        .filter(entity -> !parts.contains("hostile") || isHostileTarget(entity, player))
                         .filter(entity -> entity.getBoundingBox().getCenter().squaredDistanceTo(chainOrigin) <= 8.0 * 8.0)
                         .min(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(chainOrigin)))
                         .orElse(null);
@@ -162,9 +162,14 @@ public final class SpellCaster {
         return result;
     }
 
+    private static boolean isHostileTarget(LivingEntity entity, ServerPlayerEntity player) {
+        return entity instanceof net.minecraft.entity.mob.HostileEntity
+            || (entity instanceof ServerPlayerEntity && !entity.isTeammate(player));
+    }
+
     private static boolean hasWorldUtility(List<String> parts) {
         return parts.stream().anyMatch(id -> List.of("growth", "harvest", "repair", "magnetism",
-            "repulsion", "storage", "transmutation").contains(id));
+            "repulsion", "storage", "transmutation", "projectile_target").contains(id));
     }
 
     private static boolean hasSelfUtility(List<String> parts) {
