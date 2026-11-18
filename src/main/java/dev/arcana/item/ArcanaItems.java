@@ -13,10 +13,10 @@ public final class ArcanaItems {
     // Legacy registry entry retained so existing worlds can still load old Spell Page stacks.
     // New pages are always represented by data-bearing Magic Paper.
     public static final Item SPELL_PAGE = register("spell_page", new Item(new Item.Settings()));
-    public static final Item NOVICE_GRIMOIRE = register("novice_grimoire", new Item(new Item.Settings()));
-    public static final Item APPRENTICE_GRIMOIRE = register("apprentice_grimoire", new Item(new Item.Settings()));
-    public static final Item ADEPT_GRIMOIRE = register("adept_grimoire", new Item(new Item.Settings()));
-    public static final Item MASTER_GRIMOIRE = register("master_grimoire", new Item(new Item.Settings()));
+    public static final Item NOVICE_GRIMOIRE = register("novice_grimoire", new Item(new Item.Settings().maxCount(1)));
+    public static final Item APPRENTICE_GRIMOIRE = register("apprentice_grimoire", new Item(new Item.Settings().maxCount(1)));
+    public static final Item ADEPT_GRIMOIRE = register("adept_grimoire", new Item(new Item.Settings().maxCount(1)));
+    public static final Item MASTER_GRIMOIRE = register("master_grimoire", new Item(new Item.Settings().maxCount(1)));
 
     private ArcanaItems() {}
     private static Item register(String path, Item item) {
