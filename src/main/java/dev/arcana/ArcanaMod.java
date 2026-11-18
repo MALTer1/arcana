@@ -12,6 +12,7 @@ import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.GrimoireStore;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
+import dev.arcana.spell.SpellPageStore;
 import dev.arcana.spell.SpellDraft;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -126,12 +127,12 @@ public final class ArcanaMod implements ModInitializer {
                         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
                             name, spellDraft.selectedIds(), spellDraft.behavior());
                         SpellBookStore.add(player.getUuid(), spell);
-                        net.minecraft.item.ItemStack page = new net.minecraft.item.ItemStack(ArcanaItems.SPELL_PAGE);
-                        page.set(net.minecraft.component.DataComponentTypes.CUSTOM_NAME, Text.literal(name));
+                        net.minecraft.item.ItemStack page = new net.minecraft.item.ItemStack(ArcanaItems.MAGIC_PAPER);
+                        SpellPageStore.set(page, spell);
                         if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
                         spellDraft.clear();
                         SpellBookStore.save(player.getServer());
-                        player.sendMessage(Text.literal("Engraved '" + name + "' onto a Spell Page. Insert it with /arcana grimoire insert " + name + "."), false);
+                        player.sendMessage(Text.literal("Engraved '" + name + "' onto Magic Paper. Hold your Grimoire and use its Pages tab to insert it."), false);
                         return 1;
                     })))
                 .then(CommandManager.literal("spells").executes(context -> {
