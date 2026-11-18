@@ -4,13 +4,15 @@
     {
       "rolls": 1,
       "entries": [
-        {
-          "type": "minecraft:item",
-          "name": "arcana:magic_writer"
-        }
+        { "type": "minecraft:item", "name": "arcana:magic_writer" }
       ],
       "conditions": [
-        { "condition": "minecraft:survives_explosion" }
+        { "condition": "minecraft:survives_explosion" },
+        {
+          "condition": "minecraft:block_state_property",
+          "block": "arcana:magic_writer",
+          "properties": { "half": "lower" }
+        }
       ]
     }
   ]

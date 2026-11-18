@@ -1,0 +1,20 @@
+{
+  "textures": { "all": "arcana:block/magic_writer", "particle": "arcana:block/magic_writer" },
+  "elements": [
+    { "from": [6,0,6], "to": [10,16,10], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [2,12,5], "to": [14,15,11], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [7,8,1], "to": [9,13,8], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [6,2,1], "to": [10,8,5], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [7,0,2], "to": [9,3,4], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }}
+  ]
+}

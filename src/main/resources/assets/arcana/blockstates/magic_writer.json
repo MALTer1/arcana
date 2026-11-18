@@ -1,5 +1,6 @@
 {
   "variants": {
-    "": { "model": "arcana:block/magic_writer" }
+    "half=lower": { "model": "arcana:block/magic_writer_bottom" },
+    "half=upper": { "model": "arcana:block/magic_writer_top" }
   }
 }

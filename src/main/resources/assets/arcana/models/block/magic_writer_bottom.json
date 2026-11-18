@@ -1,0 +1,14 @@
+{
+  "textures": { "all": "arcana:block/magic_writer", "particle": "arcana:block/magic_writer" },
+  "elements": [
+    { "from": [1,0,1], "to": [15,5,15], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [0,5,0], "to": [16,8,16], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }},
+    { "from": [2,8,2], "to": [14,9,14], "faces": {
+      "north":{"texture":"#all"},"south":{"texture":"#all"},"east":{"texture":"#all"},"west":{"texture":"#all"},"up":{"texture":"#all"},"down":{"texture":"#all"}
+    }}
+  ]
+}
