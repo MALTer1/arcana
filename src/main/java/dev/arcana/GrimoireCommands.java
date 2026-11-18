@@ -6,8 +6,8 @@ import dev.arcana.item.GrimoireTier;
 import dev.arcana.spell.GrimoireStore;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
+import dev.arcana.spell.SpellPageStore;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -44,7 +44,7 @@ public final class GrimoireCommands {
                             SpellBookStore.StoredSpell spell = GrimoireStore.remove(book, tier, name);
                             if (spell == null) { player.sendMessage(Text.literal("That Grimoire does not contain '" + name + "'."), false); return 0; }
                             ItemStack page = new ItemStack(ArcanaItems.SPELL_PAGE);
-                            page.set(DataComponentTypes.CUSTOM_NAME, Text.literal(spell.name));
+                            SpellPageStore.set(page, spell);
                             if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
                             player.sendMessage(Text.literal("Removed '" + name + "' and returned its Spell Page."), false);
                             return 1;
