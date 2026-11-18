@@ -41,10 +41,10 @@ public final class ArcanaClient implements ClientModInitializer {
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
-            if (stack.isOf(ArcanaItems.SPELL_PAGE)) {
+            if (stack.isOf(ArcanaItems.MAGIC_PAPER)) {
                 var page = SpellPageStore.get(stack);
                 if (page != null) {
-                    lines.add(Text.literal("§6Editable Spell Page"));
+                    lines.add(Text.literal("§6Engraved Magic Paper"));
                     lines.add(Text.literal("§7Components: " + String.join(", ", page.components)));
                     lines.add(Text.literal("§8Insert into a Magic Writer to edit."));
                 }
