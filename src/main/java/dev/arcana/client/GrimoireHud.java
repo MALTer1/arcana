@@ -34,12 +34,12 @@ public final class GrimoireHud {
 
     public static void refresh() { send("refresh", ""); }
     public static void previousPage() {
-        if (tab == 0) selectedSpell = Math.max(0, selectedSpell - 1);
-        else if (tab == 1) selectedLoosePage = Math.max(0, selectedLoosePage - 1);
+        if (tab == 0 && !spells().isEmpty()) selectedSpell = Math.floorMod(selectedSpell - 1, spells().size());
+        else if (tab == 1 && !pages().isEmpty()) selectedLoosePage = Math.floorMod(selectedLoosePage - 1, pages().size());
     }
     public static void nextPage() {
-        if (tab == 0) selectedSpell = Math.min(Math.max(0, spells().size() - 1), selectedSpell + 1);
-        else if (tab == 1) selectedLoosePage = Math.min(Math.max(0, pages().size() - 1), selectedLoosePage + 1);
+        if (tab == 0 && !spells().isEmpty()) selectedSpell = (selectedSpell + 1) % spells().size();
+        else if (tab == 1 && !pages().isEmpty()) selectedLoosePage = (selectedLoosePage + 1) % pages().size();
     }
     public static void nextTab() { tab = (tab + 1) % 4; }
     public static void previousTab() { tab = (tab + 3) % 4; }
@@ -82,6 +82,19 @@ public final class GrimoireHud {
         // directly for sharper edges and more consistent readability.
         draw.drawText(client.textRenderer, value, x, y, color, false);
     }
+    private static void fitLine(DrawContext draw, MinecraftClient client, String value,
+                                int x, int y, int maxWidth, int color) {
+        if (value == null || value.isEmpty() || maxWidth < 1) return;
+        int measured = client.textRenderer.getWidth(value);
+        float scale = measured <= maxWidth ? 1.0f : (float) maxWidth / measured;
+        var matrices = draw.getMatrices();
+        matrices.push();
+        matrices.translate(x, y, 0);
+        matrices.scale(scale, scale, 1.0f);
+        draw.drawText(client.textRenderer, value, 0, 0, color, false);
+        matrices.pop();
+    }
+
     private static void wrapped(DrawContext draw, MinecraftClient client, String value,
                                 int x, int y, int width, int color, int maxLines) {
         if (value == null || value.isBlank() || width < 12 || maxLines < 1) return;
@@ -106,13 +119,13 @@ public final class GrimoireHud {
 
     private static void panel(DrawContext draw, int x, int y, int width, int height, boolean right) {
         // 0xE6 alpha leaves the parchment and frame approximately 10% transparent.
-        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0x90170D20);
-        draw.fill(x, y, x + width, y + height, 0xA04B245F);
-        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0xA0FFF1D5);
+        draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0x55170D20);
+        draw.fill(x, y, x + width, y + height, 0x754B245F);
+        draw.fill(x + 4, y + 4, x + width - 4, y + height - 4, 0x55FFF1D5);
         draw.fill(x + 7, y + 7, x + width - 7, y + height - 7,
-            right ? 0xA0F7EBD4 : 0xA0F4E4C3);
-        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0xA0B18A5C);
-        draw.fill(x + 7, y + height - 9, x + width - 7, y + height - 7, 0xB0B18A5C);
+            right ? 0x55F7EBD4 : 0x55F4E4C3);
+        draw.fill(x + 7, y + 7, x + width - 7, y + 9, 0x66B18A5C);
+        draw.fill(x + 7, y + height - 9, x + width - 7, y + height - 7, 0x77B18A5C);
     }
 
     public static void render(DrawContext draw, MinecraftClient client) {
@@ -132,19 +145,19 @@ public final class GrimoireHud {
         int accent = 0xFF572B70;
         int muted = 0xFF76583A;
         int contentWidth = panelWidth - 24;
-        int top = y + 28;
+        int top = y + 43;
 
         panel(draw, leftX, y, panelWidth, panelHeight, false);
         panel(draw, rightX, y, panelWidth, panelHeight, true);
 
         String tier = state.has("tier") ? state.get("tier").getAsString() : "Grimoire";
-        line(draw, client, tier.toUpperCase(), leftX + innerX, y + 11, accent);
+        fitLine(draw, client, tier.toUpperCase(), leftX + innerX, y + 8, contentWidth, accent);
         String[] labels = {"SPELL", "PAGES", "ARC", "BOOK"};
-        int tabWidth = Math.max(26, contentWidth / 4);
+        int tabWidth = contentWidth / 4;
         for (int i = 0; i < labels.length; i++) {
             int tx = leftX + innerX + i * tabWidth;
-            if (i == tab) draw.fill(tx - 1, y + 24, tx + tabWidth - 2, y + 35, 0xB04B245F);
-            line(draw, client, trimToWidth(client, labels[i], tabWidth - 3), tx, y + 25, i == tab ? 0xFFFFEAC8 : muted);
+            if (i == tab) draw.fill(tx - 1, y + 22, tx + tabWidth - 2, y + 35, 0x884B245F);
+            fitLine(draw, client, labels[i], tx, y + 25, tabWidth - 4, i == tab ? 0xFFFFEAC8 : muted);
         }
 
         String rightTitle = switch (tab) {
@@ -153,8 +166,8 @@ public final class GrimoireHud {
             case 2 -> "ARCANA";
             default -> "BOOK DETAILS";
         };
-        line(draw, client, rightTitle, rightX + innerX, y + 12, accent);
-        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0xA0B89A70);
+        fitLine(draw, client, rightTitle, rightX + innerX, y + 12, contentWidth, accent);
+        draw.fill(rightX + innerX, y + 25, rightX + panelWidth - innerX, y + 27, 0x66B89A70);
 
         if (tab == 0) {
             line(draw, client, "SPELL INDEX", leftX + innerX, top, muted);
@@ -164,17 +177,19 @@ public final class GrimoireHud {
                 wrapped(draw, client, "Select a spell to see its components, behavior and Arcana cost here.",
                     rightX + innerX, top + 24, contentWidth, ink, Math.max(1, (panelHeight - 104) / 11));
             } else {
-                int visible = Math.max(1, Math.min(8, (panelHeight - 76) / 15));
-                int start = Math.max(0, Math.min(selectedSpell - visible / 2, spells().size() - visible));
-                for (int i = start; i < Math.min(start + visible, spells().size()); i++) {
-                    String name = spells().get(i).getAsJsonObject().get("name").getAsString();
-                    String label = (i == selectedSpell ? "› " : "  ") + name;
-                    line(draw, client, trimToWidth(client, label, contentWidth), leftX + innerX,
-                        top + 18 + (i - start) * 15, i == selectedSpell ? accent : ink);
+                int visible = Math.max(1, Math.min(8, (panelHeight - 92) / 13));
+                int rows = Math.min(visible, spells().size());
+                int firstIndex = Math.floorMod(selectedSpell - rows / 2, spells().size());
+                for (int row = 0; row < rows; row++) {
+                    int index = (firstIndex + row) % spells().size();
+                    String name = spells().get(index).getAsJsonObject().get("name").getAsString();
+                    String label = (index == selectedSpell ? "› " : "  ") + name;
+                    fitLine(draw, client, label, leftX + innerX, top + 18 + row * 13,
+                        contentWidth, index == selectedSpell ? accent : ink);
                 }
                 JsonObject selected = spells().get(selectedSpell).getAsJsonObject();
                 String name = selected.get("name").getAsString();
-                line(draw, client, trimToWidth(client, name, contentWidth), rightX + innerX, top + 8, accent);
+                fitLine(draw, client, name, rightX + innerX, top + 8, contentWidth, accent);
                 JsonArray components = selected.has("components") ? selected.getAsJsonArray("components") : new JsonArray();
                 line(draw, client, "Components (" + components.size() + ")", rightX + innerX, top + 27, muted);
                 // Reserve the bottom of the page for controls. Show only as many
@@ -182,8 +197,8 @@ public final class GrimoireHud {
                 int componentY = top + 39;
                 int visibleComponents = Math.min(components.size(), Math.max(2, Math.min(4, (panelHeight - 130) / 15)));
                 for (int i = 0; i < visibleComponents; i++) {
-                    line(draw, client, trimToWidth(client, "• " + components.get(i).getAsString(), contentWidth),
-                        rightX + innerX, componentY + i * 10, ink);
+                    fitLine(draw, client, "• " + components.get(i).getAsString(),
+                        rightX + innerX, componentY + i * 10, contentWidth, ink);
                 }
                 if (components.size() > visibleComponents) {
                     line(draw, client, "+" + (components.size() - visibleComponents) + " more components",
@@ -207,12 +222,14 @@ public final class GrimoireHud {
                 wrapped(draw, client, "Engrave a spell first, then select its loose page and press Enter to insert it.",
                     rightX + innerX, top + 22, contentWidth, ink, 7);
             } else {
-                int visible = Math.max(1, Math.min(10, (panelHeight - 76) / 15));
-                int start = Math.max(0, Math.min(selectedLoosePage - visible / 2, pages().size() - visible));
-                for (int i = start; i < Math.min(start + visible, pages().size()); i++) {
-                    String name = pages().get(i).getAsString();
-                    line(draw, client, trimToWidth(client, (i == selectedLoosePage ? "› " : "  ") + name, contentWidth),
-                        leftX + innerX, top + 18 + (i - start) * 15, i == selectedLoosePage ? accent : ink);
+                int visible = Math.max(1, Math.min(10, (panelHeight - 92) / 13));
+                int rows = Math.min(visible, pages().size());
+                int firstIndex = Math.floorMod(selectedLoosePage - rows / 2, pages().size());
+                for (int row = 0; row < rows; row++) {
+                    int index = (firstIndex + row) % pages().size();
+                    String name = pages().get(index).getAsString();
+                    fitLine(draw, client, (index == selectedLoosePage ? "› " : "  ") + name,
+                        leftX + innerX, top + 18 + row * 13, contentWidth, index == selectedLoosePage ? accent : ink);
                 }
                 line(draw, client, trimToWidth(client, pages().get(selectedLoosePage).getAsString(), contentWidth),
                     rightX + innerX, top + 12, accent);
@@ -223,9 +240,9 @@ public final class GrimoireHud {
             int value = state.has("arcana") ? state.get("arcana").getAsInt() : 0;
             int maximum = state.has("maxArcana") ? state.get("maxArcana").getAsInt() : 100;
             line(draw, client, "CURRENT RESERVE", leftX + innerX, top, muted);
-            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0xA0B9A88C);
+            draw.fill(leftX + innerX, top + 24, leftX + panelWidth - innerX, top + 38, 0x66B9A88C);
             int barWidth = Math.max(0, (contentWidth - 4) * value / Math.max(1, maximum));
-            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0xA075409A);
+            draw.fill(leftX + innerX + 2, top + 26, leftX + innerX + 2 + barWidth, top + 36, 0x6675409A);
             line(draw, client, value + " / " + maximum, leftX + innerX, top + 47, ink);
             wrapped(draw, client, "Arcana regenerates over time. Casting spends Arcana based on spell complexity.",
                 rightX + innerX, top + 8, contentWidth, ink, 7);
@@ -278,7 +295,7 @@ public final class GrimoireHud {
             int y = centerY + directions[i][1] * radius - size / 2;
             boolean selected = i == 2;
             draw.fill(x - 2, y - 2, x + size + 2, y + size + 2, selected ? 0xE6E0B45D : 0xB84B245F);
-            draw.fill(x, y, x + size, y + size, selected ? 0xA0FFF0C9 : 0xBFD9C9A8);
+            draw.fill(x, y, x + size, y + size, selected ? 0x66FFF0C9 : 0xBFD9C9A8);
             draw.fill(x + 2, y + 2, x + size - 2, y + size - 2, 0xBFAE9877);
             String glyph = spellGlyph(spell);
             int glyphWidth = client.textRenderer.getWidth(glyph);
