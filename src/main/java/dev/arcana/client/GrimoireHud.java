@@ -117,6 +117,35 @@ public final class GrimoireHud {
         }
     }
 
+    private static void wrappedFit(DrawContext draw, MinecraftClient client, String value,
+                                   int x, int y, int width, int maxHeight, int color) {
+        if (value == null || value.isBlank() || width < 12 || maxHeight < 9) return;
+        java.util.List<String> rows = new java.util.ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (String word : value.split("\\s+")) {
+            String candidate = current.length() == 0 ? word : current + " " + word;
+            if (client.textRenderer.getWidth(candidate) > width && current.length() > 0) {
+                rows.add(current.toString());
+                current.setLength(0);
+                current.append(word);
+            } else {
+                if (current.length() > 0) current.append(' ');
+                current.append(word);
+            }
+        }
+        if (current.length() > 0) rows.add(current.toString());
+        if (rows.isEmpty()) return;
+        float scale = Math.min(1.0f, (float) maxHeight / (rows.size() * 11.0f));
+        var matrices = draw.getMatrices();
+        matrices.push();
+        matrices.translate(x, y, 0);
+        matrices.scale(scale, scale, 1.0f);
+        for (int i = 0; i < rows.size(); i++) {
+            line(draw, client, rows.get(i), 0, i * 11, color);
+        }
+        matrices.pop();
+    }
+
     private static void panel(DrawContext draw, int x, int y, int width, int height, boolean right) {
         // 0xE6 alpha leaves the parchment and frame approximately 10% transparent.
         draw.fill(x + 3, y + 3, x + width - 3, y + height - 3, 0x55170D20);
@@ -212,8 +241,8 @@ public final class GrimoireHud {
                 int behaviorY = costY + 14;
                 int lastSafeY = y + panelHeight - 43;
                 int behaviorLines = Math.max(1, (lastSafeY - behaviorY) / 11 + 1);
-                wrapped(draw, client, behavior, rightX + innerX, behaviorY,
-                    contentWidth, ink, behaviorLines);
+                wrappedFit(draw, client, behavior, rightX + innerX, behaviorY,
+                    contentWidth, Math.max(9, lastSafeY - behaviorY + 9), ink);
             }
         } else if (tab == 1) {
             line(draw, client, "LOOSE SPELL PAGES", leftX + innerX, top, muted);
