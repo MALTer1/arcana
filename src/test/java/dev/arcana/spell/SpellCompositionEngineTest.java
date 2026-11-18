@@ -41,6 +41,7 @@ class SpellCompositionEngineTest {
 
     @Test
     void distinctComponentsFromTheSameCategoryAreAllowed() {
+        ComponentRegistry.bootstrap();
         SpellDraft draft = new SpellDraft();
         assertTrue(draft.add("projectile").success());
         assertTrue(draft.add("chain").success());
