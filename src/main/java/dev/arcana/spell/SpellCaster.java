@@ -6,7 +6,9 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
+import net.minecraft.world.RaycastContext;
 import net.minecraft.util.math.Vec3d;
 
 import java.util.ArrayList;
@@ -220,7 +222,7 @@ public final class SpellCaster {
         for (ElementalReactionEngine.Reaction reaction : reactions) {
             switch (reaction.id()) {
                 case "storm_steam" -> {
-                    target.damage(caster.getDamageSources().magic(), 4.0F);
+                    target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
                 }
@@ -229,12 +231,12 @@ public final class SpellCaster {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
                 }
                 case "charged_water" -> {
-                    target.damage(caster.getDamageSources().magic(), 4.0F);
+                    target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
                 }
                 case "magma" -> {
                     target.setOnFireFor(5);
-                    target.damage(caster.getDamageSources().magic(), 2.0F);
+                    target.damage(caster.getDamageSources().indirectMagic(caster, caster), 2.0F);
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
                 }
                 case "frozen_water" -> {
@@ -275,7 +277,7 @@ public final class SpellCaster {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
         }
         if (parts.contains("lightning") && !consumed.contains("lightning")) {
-            target.damage(caster.getDamageSources().magic(), 4.0F);
+            target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
         }
         if (parts.contains("ice") && !consumed.contains("ice")) {
@@ -294,7 +296,7 @@ public final class SpellCaster {
         }
         if (parts.contains("magma") && !parts.contains("fire") && !consumed.contains("magma")) {
             target.setOnFireFor(6);
-            target.damage(caster.getDamageSources().magic(), 3.0F);
+            target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
         }
         if (parts.contains("smoke")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0));
         if (parts.contains("sound")) {
@@ -341,13 +343,14 @@ public final class SpellCaster {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
         }
         if (parts.contains("explosion")) {
-            target.damage(caster.getDamageSources().magic(), 8.0F);
+            target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F);
             Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.4);
             target.addVelocity(away.x, 0.55, away.z); target.velocityModified = true;
         }
         if (parts.contains("binding")) {
+            // Avoid extreme Jump Boost amplifiers: they can launch server-side mobs.
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 160, 5));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 160, 128));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 100, 1));
         }
         if (parts.contains("night_vision")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 1200, 0));
         if (parts.contains("water_breathing")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 1200, 0));
@@ -409,7 +412,7 @@ public final class SpellCaster {
         if (parts.contains("decoy")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 80, 0));
         if (parts.contains("portal")) {
             Vec3d destination = caster.getPos().add(caster.getRotationVec(1.0F).multiply(6.0));
-            target.requestTeleport(destination.x, destination.y, destination.z);
+            teleportSafely(target, destination);
         }
         if (parts.contains("memory")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60, 0));
         if (parts.contains("alarm")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 400, 0));
@@ -425,6 +428,35 @@ public final class SpellCaster {
 
     private static void teleportForward(ServerPlayerEntity player, double distance) {
         Vec3d destination = player.getPos().add(player.getRotationVec(1.0F).multiply(distance));
-        player.requestTeleport(destination.x, destination.y, destination.z);
+        teleportSafely(player, destination);
+    }
+
+    /** Teleport only when the destination is clear for the entity's bounding box. */
+    private static boolean teleportSafely(LivingEntity entity, Vec3d requested) {
+        Vec3d origin = entity.getPos();
+        Vec3d movement = requested.subtract(origin);
+        double distance = movement.length();
+        if (distance < 0.01) return false;
+
+        Vec3d direction = movement.normalize();
+        Vec3d rayStart = origin.add(0.0, 0.5, 0.0);
+        Vec3d rayEnd = rayStart.add(movement);
+        var hit = entity.getWorld().raycast(new RaycastContext(
+            rayStart, rayEnd, RaycastContext.ShapeType.COLLIDER,
+            RaycastContext.FluidHandling.NONE, entity));
+
+        Vec3d destination = hit.getType() == HitResult.Type.BLOCK
+            ? hit.getPos().subtract(direction.multiply(0.75)).subtract(0.0, 0.5, 0.0)
+            : requested;
+
+        for (double backoff = 0.0; backoff <= distance; backoff += 0.5) {
+            Vec3d candidate = destination.subtract(direction.multiply(backoff));
+            Vec3d offset = candidate.subtract(origin);
+            if (entity.getWorld().isSpaceEmpty(entity, entity.getBoundingBox().offset(offset))) {
+                entity.requestTeleport(candidate.x, candidate.y, candidate.z);
+                return true;
+            }
+        }
+        return false;
     }
 }
