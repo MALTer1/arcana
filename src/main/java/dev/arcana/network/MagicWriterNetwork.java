@@ -75,14 +75,8 @@ public final class MagicWriterNetwork {
 
         ItemStack book = writer.getStack(0);
         ItemStack input = writer.getStack(1);
-        if (input.isEmpty()) {
-            player.sendMessage(Text.literal("Insert Magic Paper or an editable Spell Page."), false);
-            return;
-        }
-
-        boolean editingPage = input.isOf(ArcanaItems.SPELL_PAGE);
-        if (editingPage && SpellPageStore.get(input) == null) {
-            player.sendMessage(Text.literal("That Spell Page has no editable spell data."), false);
+        if (input.isEmpty() || !input.isOf(ArcanaItems.MAGIC_PAPER)) {
+            player.sendMessage(Text.literal("Insert Magic Paper to engrave a spell."), false);
             return;
         }
 
@@ -91,24 +85,22 @@ public final class MagicWriterNetwork {
             new SpellBookStore.StoredSpell(name, draft.selectedIds(), draft.behavior());
 
         if (tier == null) {
-            ItemStack output = editingPage ? input.copy() : new ItemStack(ArcanaItems.SPELL_PAGE);
-            output.setCount(1);
-            SpellPageStore.set(output, spell);
+            // The spell is written onto the same item type the player inserted.
+            // Copy the complete stack first so existing custom data/components survive.
+            ItemStack engravedPaper = input.copy();
+            engravedPaper.setCount(1);
+            SpellPageStore.set(engravedPaper, spell);
 
-            // Reserve a safe destination before consuming the input. A page goes into
-            // the player's inventory when possible, otherwise into the writer output.
-            boolean fitsInventory = canFitInMainInventory(output, player.getInventory());
-            boolean useOutput = !fitsInventory;
-            if (useOutput && !writer.getStack(2).isEmpty()) {
+            boolean fitsInventory = canFitInMainInventory(engravedPaper, player.getInventory());
+            if (!fitsInventory && !writer.getStack(2).isEmpty()) {
                 player.sendMessage(Text.literal("No space! Free an inventory slot or collect the Magic Writer output."), false);
                 return;
             }
 
             if (fitsInventory) {
-                ItemStack toInsert = output.copy();
+                ItemStack toInsert = engravedPaper.copy();
                 player.getInventory().insertStack(toInsert);
                 if (!toInsert.isEmpty()) {
-                    // Defensive fallback in case inventory capacity changed unexpectedly.
                     if (!writer.getStack(2).isEmpty()) {
                         player.sendMessage(Text.literal("No space! Free an inventory slot or collect the Magic Writer output."), false);
                         return;
@@ -116,12 +108,12 @@ public final class MagicWriterNetwork {
                     writer.setOutput(toInsert);
                 }
             } else {
-                writer.setOutput(output);
+                writer.setOutput(engravedPaper);
             }
 
             writer.consumeInput();
             writer.markDirty();
-            player.sendMessage(Text.literal("Finished '" + name + "' as a Spell Page."), false);
+            player.sendMessage(Text.literal("Engraved '" + name + "' onto Magic Paper."), false);
             return;
         }
 
@@ -141,18 +133,15 @@ public final class MagicWriterNetwork {
         writer.consumeInput();
         writer.markDirty();
         player.getInventory().markDirty();
-        player.sendMessage(Text.literal((editingPage ? "Edited and engraved '" : "Engraved '")
-            + name + "' into this " + tier.displayName() + "."), false);
+        player.sendMessage(Text.literal("Engraved '" + name + "' into this " + tier.displayName() + "."), false);
     }
 
     private static boolean canFitInMainInventory(ItemStack stack, PlayerInventory inventory) {
         int capacity = 0;
         for (ItemStack existing : inventory.main) {
-            if (existing.isEmpty()) {
-                capacity += stack.getMaxCount();
-            } else if (ItemStack.areItemsAndComponentsEqual(existing, stack)) {
+            if (existing.isEmpty()) capacity += stack.getMaxCount();
+            else if (ItemStack.areItemsAndComponentsEqual(existing, stack))
                 capacity += Math.max(0, existing.getMaxCount() - existing.getCount());
-            }
             if (capacity >= stack.getCount()) return true;
         }
         return false;
