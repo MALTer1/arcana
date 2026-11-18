@@ -2,6 +2,7 @@ package dev.arcana.spell;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import dev.arcana.entity.ArcanaProjectileEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -43,8 +44,11 @@ public final class SpellCaster {
         boolean teleport = parts.contains("teleportation");
         SpellCompositionEngine.Plan composition = SpellCompositionEngine.compose(parts);
 
+        boolean launchesProjectile = (parts.contains("projectile") || parts.contains("arc"))
+            && !self && !parts.contains("self_and_nearby");
         List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single, composition);
-        if (targets.isEmpty() && !teleport && !parts.contains("summoning") && !hasWorldUtility(parts)) {
+        if (targets.isEmpty() && !launchesProjectile && !teleport
+            && !parts.contains("summoning") && !hasWorldUtility(parts)) {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
 
@@ -55,6 +59,15 @@ public final class SpellCaster {
         }
 
         if (!parts.contains("recall")) SpellRecallStore.record(player);
+        if (launchesProjectile) {
+            if (!ArcanaProjectileEntity.launch(player, spell, composition)) {
+                ArcanaResource.restore(player, cost);
+                return new CastResult(false, "The magical projectile could not be created; Arcana was refunded.", cost);
+            }
+            return new CastResult(true, "Launched '" + spell.name
+                + "'. Its components will combine when the projectile hits. Cost: " + cost
+                + " Arcana. Remaining Arcana: " + ArcanaResource.current(player) + ".", cost);
+        }
         int affected = 0;
         boolean didSummon = false;
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
@@ -91,6 +104,23 @@ public final class SpellCaster {
         return new CastResult(true, "Cast '" + spell.name + "'. " + analysis.summary() +
             " Cost: " + cost + " Arcana. Affected " + affected + " target(s)." + detail + reactionText +
             " Remaining Arcana: " + ArcanaResource.current(player) + ".", cost);
+    }
+
+    /** Applies a projectile's complete spell composition at its server-side impact. */
+    public static void impactProjectile(ServerPlayerEntity caster, SpellBookStore.StoredSpell spell,
+                                        LivingEntity target) {
+        if (caster == null || target == null || target.isRemoved() || !target.isAlive()) return;
+        List<String> parts = spell.components;
+        if (parts.contains("ally") && !target.isTeammate(caster)) return;
+        if (parts.contains("hostile") && !isHostileTarget(target, caster)) return;
+        SpellCompositionEngine.Plan plan = SpellCompositionEngine.compose(parts,
+            new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
+        List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
+        applyElements(caster, target, parts, reactions, plan.durationMultiplier());
+        applyEffects(caster, target, parts, plan.durationMultiplier());
+        applyCompositionInteractions(caster, target, plan);
+        SpellWorldEffects.apply(caster, parts);
+        if (parts.contains("summoning")) summon(caster);
     }
 
     private static List<LivingEntity> selectTargets(ServerPlayerEntity player, List<String> parts,
