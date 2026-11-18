@@ -63,7 +63,7 @@ class SpellCompositionEngineTest {
     @Test
     void allSelectedCategoriesCanComposeTogether() {
         SpellCompositionEngine.Plan plan = SpellCompositionEngine.compose(
-            List.of("projectile", "chain", "fire", "wind", "multiple_targets", "binding"));
+            List.of("projectile", "chain", "fire", "wind", "multiple_targets", "binding", "healing"));
 
         assertTrue(plan.interactions().contains("Composite delivery"));
         assertTrue(plan.interactions().contains("Mixed elements"));
