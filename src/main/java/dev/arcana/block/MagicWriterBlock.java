@@ -8,6 +8,7 @@ import net.minecraft.block.BlockWithEntity;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.ActionResult;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -17,11 +18,9 @@ public final class MagicWriterBlock extends BlockWithEntity {
 
     public MagicWriterBlock(Settings settings) { super(settings); }
 
-    @Override
-    public MapCodec<MagicWriterBlock> getCodec() { return CODEC; }
+    @Override public MapCodec<MagicWriterBlock> getCodec() { return CODEC; }
 
-    @Override
-    public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
+    @Override public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
         return new MagicWriterBlockEntity(pos, state);
     }
 
@@ -30,14 +29,22 @@ public final class MagicWriterBlock extends BlockWithEntity {
                                  PlayerEntity player, BlockHitResult hit) {
         if (world.isClient) return ActionResult.SUCCESS;
         BlockEntity entity = world.getBlockEntity(pos);
-        if (entity instanceof MagicWriterBlockEntity writer) {
-            player.openHandledScreen(writer);
-        }
+        if (entity instanceof MagicWriterBlockEntity writer) player.openHandledScreen(writer);
         return ActionResult.CONSUME;
     }
 
     @Override
-    public BlockRenderType getRenderType(BlockState state) {
-        return BlockRenderType.MODEL;
+    protected void onStateReplaced(BlockState state, World world, BlockPos pos,
+                                   BlockState newState, boolean moved) {
+        if (!state.isOf(newState.getBlock())) {
+            BlockEntity entity = world.getBlockEntity(pos);
+            if (entity instanceof MagicWriterBlockEntity writer) {
+                ItemScatterer.spawn(world, pos, writer);
+                world.updateComparators(pos, this);
+            }
+        }
+        super.onStateReplaced(state, world, pos, newState, moved);
     }
+
+    @Override public BlockRenderType getRenderType(BlockState state) { return BlockRenderType.MODEL; }
 }
