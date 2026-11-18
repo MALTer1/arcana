@@ -10,6 +10,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SpellCompositionEngineTest {
     @Test
+    void everyRegisteredComponentHasACompositionProperty() {
+        ComponentRegistry.bootstrap();
+        for (SpellComponent component : ComponentRegistry.all()) {
+            assertFalse(SpellCompositionEngine.compose(List.of(component.id())).properties().isEmpty(),
+                "Missing semantic properties for " + component.id());
+        }
+    }
+
+    @Test
     void specificThreeElementReactionReplacesItsPairReactions() {
         List<ElementalReactionEngine.Reaction> reactions =
             ElementalReactionEngine.resolve(List.of("fire", "water", "lightning"));
