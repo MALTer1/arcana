@@ -1,5 +1,6 @@
 package dev.arcana.block;
 
+import com.mojang.serialization.MapCodec;
 import dev.arcana.block.entity.MagicWriterBlockEntity;
 import net.minecraft.block.BlockRenderType;
 import net.minecraft.block.BlockState;
@@ -12,7 +13,12 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 public final class MagicWriterBlock extends BlockWithEntity {
+    public static final MapCodec<MagicWriterBlock> CODEC = createCodec(MagicWriterBlock::new);
+
     public MagicWriterBlock(Settings settings) { super(settings); }
+
+    @Override
+    public MapCodec<MagicWriterBlock> getCodec() { return CODEC; }
 
     @Override
     public BlockEntity createBlockEntity(BlockPos pos, BlockState state) {
