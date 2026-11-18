@@ -203,7 +203,8 @@ public final class SpellCompositionEngine {
         switch (id) {
             case "projectile", "arc", "chain", "tether" -> result.add(Property.MOVING_DELIVERY);
             case "beam", "wall", "column" -> result.add(Property.LINEAR_DELIVERY);
-            case "wave", "cone", "ring", "pulse", "orbit", "field", "rune" -> result.add(Property.AREA_DELIVERY);
+            case "wave", "cone", "ring", "pulse", "orbit" -> result.add(Property.AREA_DELIVERY);
+            case "field", "rune" -> { result.add(Property.AREA_DELIVERY); result.add(Property.PERSISTENT); }
             case "barrier" -> result.add(Property.DEFENSIVE_DELIVERY);
             case "fire", "magma", "sun" -> result.add(Property.HEAT);
             case "water" -> result.add(Property.FLUID);
@@ -231,8 +232,7 @@ public final class SpellCompositionEngine {
             case "invisibility", "disguise", "decoy" -> result.add(Property.CONCEALMENT);
             case "explosion", "fatigue", "silence", "repulsion", "poison" -> result.add(Property.CONTROL);
             case "summoning", "echo", "alarm", "memory" -> result.add(Property.REPEATING);
-            case "field", "waypoint", "storage" -> result.add(Property.PERSISTENT);
-            case "rune" -> { result.add(Property.AREA_DELIVERY); result.add(Property.PERSISTENT); }
+            case "waypoint", "storage" -> result.add(Property.PERSISTENT);
             default -> { }
         }
         if (id.equals("projectile") || id.equals("beam") || id.equals("arc")) result.add(Property.PROJECTILE_IMPACT);
