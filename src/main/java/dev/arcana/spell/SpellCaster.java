@@ -83,52 +83,108 @@ public final class SpellCaster {
         if (self) result.add(player);
 
         double range = parts.contains("beam") ? 24.0 : parts.contains("projectile") ? 18.0 : 12.0;
-        double radius = parts.contains("field") || parts.contains("barrier") ? 5.0
-            : parts.contains("wave") ? 4.0 : 2.5;
         Vec3d look = player.getRotationVec(1.0F).normalize();
         Vec3d origin = player.getEyePos();
-        // Area spells resolve around the aimed endpoint; wave spells cover a
-        // forward corridor, so Projectile + Area + Wave can be composed.
         Vec3d impact = origin.add(look.multiply(range));
-        Box search = player.getBoundingBox().expand(range, 6.0, range);
+        Box search = player.getBoundingBox().expand(range, 8.0, range);
         List<LivingEntity> candidates = player.getWorld().getEntitiesByClass(
             LivingEntity.class, search, entity -> entity != player && entity.isAlive());
 
         if (!self) {
-            if (area) {
-                candidates.stream()
-                    .filter(entity -> entity.getBoundingBox().getCenter().squaredDistanceTo(impact) <= radius * radius)
-                    .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(impact)))
-                    .limit(multiple ? 5 : 1)
-                    .forEach(result::add);
-            } else if (parts.contains("wave")) {
-                candidates.stream()
-                    .filter(entity -> {
-                        Vec3d offset = entity.getBoundingBox().getCenter().subtract(origin);
-                        double distance = offset.length();
-                        if (distance <= 0.0 || distance > range) return false;
-                        double forward = offset.dotProduct(look);
-                        Vec3d lateral = offset.subtract(look.multiply(forward));
-                        return forward > 0.0 && lateral.lengthSquared() <= radius * radius;
-                    })
-                    .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
-                    .limit(multiple ? 5 : 1)
-                    .forEach(result::add);
+            if (parts.contains("chain")) {
+                LivingEntity current = null;
+                Vec3d from = origin;
+                for (int i = 0; i < (multiple ? 5 : 1); i++) {
+                    final Vec3d chainOrigin = from;
+                    LivingEntity next = candidates.stream()
+                        .filter(entity -> !result.contains(entity))
+                        .filter(entity -> entity.getBoundingBox().getCenter().squaredDistanceTo(chainOrigin) <= 8.0 * 8.0)
+                        .min(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(chainOrigin)))
+                        .orElse(null);
+                    if (next == null) break;
+                    result.add(next);
+                    current = next;
+                    from = current.getBoundingBox().getCenter();
+                }
             } else {
                 candidates.stream()
-                    .filter(entity -> {
-                        Vec3d to = entity.getBoundingBox().getCenter().subtract(origin);
-                        double distance = to.length();
-                        return distance <= range && distance > 0.0
-                            && look.dotProduct(to.normalize()) >= (parts.contains("beam") ? 0.94 : 0.82);
-                    })
+                    .filter(entity -> matchesDeliveryShape(entity, parts, origin, impact, look, range))
                     .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
                     .limit(multiple ? 5 : 1)
                     .forEach(result::add);
             }
         }
-        if (parts.contains("barrier") && result.isEmpty()) result.add(player);
+
+        if ((parts.contains("barrier") || parts.contains("pulse") || parts.contains("orbit")) && result.isEmpty()) {
+            result.add(player);
+        }
         return result;
+    }
+
+    private static boolean matchesDeliveryShape(LivingEntity entity, List<String> parts,
+                                                 Vec3d origin, Vec3d impact, Vec3d look, double range) {
+        Vec3d point = entity.getBoundingBox().getCenter();
+        Vec3d offset = point.subtract(origin);
+        double distance = offset.length();
+        if (distance <= 0.0 || distance > range) return false;
+
+        if (parts.contains("pulse") || parts.contains("orbit")) {
+            double radius = parts.contains("orbit") ? 5.0 : 6.0;
+            double distanceFromCaster = point.distanceTo(origin);
+            return distanceFromCaster <= radius;
+        }
+
+        if (parts.contains("ring")) {
+            double radius = point.distanceTo(impact);
+            return radius >= 2.0 && radius <= 4.5;
+        }
+
+        if (parts.contains("rune") || parts.contains("field") || parts.contains("area")) {
+            double radius = parts.contains("rune") ? 3.0 : 2.5;
+            return point.squaredDistanceTo(impact) <= radius * radius;
+        }
+
+        if (parts.contains("column")) {
+            double horizontal = Math.sqrt(
+                Math.pow(point.x - impact.x, 2) + Math.pow(point.z - impact.z, 2));
+            return horizontal <= 2.5 && Math.abs(point.y - impact.y) <= 6.0;
+        }
+
+        if (parts.contains("wall")) {
+            Vec3d fromImpact = point.subtract(impact);
+            double depth = Math.abs(fromImpact.dotProduct(look));
+            Vec3d lateral = fromImpact.subtract(look.multiply(fromImpact.dotProduct(look)));
+            return depth <= 2.0 && lateral.horizontalLength() <= 5.0
+                && Math.abs(fromImpact.y) <= 3.0;
+        }
+
+        double forward = offset.dotProduct(look);
+        Vec3d lateral = offset.subtract(look.multiply(forward));
+        if (parts.contains("cone")) {
+            return forward > 0.0 && forward <= range
+                && lateral.length() <= Math.max(1.0, forward * 0.55);
+        }
+
+        if (parts.contains("arc")) {
+            double t = Math.max(0.0, Math.min(1.0, forward / range));
+            Vec3d arcPoint = origin.add(look.multiply(forward))
+                .add(0.0, Math.sin(t * Math.PI) * 2.5, 0.0);
+            return forward > 0.0 && lateral.length() <= 2.5
+                && point.squaredDistanceTo(arcPoint) <= 3.5 * 3.5;
+        }
+
+        if (parts.contains("tether")) {
+            return forward > 0.0 && forward <= range && lateral.length() <= 1.75;
+        }
+
+        if (parts.contains("wave")) {
+            return forward > 0.0 && forward <= range && lateral.length() <= 4.0;
+        }
+
+        // Projectile and beam use a narrow line; the default direct delivery
+        // uses a slightly wider line so ordinary spells remain forgiving.
+        double width = parts.contains("beam") ? 0.9 : parts.contains("projectile") ? 1.4 : 2.5;
+        return forward > 0.0 && forward <= range && lateral.length() <= width;
     }
 
     private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts) {
