@@ -207,7 +207,8 @@ public final class SpellCompositionEngine {
             case "barrier" -> result.add(Property.DEFENSIVE_DELIVERY);
             case "fire", "magma", "sun" -> result.add(Property.HEAT);
             case "water" -> result.add(Property.FLUID);
-            case "wind", "smoke" -> result.add(Property.AIRFLOW);
+            case "wind" -> result.add(Property.AIRFLOW);
+            case "smoke" -> { result.add(Property.AIRFLOW); result.add(Property.CONCEALMENT); }
             case "earth", "sand" -> result.add(Property.EARTH);
             case "lightning" -> result.add(Property.ELECTRICITY);
             case "ice" -> result.add(Property.COLD);
@@ -227,10 +228,11 @@ public final class SpellCompositionEngine {
                 result.add(Property.PROTECTION);
             case "healing", "regeneration", "cleanse", "purify", "repair" ->
                 result.add(Property.RESTORATION);
-            case "invisibility", "disguise", "decoy", "smoke" -> result.add(Property.CONCEALMENT);
+            case "invisibility", "disguise", "decoy" -> result.add(Property.CONCEALMENT);
             case "explosion", "fatigue", "silence", "repulsion", "poison" -> result.add(Property.CONTROL);
             case "summoning", "echo", "alarm", "memory" -> result.add(Property.REPEATING);
-            case "rune", "field", "waypoint", "storage" -> result.add(Property.PERSISTENT);
+            case "field", "waypoint", "storage" -> result.add(Property.PERSISTENT);
+            case "rune" -> { result.add(Property.AREA_DELIVERY); result.add(Property.PERSISTENT); }
             default -> { }
         }
         if (id.equals("projectile") || id.equals("beam") || id.equals("arc")) result.add(Property.PROJECTILE_IMPACT);
