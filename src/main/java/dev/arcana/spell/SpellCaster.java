@@ -41,8 +41,9 @@ public final class SpellCaster {
         boolean multiple = parts.contains("multiple_targets");
         boolean single = parts.contains("single_target");
         boolean teleport = parts.contains("teleportation");
+        SpellCompositionEngine.Plan composition = SpellCompositionEngine.compose(parts);
 
-        List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single);
+        List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single, composition);
         if (targets.isEmpty() && !teleport && !parts.contains("summoning")) {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
@@ -60,6 +61,7 @@ public final class SpellCaster {
             if (target.isRemoved()) continue;
             applyElements(player, target, parts, reactions);
             applyEffects(player, target, parts);
+            applyCompositionInteractions(player, target, composition);
             affected++;
         }
 
@@ -85,11 +87,13 @@ public final class SpellCaster {
     }
 
     private static List<LivingEntity> selectTargets(ServerPlayerEntity player, List<String> parts,
-                                                     boolean self, boolean area, boolean multiple, boolean single) {
+                                                     boolean self, boolean area, boolean multiple, boolean single,
+                                                     SpellCompositionEngine.Plan composition) {
         List<LivingEntity> result = new ArrayList<>();
         if (self) result.add(player);
 
-        double range = parts.contains("beam") ? 24.0 : parts.contains("projectile") ? 18.0 : 12.0;
+        double range = (parts.contains("beam") ? 24.0 : parts.contains("projectile") ? 18.0 : 12.0)
+            * composition.rangeMultiplier();
         Vec3d look = player.getRotationVec(1.0F).normalize();
         Vec3d origin = player.getEyePos();
         Vec3d impact = origin.add(look.multiply(range));
@@ -122,7 +126,7 @@ public final class SpellCaster {
                 }
             } else {
                 candidates.stream()
-                    .filter(entity -> matchesDeliveryShape(entity, parts, origin, impact, look, range))
+                    .filter(entity -> matchesDeliveryShape(entity, parts, origin, impact, look, range, composition))
                     .filter(entity -> !parts.contains("ally") || entity.isTeammate(player))
                     .filter(entity -> !parts.contains("hostile") || !entity.isTeammate(player))
                     .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
@@ -151,7 +155,8 @@ public final class SpellCaster {
     }
 
     private static boolean matchesDeliveryShape(LivingEntity entity, List<String> parts,
-                                                 Vec3d origin, Vec3d impact, Vec3d look, double range) {
+                                                 Vec3d origin, Vec3d impact, Vec3d look, double range,
+                                                 SpellCompositionEngine.Plan composition) {
         Vec3d point = entity.getBoundingBox().getCenter();
         Vec3d offset = point.subtract(origin);
         double distance = offset.length();
@@ -198,21 +203,22 @@ public final class SpellCaster {
             double t = Math.max(0.0, Math.min(1.0, forward / range));
             Vec3d arcPoint = origin.add(look.multiply(forward))
                 .add(0.0, Math.sin(t * Math.PI) * 2.5, 0.0);
-            return forward > 0.0 && lateral.length() <= 2.5
-                && point.squaredDistanceTo(arcPoint) <= 3.5 * 3.5;
+            return forward > 0.0 && lateral.length() <= 2.5 * composition.areaMultiplier()
+                && point.squaredDistanceTo(arcPoint) <= Math.pow(3.5 * composition.areaMultiplier(), 2);
         }
 
         if (parts.contains("tether")) {
-            return forward > 0.0 && forward <= range && lateral.length() <= 1.75;
+            return forward > 0.0 && forward <= range && lateral.length() <= 1.75 * composition.areaMultiplier();
         }
 
         if (parts.contains("wave")) {
-            return forward > 0.0 && forward <= range && lateral.length() <= 4.0;
+            return forward > 0.0 && forward <= range && lateral.length() <= 4.0 * composition.areaMultiplier();
         }
 
         // Projectile and beam use a narrow line; the default direct delivery
         // uses a slightly wider line so ordinary spells remain forgiving.
-        double width = parts.contains("beam") ? 0.9 : parts.contains("projectile") ? 1.4 : 2.5;
+        double width = (parts.contains("beam") ? 0.9 : parts.contains("projectile") ? 1.4 : 2.5)
+            * composition.areaMultiplier();
         return forward > 0.0 && forward <= range && lateral.length() <= width;
     }
 
@@ -329,6 +335,33 @@ public final class SpellCaster {
         if (parts.contains("sun")) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 120, 0));
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 100, 0));
+        }
+    }
+
+    /**
+     * Applies emergent interactions calculated from the complete component set.
+     * This is separate from individual component effects so combinations can
+     * alter outcomes without duplicating every base component implementation.
+     */
+    private static void applyCompositionInteractions(ServerPlayerEntity caster, LivingEntity target,
+                                                     SpellCompositionEngine.Plan plan) {
+        if (plan.impactDamageBonus() > 0.0) {
+            target.damage(caster.getDamageSources().indirectMagic(caster, caster),
+                (float) plan.impactDamageBonus());
+        }
+        if (plan.stunTicks() > 0) {
+            // Minecraft has no universal stun status; use bounded movement
+            // and action interruption effects as a practical approximation.
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                plan.stunTicks(), 4));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE,
+                plan.stunTicks(), 2));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS,
+                plan.stunTicks(), 0));
+        }
+        if (plan.slowTicks() > 0 && plan.stunTicks() == 0) {
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                plan.slowTicks(), 2));
         }
     }
 
