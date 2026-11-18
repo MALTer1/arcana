@@ -30,9 +30,9 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         // Ground-mode item transforms lie flat on that surface instead of hovering above it.
         if (!book.isEmpty()) {
             matrices.push();
-            matrices.translate(0.5, 0.575, 0.5);
+            matrices.translate(0.5, 0.565, 0.5);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
-            matrices.scale(0.68F, 0.68F, 0.68F);
+            matrices.scale(0.78F, 0.78F, 0.78F);
             itemRenderer.renderItem(book, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 0);
             matrices.pop();
@@ -40,10 +40,10 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
 
         if (!page.isEmpty()) {
             matrices.push();
-            matrices.translate(0.5, book.isEmpty() ? 0.575 : 0.595, 0.5);
+            matrices.translate(0.5, book.isEmpty() ? 0.565 : 0.582, 0.5);
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
-            matrices.scale(book.isEmpty() ? 0.68F : 0.46F, book.isEmpty() ? 0.68F : 0.46F,
-                book.isEmpty() ? 0.68F : 0.46F);
+            matrices.scale(book.isEmpty() ? 0.78F : 0.52F, book.isEmpty() ? 0.78F : 0.52F,
+                book.isEmpty() ? 0.78F : 0.52F);
             itemRenderer.renderItem(page, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 1);
             matrices.pop();
@@ -52,9 +52,11 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         // The stylus is kept close to the writing surface; the upper model's
         // supported arm reaches over it.
         float time = entity.getWorld().getTime() + tickDelta;
-        float swing = (float) Math.sin(time * 0.12F) * 9.0F;
+        float sweep = (float) Math.sin(time * 0.16F) * 0.16F;
+        float dip = (float) Math.abs(Math.sin(time * 0.16F)) * 0.055F;
+        float swing = (float) Math.sin(time * 0.16F) * 22.0F;
         matrices.push();
-        matrices.translate(0.5, 1.12, 0.70);
+        matrices.translate(0.5 + sweep, 1.12 - dip, 0.70);
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(swing));
         matrices.scale(0.18F, 0.18F, 0.18F);
         itemRenderer.renderItem(new ItemStack(Items.END_ROD), ModelTransformationMode.GROUND,
