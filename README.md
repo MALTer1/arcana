@@ -29,7 +29,7 @@ This is still a prototype, not a finished gameplay system. Some registered conce
 - `water_walking`, `climb`, and `float` use movement/status-effect approximations.
 - `duplication` is not yet a true object-copy system.
 - Block transmutation is intentionally restricted to a small supported recipe list; it does not rewrite arbitrary blocks or block entities.
-- Summoning currently creates a basic Allay helper; ownership, commands, and a dedicated lifetime system remain future work.
+- Summoning creates a named temporary Allay helper with a 60-second loaded-world lifetime; follow/command behavior and lifetime persistence across chunk unloads still need work.
 
 The composition engine is deterministic and rule-based. Its interaction library is expandable, but it does not yet infer every possible combination or every world situation automatically.
 
