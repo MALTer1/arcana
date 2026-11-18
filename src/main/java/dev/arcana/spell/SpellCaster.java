@@ -441,7 +441,25 @@ public final class SpellCaster {
 
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                      double durationScale) {
-        if (parts.contains("healing")) { target.heal(6.0F); target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(100, durationScale), 0)); }
+        if (parts.contains("healing") && parts.contains("explosion")) {
+            if (target == caster || target.isTeammate(caster)) {
+                target.heal(8.0F);
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION,
+                    scaledTicks(140, durationScale), 1));
+                Vec3d outward = target.getPos().subtract(caster.getPos()).normalize().multiply(0.35);
+                target.addVelocity(outward.x, 0.12, outward.z);
+                target.velocityModified = true;
+            } else {
+                target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F);
+                Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.4);
+                target.addVelocity(away.x, 0.55, away.z);
+                target.velocityModified = true;
+            }
+        } else if (parts.contains("healing")) {
+            target.heal(6.0F);
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION,
+                scaledTicks(100, durationScale), 0));
+        }
         if (parts.contains("enhancement")) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, scaledTicks(240, durationScale), 1));
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, scaledTicks(240, durationScale), 0));
@@ -450,7 +468,7 @@ public final class SpellCaster {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(200, durationScale), parts.contains("barrier_reinforcement") ? 2 : 1));
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, scaledTicks(200, durationScale), 1));
         }
-        if (parts.contains("explosion")) {
+        if (parts.contains("explosion") && !parts.contains("healing")) {
             target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F);
             Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.4);
             target.addVelocity(away.x, 0.55, away.z); target.velocityModified = true;
