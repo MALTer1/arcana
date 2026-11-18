@@ -74,9 +74,18 @@ public final class SpellIntelligence {
             warnings.add("Elemental reaction: " + reaction.name() + " — " + reaction.description());
         }
 
+        SpellCompositionEngine.Plan composition = SpellCompositionEngine.compose(
+            components.stream().map(SpellComponent::id).toList());
+        for (String interaction : composition.interactions()) {
+            warnings.add("Composition: " + interaction + ".");
+        }
+        for (String explanation : composition.explanations()) {
+            warnings.add("Spell reasoning: " + explanation);
+        }
+
         checkNameIntent(spellName, selected, warnings);
 
-        String summary = buildSummary(components, reactions);
+        String summary = buildSummary(components, reactions, composition);
         return new Analysis(summary, List.copyOf(issues), List.copyOf(warnings),
             Map.copyOf(counts), reactions);
     }
@@ -109,7 +118,8 @@ public final class SpellIntelligence {
     }
 
     private static String buildSummary(List<SpellComponent> components,
-                                       List<ElementalReactionEngine.Reaction> reactions) {
+                                       List<ElementalReactionEngine.Reaction> reactions,
+                                       SpellCompositionEngine.Plan composition) {
         Map<ComponentCategory, List<String>> grouped = new LinkedHashMap<>();
         for (SpellComponent component : components) {
             grouped.computeIfAbsent(component.category(), ignored -> new ArrayList<>())
@@ -134,6 +144,10 @@ public final class SpellIntelligence {
         if (!elements.isEmpty()) result.append(" with ").append(String.join(" + ", elements));
         if (!effects.isBlank()) result.append("; effects: ").append(effects);
         result.append(".");
+        if (!composition.interactions().isEmpty()) {
+            result.append(" Combined behavior: ")
+                .append(String.join(", ", composition.interactions())).append(".");
+        }
         return result.toString();
     }
 
