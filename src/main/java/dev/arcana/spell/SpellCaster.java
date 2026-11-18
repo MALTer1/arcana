@@ -111,7 +111,7 @@ public final class SpellCaster {
             LivingEntity.class, search, entity -> entity != player && entity.isAlive());
 
         if (parts.contains("self_and_nearby")) {
-            result.add(player);
+            if (!result.contains(player)) result.add(player);
             candidates.stream().filter(entity -> entity.isTeammate(player))
                 .filter(entity -> entity.squaredDistanceTo(player) <= 8.0 * 8.0)
                 .limit(4).forEach(result::add);
