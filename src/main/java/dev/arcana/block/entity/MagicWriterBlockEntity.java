@@ -39,7 +39,7 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
-        ItemStack result = net.minecraft.inventory Inventories.splitStack(items, slot, amount);
+        ItemStack result = net.minecraft.inventory.Inventories.splitStack(items, slot, amount);
         if (!result.isEmpty()) markDirty();
         return result;
     }
