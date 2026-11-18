@@ -31,6 +31,7 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         if (!book.isEmpty()) {
             matrices.push();
             matrices.translate(0.5, 0.565, 0.5);
+            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90.0F));
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
             matrices.scale(0.78F, 0.78F, 0.78F);
             itemRenderer.renderItem(book, ModelTransformationMode.GROUND, light, overlay,
