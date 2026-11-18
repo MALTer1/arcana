@@ -9,6 +9,7 @@ import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.Inventories;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryWrapper;
@@ -39,14 +40,14 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
 
     @Override
     public ItemStack removeStack(int slot, int amount) {
-        ItemStack result = net.minecraft.inventory.Inventories.splitStack(items, slot, amount);
+        ItemStack result = Inventories.splitStack(items, slot, amount);
         if (!result.isEmpty()) markDirty();
         return result;
     }
 
     @Override
     public ItemStack removeStack(int slot) {
-        ItemStack result = net.minecraft.inventory Inventories.removeStack(items, slot);
+        ItemStack result = Inventories.removeStack(items, slot);
         if (!result.isEmpty()) markDirty();
         return result;
     }
@@ -104,12 +105,12 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
     @Override
     protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.writeNbt(nbt, registries);
-        net.minecraft.inventory.Inventories.writeNbt(nbt, items, registries);
+        Inventories.writeNbt(nbt, items, registries);
     }
 
     @Override
     protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
         super.readNbt(nbt, registries);
-        net.minecraft.inventory.Inventories.readNbt(nbt, items, registries);
+        Inventories.readNbt(nbt, items, registries);
     }
 }
