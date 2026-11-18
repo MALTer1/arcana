@@ -549,7 +549,11 @@ public final class SpellCaster {
         if (helper == null) return false;
         Vec3d spawn = player.getPos().add(player.getRotationVec(1.0F).multiply(2.0));
         helper.refreshPositionAndAngles(spawn.x, spawn.y, spawn.z, player.getYaw(), 0.0F);
-        return player.getWorld().spawnEntity(helper);
+        helper.setCustomName(net.minecraft.text.Text.literal(player.getName().getString() + "'s Arcana Helper"));
+        helper.setCustomNameVisible(true);
+        boolean spawned = player.getWorld().spawnEntity(helper);
+        if (spawned) TemporarySummonStore.track(helper, 20 * 60);
+        return spawned;
     }
 
     private static void teleportForward(ServerPlayerEntity player, double distance) {
