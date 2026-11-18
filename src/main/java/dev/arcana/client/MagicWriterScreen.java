@@ -1,6 +1,9 @@
 package dev.arcana.client;
 
 import dev.arcana.network.MagicWriterNetwork;
+import dev.arcana.item.ArcanaItems;
+import dev.arcana.spell.SpellBookStore;
+import dev.arcana.spell.SpellPageStore;
 import dev.arcana.screen.MagicWriterScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
@@ -9,6 +12,7 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.slot.Slot;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -67,6 +71,14 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         spellName = new TextFieldWidget(textRenderer, x + 274, y + 155, 104, 18, Text.literal("Spell name"));
         spellName.setMaxLength(32);
         spellName.setPlaceholder(Text.literal("Spell name"));
+        ItemStack insertedPage = handler.getWriterInventory().getStack(1);
+        SpellBookStore.StoredSpell existingPage = insertedPage.isOf(ArcanaItems.SPELL_PAGE)
+            ? SpellPageStore.get(insertedPage) : null;
+        if (existingPage != null) {
+            spellName.setText(existingPage.name);
+            selected.addAll(existingPage.components);
+            refreshButtons();
+        }
         addDrawableChild(spellName);
         addDrawableChild(ButtonWidget.builder(Text.literal("✦ ENGRAVE"), b -> engrave())
             .dimensions(x + 274, y + 180, 104, 18).build());
@@ -140,6 +152,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.fill(x + backgroundWidth - 5, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFFE1B76C);
 
         context.fill(x + 128, y + 30, x + 378, y + 32, 0xFFB58B58);
+        context.drawText(textRenderer, "OUTPUT", x + 86, y + 74, 0xFFFFD98D, false);
         context.fill(x + 102, y + 152, x + 264, y + 154, 0xFFB58B58);
 
         int totalRows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;

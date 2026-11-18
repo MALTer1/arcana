@@ -1,6 +1,8 @@
 package dev.arcana.client;
 
 import dev.arcana.item.GrimoireTier;
+import dev.arcana.item.ArcanaItems;
+import dev.arcana.spell.SpellPageStore;
 import dev.arcana.network.GrimoireNetwork;
 import dev.arcana.spell.GrimoireStore;
 import net.fabricmc.api.ClientModInitializer;
@@ -36,6 +38,15 @@ public final class ArcanaClient implements ClientModInitializer {
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
+            if (stack.isOf(ArcanaItems.SPELL_PAGE)) {
+                var page = SpellPageStore.get(stack);
+                if (page != null) {
+                    lines.add(Text.literal("§6Editable Spell Page"));
+                    lines.add(Text.literal("§7Components: " + String.join(", ", page.components)));
+                    lines.add(Text.literal("§8Insert into a Magic Writer to edit."));
+                }
+                return;
+            }
             GrimoireTier tier = GrimoireTier.fromItem(stack.getItem());
             if (tier == null) return;
             var spells = GrimoireStore.get(stack, tier);
