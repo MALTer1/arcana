@@ -21,7 +21,11 @@ public final class SpellCompositionEngine {
         HEAT, FLUID, AIRFLOW, EARTH, ELECTRICITY, COLD, RADIANCE, DARKNESS,
         NATURE, METALLIC, CRYSTALLINE, VIBRATION, GRAVITY, TEMPORAL, SPATIAL,
         RESTRAINT, MOBILITY, PROTECTION, RESTORATION, CONCEALMENT, CONTROL,
-        PROJECTILE_IMPACT, REPEATING, PERSISTENT
+        PROJECTILE_IMPACT, REPEATING, PERSISTENT, TARGET_SELECTION, SELF_TARGETING,
+        MULTI_TARGETING, ALLY_SELECTION, HOSTILE_SELECTION, BLOCK_TARGETING, GROUND_TARGETING,
+        PROJECTILE_TARGETING, VISION, AQUATIC, FALL_CONTROL, SUMMONING, ENHANCEMENT,
+        TELEPORTATION, NAVIGATION, ENVIRONMENTAL, AGRICULTURE, MATERIAL_CHANGE,
+        INVENTORY, LUCK, MAGNETIC, DECOY, ALARMING
     }
 
     public record Plan(
@@ -201,11 +205,17 @@ public final class SpellCompositionEngine {
     private static Set<Property> propertiesFor(String id) {
         Set<Property> result = new LinkedHashSet<>();
         switch (id) {
-            case "projectile", "arc", "chain", "tether" -> result.add(Property.MOVING_DELIVERY);
-            case "beam", "wall", "column" -> result.add(Property.LINEAR_DELIVERY);
+            // Delivery and shape.
+            case "projectile", "arc", "chain", "tether" -> {
+                result.add(Property.MOVING_DELIVERY); result.add(Property.PROJECTILE_IMPACT);
+            }
+            case "beam" -> { result.add(Property.LINEAR_DELIVERY); result.add(Property.PROJECTILE_IMPACT); }
+            case "wall", "column" -> result.add(Property.LINEAR_DELIVERY);
             case "wave", "cone", "ring", "pulse", "orbit" -> result.add(Property.AREA_DELIVERY);
             case "field", "rune" -> { result.add(Property.AREA_DELIVERY); result.add(Property.PERSISTENT); }
             case "barrier" -> result.add(Property.DEFENSIVE_DELIVERY);
+
+            // Elements.
             case "fire", "magma", "sun" -> result.add(Property.HEAT);
             case "water" -> result.add(Property.FLUID);
             case "wind" -> result.add(Property.AIRFLOW);
@@ -221,21 +231,58 @@ public final class SpellCompositionEngine {
             case "sound" -> result.add(Property.VIBRATION);
             case "gravity" -> result.add(Property.GRAVITY);
             case "time" -> result.add(Property.TEMPORAL);
-            case "space", "teleportation", "portal" -> result.add(Property.SPATIAL);
-            case "binding", "anchor" -> result.add(Property.RESTRAINT);
-            case "dash", "levitation", "float", "water_walking", "climb", "jump", "sprint", "glide" ->
-                result.add(Property.MOBILITY);
-            case "ward", "resistance", "absorption", "reflection", "barrier_reinforcement" ->
-                result.add(Property.PROTECTION);
+            case "space" -> result.add(Property.SPATIAL);
+            case "poison" -> result.add(Property.CONTROL);
+            case "moon" -> { result.add(Property.DARKNESS); result.add(Property.TEMPORAL); }
+
+            // Target selectors.
+            case "single_target", "multiple_targets", "self", "area", "self_and_nearby",
+                 "ally", "hostile", "ground", "block", "projectile_target" -> {
+                result.add(Property.TARGET_SELECTION);
+                if (id.equals("self")) result.add(Property.SELF_TARGETING);
+                if (id.equals("multiple_targets") || id.equals("self_and_nearby") || id.equals("area"))
+                    result.add(Property.MULTI_TARGETING);
+                if (id.equals("ally") || id.equals("self_and_nearby")) result.add(Property.ALLY_SELECTION);
+                if (id.equals("hostile")) result.add(Property.HOSTILE_SELECTION);
+                if (id.equals("ground")) result.add(Property.GROUND_TARGETING);
+                if (id.equals("block")) result.add(Property.BLOCK_TARGETING);
+                if (id.equals("projectile_target")) result.add(Property.PROJECTILE_TARGETING);
+            }
+
+            // Effects and capabilities.
+            case "explosion", "repulsion" -> result.add(Property.CONTROL);
             case "healing", "regeneration", "cleanse", "purify", "repair" ->
                 result.add(Property.RESTORATION);
+            case "summoning" -> { result.add(Property.SUMMONING); result.add(Property.REPEATING); }
+            case "enhancement", "haste", "stamina", "focus", "fortune" ->
+                result.add(Property.ENHANCEMENT);
+            case "teleportation", "portal", "recall" -> {
+                result.add(Property.SPATIAL); result.add(Property.TELEPORTATION);
+            }
+            case "binding", "anchor" -> result.add(Property.RESTRAINT);
+            case "night_vision", "illumination", "reveal", "dimension_sense" ->
+                result.add(Property.VISION);
+            case "water_breathing", "water_walking" -> result.add(Property.AQUATIC);
+            case "slow_falling", "float", "glide" -> result.add(Property.FALL_CONTROL);
             case "invisibility", "disguise", "decoy" -> result.add(Property.CONCEALMENT);
-            case "explosion", "fatigue", "silence", "repulsion", "poison" -> result.add(Property.CONTROL);
-            case "summoning", "echo", "alarm", "memory" -> result.add(Property.REPEATING);
-            case "waypoint", "storage" -> result.add(Property.PERSISTENT);
+            case "levitation", "dash", "climb", "jump", "sprint" -> result.add(Property.MOBILITY);
+            case "fatigue", "silence" -> result.add(Property.CONTROL);
+            case "echo", "memory", "alarm" -> result.add(Property.REPEATING);
+            case "tracking", "waypoint" -> { result.add(Property.NAVIGATION); result.add(Property.PERSISTENT); }
+            case "ward", "resistance", "absorption", "reflection", "barrier_reinforcement" ->
+                result.add(Property.PROTECTION);
+            case "temperature", "weather" -> result.add(Property.ENVIRONMENTAL);
+            case "growth", "harvest" -> result.add(Property.AGRICULTURE);
+            case "magnetism" -> result.add(Property.MAGNETIC);
+            case "storage" -> { result.add(Property.INVENTORY); result.add(Property.PERSISTENT); }
+            case "transmutation" -> result.add(Property.MATERIAL_CHANGE);
+            case "duplication" -> result.add(Property.MATERIAL_CHANGE);
             default -> { }
         }
-        if (id.equals("projectile") || id.equals("beam") || id.equals("arc")) result.add(Property.PROJECTILE_IMPACT);
+        if (id.equals("rune") || id.equals("field") || id.equals("waypoint") || id.equals("storage"))
+            result.add(Property.PERSISTENT);
+        if (id.equals("ward") || id.equals("barrier") || id.equals("barrier_reinforcement"))
+            result.add(Property.PROTECTION);
         return result;
     }
 
