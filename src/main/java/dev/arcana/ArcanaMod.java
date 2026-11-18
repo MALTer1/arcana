@@ -5,6 +5,8 @@ import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.network.GrimoireNetwork;
+import dev.arcana.network.MagicWriterNetwork;
+import dev.arcana.screen.MagicWriterScreenHandlers;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.GrimoireStore;
@@ -35,6 +37,8 @@ public final class ArcanaMod implements ModInitializer {
         GrimoireCommands.register();
         ArcanaItems.register();
         ArcanaBlocks.register();
+        MagicWriterScreenHandlers.register();
+        MagicWriterNetwork.register();
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ArcanaResource.tick(server);
