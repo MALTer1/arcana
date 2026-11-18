@@ -72,6 +72,7 @@ public final class MagicWriterNetwork {
             draft.validationIssues().forEach(issue -> player.sendMessage(Text.literal("• " + issue), false));
             return;
         }
+        SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(name, draft.selectedIds());
 
         ItemStack book = writer.getStack(0);
         ItemStack input = writer.getStack(1);
@@ -114,6 +115,8 @@ public final class MagicWriterNetwork {
             writer.consumeInput();
             writer.markDirty();
             player.sendMessage(Text.literal("Engraved '" + name + "' onto Magic Paper."), false);
+            analysis.warnings().forEach(warning ->
+                player.sendMessage(Text.literal("Spell Intelligence: " + warning), false));
             return;
         }
 
@@ -134,6 +137,8 @@ public final class MagicWriterNetwork {
         writer.markDirty();
         player.getInventory().markDirty();
         player.sendMessage(Text.literal("Engraved '" + name + "' into this " + tier.displayName() + "."), false);
+        analysis.warnings().forEach(warning ->
+            player.sendMessage(Text.literal("Spell Intelligence: " + warning), false));
     }
 
     private static boolean canFitInMainInventory(ItemStack stack, PlayerInventory inventory) {
