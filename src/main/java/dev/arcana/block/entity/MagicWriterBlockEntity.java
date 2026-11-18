@@ -7,6 +7,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.*;
 import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.entity.player.*;
 import net.minecraft.inventory.*;
 import net.minecraft.item.ItemStack;
@@ -34,7 +35,7 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
  public GrimoireTier getInsertedTier(){ItemStack s=items.get(0);return s.isEmpty()?null:GrimoireTier.fromItem(s.getItem());}
  public boolean consumeInput(){ItemStack s=items.get(1);if(s.isEmpty())return false;s.decrement(1);markDirty();return true;}
  public void clear(){items.clear();markDirty();}
- public void markDirty(){super.markDirty();if(world!=null&&!world.isClient)world.updateListeners(pos,getCachedState(),getCachedState(),Block.NOTIFY_LISTENERS);}
+ public void markDirty(){super.markDirty();if(world instanceof ServerWorld serverWorld)serverWorld.getChunkManager().markForUpdate(pos);}
  public boolean canPlayerUse(PlayerEntity p){return !isRemoved()&&p.squaredDistanceTo(pos.getX()+.5,pos.getY()+.5,pos.getZ()+.5)<=64;}
  public Text getDisplayName(){return Text.translatable("container.arcana.magic_writer");}
  public ScreenHandler createMenu(int id,PlayerInventory inv,PlayerEntity p){return new MagicWriterScreenHandler(id,inv,this,ScreenHandlerContext.create(world,pos));}
