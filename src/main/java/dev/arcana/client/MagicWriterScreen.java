@@ -140,7 +140,6 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     }
 
     @Override
-    @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
         context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xFF100D18);
         context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFF59402E);
