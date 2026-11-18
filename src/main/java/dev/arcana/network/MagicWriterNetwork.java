@@ -78,6 +78,7 @@ public final class MagicWriterNetwork {
             player.sendMessage(Text.literal("The Grimoire is full or cannot hold this spell."), false); return;
         }
         writer.consumePaper();
+        writer.markDirty();
         player.getInventory().markDirty();
         player.sendMessage(Text.literal("Engraved '" + name + "' into this " + tier.displayName() + "."), false);
     }
