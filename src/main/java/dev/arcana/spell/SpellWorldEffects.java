@@ -5,6 +5,7 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
@@ -51,6 +52,9 @@ public final class SpellWorldEffects {
         }
         if (components.contains("transmutation")) {
             changed += transmuteBlock(world, center, components);
+        }
+        if (components.contains("projectile_target")) {
+            changed += deflectProjectiles(world, caster);
         }
         return changed;
     }
@@ -166,6 +170,29 @@ public final class SpellWorldEffects {
         int oldDamage = stack.getDamage();
         stack.setDamage(Math.max(0, oldDamage - Math.max(1, stack.getMaxDamage() / 4)));
         return stack.getDamage() < oldDamage ? 1 : 0;
+    }
+
+    /**
+     * Intercepts incoming moving projectiles in a short forward cone. Deflection
+     * reverses their velocity instead of deleting them, so the interaction is
+     * visible and preserves the projectile's own behavior.
+     */
+    private static int deflectProjectiles(ServerWorld world, ServerPlayerEntity caster) {
+        Vec3d look = caster.getRotationVec(1.0F).normalize();
+        Box area = caster.getBoundingBox().expand(12.0);
+        var projectiles = world.getEntitiesByClass(ProjectileEntity.class, area, entity -> entity.isAlive());
+        int deflected = 0;
+        for (ProjectileEntity projectile : projectiles) {
+            Vec3d offset = projectile.getPos().subtract(caster.getEyePos());
+            double forward = offset.dotProduct(look);
+            if (forward < 0.0 || forward > 12.0) continue;
+            Vec3d lateral = offset.subtract(look.multiply(forward));
+            if (lateral.lengthSquared() > 3.0 * 3.0) continue;
+            projectile.setVelocity(projectile.getVelocity().multiply(-0.85).add(0.0, 0.12, 0.0));
+            projectile.velocityModified = true;
+            deflected++;
+        }
+        return deflected;
     }
 
     private static int attractItems(ServerWorld world, ServerPlayerEntity caster) {
