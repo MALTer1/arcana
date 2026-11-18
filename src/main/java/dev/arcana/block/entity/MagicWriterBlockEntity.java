@@ -40,7 +40,13 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
  public Text getDisplayName(){return Text.translatable("container.arcana.magic_writer");}
  public ScreenHandler createMenu(int id,PlayerInventory inv,PlayerEntity p){return new MagicWriterScreenHandler(id,inv,this,ScreenHandlerContext.create(world,pos));}
  protected void writeNbt(NbtCompound nbt,RegistryWrapper.WrapperLookup regs){super.writeNbt(nbt,regs);Inventories.writeNbt(nbt,items,regs);}
- protected void readNbt(NbtCompound nbt,RegistryWrapper.WrapperLookup regs){super.readNbt(nbt,regs);Inventories.readNbt(nbt,items,regs);}
+ protected void readNbt(NbtCompound nbt,RegistryWrapper.WrapperLookup regs){
+  super.readNbt(nbt,regs);
+  // Block-entity update packets can contain empty slots. Clear the client-side
+  // inventory first so removed items cannot remain rendered from an older packet.
+  for(int i=0;i<items.size();i++)items.set(i,ItemStack.EMPTY);
+  Inventories.readNbt(nbt,items,regs);
+ }
  public Packet<ClientPlayPacketListener> toUpdatePacket(){return BlockEntityUpdateS2CPacket.create(this);}
  public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup regs){return createNbt(regs);}
 }
