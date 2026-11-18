@@ -14,6 +14,7 @@ import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.spell.SpellDraft;
+import dev.arcana.spell.TemporarySummonStore;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -43,6 +44,7 @@ public final class ArcanaMod implements ModInitializer {
 
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             ArcanaResource.tick(server);
+            TemporarySummonStore.tick();
             if (++hudSyncTicks >= 5) {
                 hudSyncTicks = 0;
                 for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
