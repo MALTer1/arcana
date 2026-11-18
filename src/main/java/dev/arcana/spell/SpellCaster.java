@@ -44,7 +44,7 @@ public final class SpellCaster {
         SpellCompositionEngine.Plan composition = SpellCompositionEngine.compose(parts);
 
         List<LivingEntity> targets = selectTargets(player, parts, self, area, multiple, single, composition);
-        if (targets.isEmpty() && !teleport && !parts.contains("summoning")) {
+        if (targets.isEmpty() && !teleport && !parts.contains("summoning") && !hasWorldUtility(parts)) {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
 
@@ -156,20 +156,23 @@ public final class SpellCaster {
         }
 
         if ((parts.contains("barrier") || parts.contains("pulse") || parts.contains("orbit")
-            || parts.contains("ground") || parts.contains("block") || parts.contains("projectile_target")
             || hasSelfUtility(parts)) && result.isEmpty()) {
             result.add(player);
         }
         return result;
     }
 
+    private static boolean hasWorldUtility(List<String> parts) {
+        return parts.stream().anyMatch(id -> List.of("growth", "harvest", "repair", "magnetism",
+            "repulsion", "storage", "transmutation").contains(id));
+    }
+
     private static boolean hasSelfUtility(List<String> parts) {
         return parts.stream().anyMatch(id -> List.of("illumination", "invisibility", "disguise",
             "levitation", "dash", "haste", "fatigue", "silence", "recall", "anchor", "float",
             "water_walking", "climb", "jump", "sprint", "glide", "temperature", "weather",
-            "growth", "harvest", "repair", "cleanse", "purify", "ward", "reflection",
-            "resistance", "absorption", "regeneration", "stamina", "focus", "fortune",
-            "magnetism", "repulsion", "storage", "transmutation", "duplication", "decoy",
+            "cleanse", "purify", "ward", "reflection",
+            "resistance", "absorption", "regeneration", "stamina", "focus", "fortune", "decoy",
             "barrier_reinforcement", "portal", "dimension_sense", "memory", "alarm",
             "night_vision", "water_breathing", "slow_falling").contains(id));
     }
