@@ -1,19 +1,37 @@
 # Arcana: The Lost Arts
 
-Arcana is an early Minecraft **1.21.1 Fabric** magic-mod prototype.
+Arcana is a Minecraft **1.21.1 Fabric** magic-mod prototype. Its spell system is built around combining components into one interpreted spell rather than executing every component as an unrelated action.
 
 ## Current features
 
 - **102 registered spell components** across Delivery, Element, Target, and Effect categories.
-- Create spells with up to five distinct components; different components from the same category can be combined.
+- Spell drafts support up to five distinct components; different components from the same category can be combined.
 - Magic Writer block and graphical component selector.
 - Magic Paper engraving and spell data stored on the item.
 - Grimoire tiers with stored spell pages.
-- Spell Intelligence checks combinations and explains the intended spell behavior.
-- Elemental reactions, including Steam, Magma, Frozen Water, Sandstorm, Wildfire, Lunar Tide, and Solar Flare.
+- Spell Intelligence validates component selections and explains detected interactions.
+- A whole-spell composition engine maps all registered components to semantic properties and calculates bounded modifiers for travel reach, area, and effect duration.
+- Delivery shapes can combine; target selection supports single/multiple targets, allies, hostile mobs, and projectile interception.
+- Context-aware interactions account for conditions such as wet, burning, and airborne targets.
+- Elemental reactions support specific multi-element reactions and independent overlapping reactions.
+- Implemented world actions include crop growth and harvesting, held-item repair, dropped-item collection/storage, item attraction/repulsion, supported block transmutations, projectile deflection, and safe same-dimension recall.
 - Arcana resource pool with regeneration.
-- Spell casting, target selection, and first-pass behavior for the registered components.
 - Server-side persistence for spellbooks, Grimoire contents, and Arcana.
+
+## Important implementation boundaries
+
+This is still a prototype, not a finished gameplay system. Some registered concepts remain approximations or need dedicated systems:
+
+- `projectile` and related moving delivery shapes currently use server-side targeting simulation; they do not yet create fully animated, independently ticking magical projectiles.
+- `portal` is currently a safe one-shot teleport, not a persistent two-way portal.
+- `weather`, `temperature`, `disguise`, `decoy`, `echo`, `memory`, `alarm`, and `dimension_sense` still need their full world or entity systems.
+- `waypoint`, `tracking`, and `reveal` currently rely on entity highlighting rather than a complete navigation/marking interface.
+- `water_walking`, `climb`, and `float` use movement/status-effect approximations.
+- `duplication` is not yet a true object-copy system.
+- Block transmutation is intentionally restricted to a small supported recipe list; it does not rewrite arbitrary blocks or block entities.
+- Summoning currently creates a basic Allay helper; ownership, commands, and a dedicated lifetime system remain future work.
+
+The composition engine is deterministic and rule-based. Its interaction library is expandable, but it does not yet infer every possible combination or every world situation automatically.
 
 ## Commands
 
@@ -32,7 +50,7 @@ Arcana is an early Minecraft **1.21.1 Fabric** magic-mod prototype.
 - `/arcana grimoire remove <name>` — remove a page and return its data-bearing Spell Page.
 - `/arcana grimoire cast <name>` — cast a spell stored in the held Grimoire.
 
-## Build
+## Build and tests
 
 Requires **JDK 21**. From the repository root, run:
 
@@ -40,7 +58,7 @@ Requires **JDK 21**. From the repository root, run:
 ./gradlew clean build
 ```
 
-The mod JAR is generated in `build/libs/`. GitHub Actions also runs the Gradle build on pushes.
+The build includes JUnit tests for spell composition and elemental reaction rules. The mod JAR is generated in `build/libs/`. GitHub Actions runs the Gradle build and tests on pushes.
 
 ## Compatibility
 
@@ -51,4 +69,4 @@ The mod JAR is generated in `build/libs/`. GitHub Actions also runs the Gradle b
 
 ## Testing status
 
-This is an early prototype. Component behavior is a first pass: some advanced effects currently use simpler status-effect or movement approximations rather than their full intended systems. The project still needs broad in-game testing, including multiplayer, GUI scaling, item persistence, and combinations of spell components. Please report reproducible bugs with your Minecraft log and the spell components involved.
+A successful Gradle build and passing unit tests verify compilation and the tested rule logic; they do **not** prove that every spell behaves correctly in a live Minecraft world. Broad in-game testing is still required, including multiplayer, GUI scaling, item persistence, world interactions, and combinations of components. Please report reproducible bugs with your Minecraft log and the spell components involved.
