@@ -33,12 +33,12 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         new Choice("explosion","Explosion"), new Choice("healing","Healing"),
         new Choice("summoning","Summoning"), new Choice("enhancement","Enhance"),
         new Choice("teleportation","Teleport"), new Choice("binding","Binding"),
-        new Choice("night_vision","Night Vision"), new Choice("water_breathing","Water Breathing"),
+        new Choice("night_vision","Night Vision"), new Choice("water_breathing","Water Breath."),
         new Choice("slow_falling","Slow Falling")
     );
 
-    private static final int COLUMNS = 3;
-    private static final int VISIBLE_ROWS = 7;
+    private static final int COLUMNS = 2;
+    private static final int VISIBLE_ROWS = 8;
     private final Set<String> selected = new LinkedHashSet<>();
     private final List<ButtonWidget> componentButtons = new ArrayList<>();
     private TextFieldWidget spellName;
@@ -46,12 +46,12 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
 
     public MagicWriterScreen(MagicWriterScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
-        backgroundWidth = 390;
-        backgroundHeight = 236;
-        playerInventoryTitleX = 16;
-        playerInventoryTitleY = 145;
-        titleX = 14;
-        titleY = 10;
+        backgroundWidth = 360;
+        backgroundHeight = 260;
+        playerInventoryTitleX = 12;
+        playerInventoryTitleY = 146;
+        titleX = 12;
+        titleY = 8;
     }
 
     @Override
@@ -60,17 +60,19 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         componentButtons.clear();
         int rows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
         scrollRow = Math.max(0, Math.min(scrollRow, Math.max(0, rows - VISIBLE_ROWS)));
-        for (int i = 0; i < CHOICES.size(); i++) {
-            Choice choice = CHOICES.get(i);
+
+        for (Choice choice : CHOICES) {
             ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> toggle(choice))
-                .dimensions(x + 130, y + 34, 80, 14).build();
+                .dimensions(x + 190, y + 36, 76, 14).build();
             componentButtons.add(button);
             addDrawableChild(button);
         }
         positionComponentButtons();
-        spellName = new TextFieldWidget(textRenderer, x + 274, y + 155, 104, 18, Text.literal("Spell name"));
+
+        spellName = new TextFieldWidget(textRenderer, x + 192, y + 188, 150, 18, Text.literal("Spell name"));
         spellName.setMaxLength(32);
         spellName.setPlaceholder(Text.literal("Spell name"));
+
         ItemStack insertedPage = handler.getWriterInventory().getStack(1);
         SpellBookStore.StoredSpell existingPage = insertedPage.isOf(ArcanaItems.SPELL_PAGE)
             ? SpellPageStore.get(insertedPage) : null;
@@ -79,13 +81,14 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             selected.addAll(existingPage.components);
             refreshButtons();
         }
+
         addDrawableChild(spellName);
         addDrawableChild(ButtonWidget.builder(Text.literal("✦ ENGRAVE"), b -> engrave())
-            .dimensions(x + 274, y + 180, 104, 18).build());
+            .dimensions(x + 192, y + 211, 150, 17).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("CLEAR"), b -> {
             selected.clear();
             refreshButtons();
-        }).dimensions(x + 274, y + 203, 104, 16).build());
+        }).dimensions(x + 192, y + 232, 150, 16).build());
     }
 
     private void positionComponentButtons() {
@@ -93,14 +96,14 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             int col = i % COLUMNS;
             int row = i / COLUMNS - scrollRow;
             ButtonWidget button = componentButtons.get(i);
-            button.setPosition(x + 130 + col * 86, y + 34 + row * 15);
+            button.setPosition(x + 190 + col * 80, y + 36 + row * 14);
             button.visible = row >= 0 && row < VISIBLE_ROWS;
             button.active = button.visible;
         }
     }
 
     private Text buttonText(Choice choice) {
-        return Text.literal((selected.contains(choice.id()) ? "✦ " : "＋ ") + choice.label());
+        return Text.literal((selected.contains(choice.id()) ? "✦ " : "+ ") + choice.label());
     }
 
     private void toggle(Choice choice) {
@@ -124,7 +127,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        if (mouseX >= x + 124 && mouseX <= x + 382 && mouseY >= y + 18 && mouseY <= y + 143) {
+        if (mouseX >= x + 184 && mouseX <= x + 352 && mouseY >= y + 22 && mouseY <= y + 154) {
             if (verticalAmount != 0) scrollComponents(verticalAmount < 0 ? 1 : -1);
             return true;
         }
@@ -138,29 +141,32 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
 
     @Override
     protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+        // Main frame
         context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xFF100D18);
         context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFF59402E);
         context.fill(x + 6, y + 6, x + backgroundWidth - 6, y + backgroundHeight - 6, 0xFF211A2A);
-        context.fill(x + 10, y + 18, x + 120, y + 139, 0xFF302438);
-        context.fill(x + 124, y + 18, x + 382, y + 143, 0xFF35283D);
-        context.fill(x + 10, y + 142, x + 190, y + 232, 0xFF2B2133);
-        context.fill(x + 274, y + 148, x + 380, y + 228, 0xFF241B30);
 
-        context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + 5, 0xFFE1B76C);
-        context.fill(x + 3, y + backgroundHeight - 5, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFFE1B76C);
-        context.fill(x + 3, y + 3, x + 5, y + backgroundHeight - 3, 0xFFE1B76C);
-        context.fill(x + backgroundWidth - 5, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFFE1B76C);
+        // Separate, non-overlapping work areas
+        context.fill(x + 10, y + 22, x + 178, y + 140, 0xFF302438);
+        context.fill(x + 184, y + 22, x + 350, y + 154, 0xFF35283D);
+        context.fill(x + 10, y + 154, x + 178, y + 246, 0xFF2B2133);
+        context.fill(x + 184, y + 160, x + 350, y + 250, 0xFF241B30);
 
-        context.fill(x + 128, y + 30, x + 378, y + 32, 0xFFB58B58);
-        context.drawText(textRenderer, "OUTPUT", x + 86, y + 74, 0xFFFFD98D, false);
-        context.fill(x + 14, y + 152, x + 184, y + 154, 0xFFB58B58);
+        // Gold frame and panel dividers
+        context.fill(x + 3, y + 3, x + 357, y + 5, 0xFFE1B76C);
+        context.fill(x + 3, y + 255, x + 357, y + 257, 0xFFE1B76C);
+        context.fill(x + 3, y + 3, x + 5, y + 257, 0xFFE1B76C);
+        context.fill(x + 355, y + 3, x + 357, y + 257, 0xFFE1B76C);
+        context.fill(x + 190, y + 32, x + 344, y + 34, 0xFFB58B58);
+        context.fill(x + 14, y + 150, x + 174, y + 152, 0xFFB58B58);
 
+        // Component scrollbar track and thumb
         int totalRows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
         int maxRows = Math.max(0, totalRows - VISIBLE_ROWS);
-        context.fill(x + 379, y + 35, x + 382, y + 139, 0xFF211727);
-        int thumbHeight = Math.max(12, 104 * VISIBLE_ROWS / Math.max(VISIBLE_ROWS, totalRows));
-        int thumbY = y + 35 + (maxRows == 0 ? 0 : (104 - thumbHeight) * scrollRow / maxRows);
-        context.fill(x + 379, thumbY, x + 382, thumbY + thumbHeight, 0xFFE1B76C);
+        context.fill(x + 343, y + 36, x + 346, y + 146, 0xFF211727);
+        int thumbHeight = Math.max(12, 110 * VISIBLE_ROWS / Math.max(VISIBLE_ROWS, totalRows));
+        int thumbY = y + 36 + (maxRows == 0 ? 0 : (110 - thumbHeight) * scrollRow / maxRows);
+        context.fill(x + 343, thumbY, x + 346, thumbY + thumbHeight, 0xFFE1B76C);
     }
 
     @Override
@@ -168,27 +174,27 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         int sx = x + slot.x;
         int sy = y + slot.y;
         boolean writerSlot = slot.id < 3;
-        int outer = writerSlot ? (slot.id == 1 ? 0xFF9BC7D2 : 0xFFE6C477) : 0xFF9A805C;
-        int inner = writerSlot ? (slot.id == 1 ? 0xFF263C4A : 0xFF49304F) : 0xFF3B3040;
+        int border = writerSlot ? (slot.id == 1 ? 0xFF9BC7D2 : 0xFFE6C477) : 0xFF9A805C;
+        int fill = writerSlot ? (slot.id == 1 ? 0xFF263C4A : 0xFF49304F) : 0xFF3B3040;
+
+        // Draw the frame first, then let Minecraft draw the item and count.
         context.fill(sx - 2, sy - 2, sx + 18, sy + 18, 0xFF100B17);
-        context.fill(sx - 1, sy - 1, sx + 17, sy + 17, outer);
-        context.fill(sx, sy, sx + 16, sy + 16, inner);
-        context.fill(sx + 1, sy + 1, sx + 15, sy + 15, writerSlot ? 0xFF211A2A : 0xFF29212F);
+        context.fill(sx - 1, sy - 1, sx + 17, sy + 17, border);
+        context.fill(sx, sy, sx + 16, sy + 16, fill);
+        context.fill(sx + 1, sy + 1, sx + 15, sy + 15, 0xFF211A2A);
         super.drawSlot(context, slot);
-        context.fill(sx - 2, sy - 2, sx + 18, sy - 1, outer);
-        context.fill(sx - 2, sy + 17, sx + 18, sy + 18, outer);
-        context.fill(sx - 2, sy - 2, sx - 1, sy + 18, outer);
-        context.fill(sx + 17, sy - 2, sx + 18, sy + 18, outer);
     }
 
     @Override
     protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
-        context.drawTextWithShadow(textRenderer, "✧ MAGIC WRITER ✧", 14, 8, 0xFFFFD98D);
-        context.drawTextWithShadow(textRenderer, "GRIMOIRE", 16, 52, 0xFFF1DCA9);
-        context.drawTextWithShadow(textRenderer, "MAGIC PAPER / PAGE", 16, 96, 0xFFB9DDE7);
-        context.drawTextWithShadow(textRenderer, "COMPONENTS  " + selected.size() + "/5", 130, 20, 0xFFFFD98D);
-        context.drawTextWithShadow(textRenderer, "SCROLL TO BROWSE", 270, 132, 0xFFD7C19F);
-        context.drawTextWithShadow(textRenderer, "SPELL NAME", 274, 145, 0xFFFFD98D);
+        context.drawTextWithShadow(textRenderer, "✧ MAGIC WRITER ✧", 12, 8, 0xFFFFD98D);
+        context.drawTextWithShadow(textRenderer, "GRIMOIRE", 14, 34, 0xFFF1DCA9);
+        context.drawTextWithShadow(textRenderer, "MAGIC PAPER / PAGE", 14, 84, 0xFFB9DDE7);
+        context.drawTextWithShadow(textRenderer, "OUTPUT", 108, 57, 0xFFFFD98D);
+        context.drawTextWithShadow(textRenderer, "COMPONENTS  " + selected.size() + "/5", 190, 20, 0xFFFFD98D);
+        context.drawTextWithShadow(textRenderer, "SCROLL TO BROWSE", 246, 140, 0xFFD7C19F);
+        context.drawTextWithShadow(textRenderer, "SPELL NAME", 192, 172, 0xFFFFD98D);
+        context.drawTextWithShadow(textRenderer, "INVENTORY", 14, 142, 0xFFD8C4A4);
     }
 
     @Override
