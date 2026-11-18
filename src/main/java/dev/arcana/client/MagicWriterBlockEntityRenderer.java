@@ -27,15 +27,14 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         ItemStack page = entity.getStack(1);
 
         // The lower block model's writing surface is at 9/16 of a block.
-        // Render with NONE so vanilla GUI/ground transforms cannot tilt the item upright.
-        // The explicit 90-degree X rotation places the item's XY model plane onto XZ.
+        // Use Minecraft's dedicated GROUND transform: generated item models define
+        // this pose as a horizontal item lying on a surface. Only yaw is customized.
         if (!book.isEmpty()) {
             matrices.push();
             matrices.translate(0.5, 0.565, 0.5);
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90.0F));
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
             matrices.scale(0.78F, 0.78F, 0.78F);
-            itemRenderer.renderItem(book, ModelTransformationMode.NONE, light, overlay,
+            itemRenderer.renderItem(book, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 0);
             matrices.pop();
         }
@@ -43,11 +42,10 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         if (!page.isEmpty()) {
             matrices.push();
             matrices.translate(0.5, book.isEmpty() ? 0.565 : 0.582, 0.5);
-            matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(90.0F));
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(90.0F));
             matrices.scale(book.isEmpty() ? 0.78F : 0.52F, book.isEmpty() ? 0.78F : 0.52F,
                 book.isEmpty() ? 0.78F : 0.52F);
-            itemRenderer.renderItem(page, ModelTransformationMode.NONE, light, overlay,
+            itemRenderer.renderItem(page, ModelTransformationMode.GROUND, light, overlay,
                 matrices, vertexConsumers, entity.getWorld(), 1);
             matrices.pop();
         }
