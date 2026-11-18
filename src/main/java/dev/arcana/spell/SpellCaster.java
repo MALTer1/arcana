@@ -53,9 +53,10 @@ public final class SpellCaster {
 
         int affected = 0;
         boolean didSummon = false;
+        List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         for (LivingEntity target : targets) {
             if (target.isRemoved()) continue;
-            applyElements(player, target, parts);
+            applyElements(player, target, parts, reactions);
             applyEffects(player, target, parts);
             affected++;
         }
@@ -187,26 +188,77 @@ public final class SpellCaster {
         return forward > 0.0 && forward <= range && lateral.length() <= width;
     }
 
-    private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts) {
-        if (parts.contains("fire")) target.setOnFireFor(5);
-        if (parts.contains("water")) {
+    private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
+                                      List<ElementalReactionEngine.Reaction> reactions) {
+        java.util.Set<String> consumed = ElementalReactionEngine.consumedElements(reactions);
+
+        // Resolve combined elements first. Their ingredients are not also applied
+        // independently, preventing Fire + Water from simultaneously burning and
+        // extinguishing the same target.
+        for (ElementalReactionEngine.Reaction reaction : reactions) {
+            switch (reaction.id()) {
+                case "storm_steam" -> {
+                    target.damage(caster.getDamageSources().magic(), 4.0F);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                }
+                case "steam" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                }
+                case "charged_water" -> {
+                    target.damage(caster.getDamageSources().magic(), 4.0F);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
+                }
+                case "magma" -> {
+                    target.setOnFireFor(5);
+                    target.damage(caster.getDamageSources().magic(), 2.0F);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                }
+                case "frozen_water" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 6, 2));
+                    target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2,
+                        target.getFrozenTicks() + 100));
+                }
+                case "sandstorm" -> {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+                }
+                case "wildfire" -> {
+                    target.setOnFireFor(7);
+                    Vec3d push = target.getPos().subtract(caster.getPos()).normalize().multiply(1.1);
+                    target.addVelocity(push.x, 0.3, push.z);
+                    target.velocityModified = true;
+                }
+                case "lunar_tide" -> target.addStatusEffect(
+                    new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 4, 0));
+                case "solar_flare" -> {
+                    target.setOnFireFor(7);
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
+                }
+                default -> { }
+            }
+        }
+
+        if (parts.contains("fire") && !consumed.contains("fire")) target.setOnFireFor(5);
+        if (parts.contains("water") && !consumed.contains("water")) {
             target.extinguish();
             target.removeStatusEffect(StatusEffects.SLOWNESS);
         }
-        if (parts.contains("wind")) {
+        if (parts.contains("wind") && !consumed.contains("wind")) {
             Vec3d push = target.getPos().subtract(caster.getPos()).normalize().multiply(0.9);
             target.addVelocity(push.x, 0.35, push.z);
             target.velocityModified = true;
         }
-        if (parts.contains("earth")) {
+        if (parts.contains("earth") && !consumed.contains("earth")) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 20 * 5, 0));
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 3, 0));
         }
-        if (parts.contains("lightning")) {
+        if (parts.contains("lightning") && !consumed.contains("lightning")) {
             target.damage(caster.getDamageSources().magic(), 4.0F);
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 20 * 4, 0));
         }
-        if (parts.contains("ice")) {
+        if (parts.contains("ice") && !consumed.contains("ice")) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 20 * 6, 2));
             target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 100));
         }
