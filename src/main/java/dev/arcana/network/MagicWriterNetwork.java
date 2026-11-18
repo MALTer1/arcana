@@ -26,8 +26,7 @@ public final class MagicWriterNetwork {
             PacketCodecs.VAR_INT, EngravePayload::syncId,
             PacketCodecs.STRING, EngravePayload::name,
             PacketCodecs.STRING, EngravePayload::components,
-            EngravePayload::new
-        );
+            EngravePayload::new);
         @Override public Id<? extends CustomPayload> getId() { return ID; }
     }
 
@@ -35,8 +34,8 @@ public final class MagicWriterNetwork {
 
     public static void register() {
         PayloadTypeRegistry.playC2S().register(EngravePayload.ID, EngravePayload.CODEC);
-        ServerPlayNetworking.registerGlobalReceiver(EngravePayload.ID, (payload, context) ->
-            context.server().execute(() -> engrave(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(EngravePayload.ID,
+            (payload, context) -> context.server().execute(() -> engrave(context.player(), payload)));
     }
 
     private static void engrave(ServerPlayerEntity player, EngravePayload payload) {
@@ -46,53 +45,40 @@ public final class MagicWriterNetwork {
 
         String name = payload.name().trim().replaceAll("\\s+", " ");
         if (name.isEmpty() || name.length() > 32) {
-            player.sendMessage(Text.literal("Spell names must contain 1–32 characters."), false);
-            return;
+            player.sendMessage(Text.literal("Spell names must contain 1–32 characters."), false); return;
         }
-
+        var book = writer.getStack(0);
         GrimoireTier tier = writer.getInsertedTier();
         if (tier == null) {
-            player.sendMessage(Text.literal("Place a Grimoire in the upper writer slot."), false);
-            return;
+            player.sendMessage(Text.literal("Place a Grimoire in the highlighted book slot."), false); return;
         }
         List<String> ids = new ArrayList<>();
-        if (!payload.components().isBlank()) {
-            for (String id : payload.components().split(",")) {
-                if (!id.isBlank() && !ids.contains(id)) ids.add(id);
-            }
+        if (!payload.components().isBlank()) for (String id : payload.components().split(",")) {
+            if (!id.isBlank() && !ids.contains(id)) ids.add(id);
         }
         if (ids.size() > tier.maxComponents()) {
-            player.sendMessage(Text.literal(tier.displayName() + " supports up to " + tier.maxComponents() + " components."), false);
-            return;
+            player.sendMessage(Text.literal(tier.displayName() + " supports up to " + tier.maxComponents() + " components."), false); return;
         }
         SpellDraft draft = new SpellDraft();
         for (String id : ids) {
             SpellDraft.AddResult result = draft.add(id);
-            if (!result.success()) {
-                player.sendMessage(Text.literal(result.message()), false);
-                return;
-            }
+            if (!result.success()) { player.sendMessage(Text.literal(result.message()), false); return; }
         }
         if (!draft.isValid()) {
-            draft.validationIssues().forEach(issue -> player.sendMessage(Text.literal("• " + issue), false));
-            return;
+            draft.validationIssues().forEach(issue -> player.sendMessage(Text.literal("• " + issue), false)); return;
         }
-        if (GrimoireStore.find(player.getUuid(), tier, name) != null) {
-            player.sendMessage(Text.literal("This Grimoire already has a spell named '" + name + "'."), false);
-            return;
+        if (GrimoireStore.find(book, tier, name) != null) {
+            player.sendMessage(Text.literal("This Grimoire already has a spell named '" + name + "'."), false); return;
         }
-        if (writer.getStack(1).isEmpty() || !writer.getStack(1).isOf(dev.arcana.item.ArcanaItems.MAGIC_PAPER)) {
-            player.sendMessage(Text.literal("Place Magic Paper in the lower writer slot."), false);
-            return;
+        if (writer.getStack(1).isEmpty()) {
+            player.sendMessage(Text.literal("Place Magic Paper in the lower writer slot."), false); return;
         }
-
         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(name, draft.selectedIds(), draft.behavior());
-        if (!GrimoireStore.insert(player.getUuid(), tier, spell)) {
-            player.sendMessage(Text.literal("The Grimoire is full or cannot hold this spell."), false);
-            return;
+        if (!GrimoireStore.insert(book, tier, spell)) {
+            player.sendMessage(Text.literal("The Grimoire is full or cannot hold this spell."), false); return;
         }
         writer.consumePaper();
-        GrimoireStore.save(player.getServer());
-        player.sendMessage(Text.literal("Engraved '" + name + "' into your " + tier.displayName() + "."), false);
+        player.getInventory().markDirty();
+        player.sendMessage(Text.literal("Engraved '" + name + "' into this " + tier.displayName() + "."), false);
     }
 }
