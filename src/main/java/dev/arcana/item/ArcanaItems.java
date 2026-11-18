@@ -26,7 +26,6 @@ public final class ArcanaItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> {
             entries.add(MAGIC_DUST);
             entries.add(MAGIC_PAPER);
-            entries.add(SPELL_PAGE);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
             entries.add(NOVICE_GRIMOIRE);
