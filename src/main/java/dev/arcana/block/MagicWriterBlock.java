@@ -15,11 +15,14 @@ import net.minecraft.util.ActionResult;
 import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldAccess;
 
 public final class MagicWriterBlock extends BlockWithEntity {
     public static final MapCodec<MagicWriterBlock> CODEC = createCodec(MagicWriterBlock::new);
-    public static final EnumProperty<DoubleBlockHalf> HALF = EnumProperty.of("half", DoubleBlockHalf.class);
+    public static final EnumProperty<DoubleBlockHalf> HALF =
+        EnumProperty.of("half", DoubleBlockHalf.class);
 
     public MagicWriterBlock(Settings settings) {
         super(settings);
@@ -35,8 +38,22 @@ public final class MagicWriterBlock extends BlockWithEntity {
 
     @Override
     public BlockState getPlacementState(ItemPlacementContext context) {
-        return context.getWorld().getBlockState(context.getBlockPos().up()).canReplace(context)
-            ? getDefaultState().with(HALF, DoubleBlockHalf.LOWER) : null;
+        BlockPos pos = context.getBlockPos();
+        World world = context.getWorld();
+        if (!world.getBlockState(pos.up()).canReplace(context)) return null;
+        return getDefaultState().with(HALF, DoubleBlockHalf.LOWER);
+    }
+
+    @Override
+    public BlockState getStateForNeighborUpdate(BlockState state, Direction direction,
+                                                 BlockState neighborState, WorldAccess world,
+                                                 BlockPos pos, BlockPos neighborPos) {
+        if (direction == (state.get(HALF) == DoubleBlockHalf.LOWER
+                ? Direction.UP : Direction.DOWN)
+            && !neighborState.isOf(this)) {
+            return Blocks.AIR.getDefaultState();
+        }
+        return super.getStateForNeighborUpdate(state, direction, neighborState, world, pos, neighborPos);
     }
 
     @Override
@@ -46,7 +63,8 @@ public final class MagicWriterBlock extends BlockWithEntity {
     }
 
     @Override
-    public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+    public void onPlaced(World world, BlockPos pos, BlockState state,
+                         LivingEntity placer, ItemStack stack) {
         super.onPlaced(world, pos, state, placer, stack);
         if (!world.isClient && state.get(HALF) == DoubleBlockHalf.LOWER) {
             world.setBlockState(pos.up(), state.with(HALF, DoubleBlockHalf.UPPER), Block.NOTIFY_ALL);
@@ -69,11 +87,14 @@ public final class MagicWriterBlock extends BlockWithEntity {
         if (!state.isOf(newState.getBlock())) {
             BlockPos otherPos = state.get(HALF) == DoubleBlockHalf.LOWER ? pos.up() : pos.down();
             if (world.getBlockState(otherPos).isOf(this)) {
-                world.setBlockState(otherPos, Blocks.AIR.getDefaultState(), Block.NOTIFY_ALL | Block.SKIP_DROPS);
+                world.setBlockState(otherPos, Blocks.AIR.getDefaultState(),
+                    Block.NOTIFY_ALL | Block.SKIP_DROPS);
             }
             if (state.get(HALF) == DoubleBlockHalf.LOWER) {
                 BlockEntity entity = world.getBlockEntity(pos);
-                if (entity instanceof MagicWriterBlockEntity writer) ItemScatterer.spawn(world, pos, writer);
+                if (entity instanceof MagicWriterBlockEntity writer) {
+                    ItemScatterer.spawn(world, pos, writer);
+                }
             }
         }
         super.onStateReplaced(state, world, pos, newState, moved);
