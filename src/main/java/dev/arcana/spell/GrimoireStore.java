@@ -1,101 +1,94 @@
 package dev.arcana.spell;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import dev.arcana.item.GrimoireTier;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.WorldSavePath;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.Writer;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
-/**
- * First-pass physical-grimoire inventory. Each player has a separate collection
- * for each grimoire tier; capacities are enforced independently.
- */
+/** Spell pages stored directly on each physical Grimoire ItemStack. */
 public final class GrimoireStore {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final Type DATA_TYPE = new TypeToken<Map<String, Map<String, List<SpellBookStore.StoredSpell>>>>() {}.getType();
-    private static final Map<String, Map<String, List<SpellBookStore.StoredSpell>>> BOOKS = new HashMap<>();
+    private static final String ROOT_KEY = "ArcanaGrimoire";
+    private static final String SPELLS_KEY = "Spells";
 
     private GrimoireStore() {}
 
-    public static synchronized void load(MinecraftServer server) {
-        BOOKS.clear();
-        Path file = fileFor(server);
-        if (!Files.exists(file)) return;
-        try (Reader reader = Files.newBufferedReader(file)) {
-            Map<String, Map<String, List<SpellBookStore.StoredSpell>>> loaded = GSON.fromJson(reader, DATA_TYPE);
-            if (loaded != null) loaded.forEach((player, tiers) -> {
-                Map<String, List<SpellBookStore.StoredSpell>> copy = new HashMap<>();
-                if (tiers != null) tiers.forEach((tier, spells) -> copy.put(tier,
-                    spells == null ? new ArrayList<>() : new ArrayList<>(spells)));
-                BOOKS.put(player, copy);
-            });
-            System.out.println("[Arcana] Loaded grimoire pages from " + file);
-        } catch (IOException | RuntimeException exception) {
-            System.err.println("[Arcana] Could not load grimoires: " + exception.getMessage());
+    public static synchronized List<SpellBookStore.StoredSpell> get(ItemStack stack, GrimoireTier tier) {
+        if (stack.isEmpty() || tier == null || GrimoireTier.fromItem(stack.getItem()) != tier) return List.of();
+        NbtList list = getSpellList(stack);
+        List<SpellBookStore.StoredSpell> spells = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            NbtCompound tag = list.getCompound(i);
+            NbtList componentsTag = tag.getList("Components", NbtElement.STRING_TYPE);
+            List<String> components = new ArrayList<>();
+            for (int j = 0; j < componentsTag.size(); j++) components.add(componentsTag.getString(j));
+            spells.add(new SpellBookStore.StoredSpell(
+                tag.getString("Name"), components, tag.getString("Behavior")));
         }
+        return List.copyOf(spells);
     }
 
-    public static synchronized void save(MinecraftServer server) {
-        Path file = fileFor(server);
-        try {
-            Files.createDirectories(file.getParent());
-            try (Writer writer = Files.newBufferedWriter(file)) {
-                GSON.toJson(BOOKS, DATA_TYPE, writer);
-            }
-            System.out.println("[Arcana] Saved grimoire pages to " + file);
-        } catch (IOException exception) {
-            System.err.println("[Arcana] Could not save grimoires: " + exception.getMessage());
-        }
-    }
-
-    public static synchronized List<SpellBookStore.StoredSpell> get(UUID player, GrimoireTier tier) {
-        return List.copyOf(list(player, tier));
-    }
-
-    public static synchronized boolean insert(UUID player, GrimoireTier tier, SpellBookStore.StoredSpell spell) {
-        List<SpellBookStore.StoredSpell> spells = list(player, tier);
-        if (spells.size() >= tier.spellSlots()) return false;
-        if (find(spells, spell.name) != null) return false;
-        if (spell.components == null || spell.components.size() > tier.maxComponents()) return false;
+    public static synchronized boolean insert(ItemStack stack, GrimoireTier tier, SpellBookStore.StoredSpell spell) {
+        if (stack.isEmpty() || tier == null || GrimoireTier.fromItem(stack.getItem()) != tier) return false;
+        List<SpellBookStore.StoredSpell> spells = new ArrayList<>(get(stack, tier));
+        if (spells.size() >= tier.spellSlots() || find(spells, spell.name) != null
+            || spell.components == null || spell.components.size() > tier.maxComponents()) return false;
         spells.add(spell);
+        write(stack, spells);
         return true;
     }
 
-    public static synchronized SpellBookStore.StoredSpell remove(UUID player, GrimoireTier tier, String name) {
-        List<SpellBookStore.StoredSpell> spells = list(player, tier);
+    public static synchronized SpellBookStore.StoredSpell remove(ItemStack stack, GrimoireTier tier, String name) {
+        if (stack.isEmpty() || tier == null || GrimoireTier.fromItem(stack.getItem()) != tier) return null;
+        List<SpellBookStore.StoredSpell> spells = new ArrayList<>(get(stack, tier));
         for (int i = 0; i < spells.size(); i++) {
-            if (spells.get(i).name.equalsIgnoreCase(name)) return spells.remove(i);
+            if (spells.get(i).name.equalsIgnoreCase(name)) {
+                SpellBookStore.StoredSpell removed = spells.remove(i);
+                write(stack, spells);
+                return removed;
+            }
         }
         return null;
     }
 
-    public static synchronized SpellBookStore.StoredSpell find(UUID player, GrimoireTier tier, String name) {
-        return find(list(player, tier), name);
+    public static synchronized SpellBookStore.StoredSpell find(ItemStack stack, GrimoireTier tier, String name) {
+        return find(get(stack, tier), name);
     }
 
     private static SpellBookStore.StoredSpell find(List<SpellBookStore.StoredSpell> spells, String name) {
         return spells.stream().filter(spell -> spell.name.equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
-    private static List<SpellBookStore.StoredSpell> list(UUID player, GrimoireTier tier) {
-        return BOOKS.computeIfAbsent(player.toString(), ignored -> new HashMap<>())
-            .computeIfAbsent(tier.name(), ignored -> new ArrayList<>());
+    private static NbtList getSpellList(ItemStack stack) {
+        NbtCompound custom = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT).copyNbt();
+        NbtCompound root = custom.getCompound(ROOT_KEY);
+        return root.getList(SPELLS_KEY, NbtElement.COMPOUND_TYPE);
     }
 
-    private static Path fileFor(MinecraftServer server) {
-        return server.getSavePath(WorldSavePath.ROOT).resolve("arcana-grimoires.json");
+    private static void write(ItemStack stack, List<SpellBookStore.StoredSpell> spells) {
+        NbtCompound custom = stack.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT).copyNbt();
+        NbtCompound root = new NbtCompound();
+        NbtList list = new NbtList();
+        for (SpellBookStore.StoredSpell spell : spells) {
+            NbtCompound tag = new NbtCompound();
+            tag.putString("Name", spell.name);
+            tag.putString("Behavior", spell.behavior == null ? "" : spell.behavior);
+            NbtList components = new NbtList();
+            if (spell.components != null) spell.components.forEach(value -> components.add(net.minecraft.nbt.NbtString.of(value)));
+            tag.put("Components", components);
+            list.add(tag);
+        }
+        root.put(SPELLS_KEY, list);
+        custom.put(ROOT_KEY, root);
+        stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(custom));
     }
+
+    /** Retained as no-op compatibility hooks for older initialization code. */
+    public static void load(net.minecraft.server.MinecraftServer server) {}
+    public static void save(net.minecraft.server.MinecraftServer server) {}
 }
