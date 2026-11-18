@@ -28,7 +28,7 @@ public final class MagicWriterBlockEntity extends BlockEntity implements Invento
  public ItemStack removeStack(int slot){ItemStack r=Inventories.removeStack(items,slot);if(!r.isEmpty())markDirty();return r;}
  public void setStack(int slot,ItemStack stack){
   if(slot==0&&!stack.isEmpty()&&GrimoireTier.fromItem(stack.getItem())==null)return;
-  if(slot==1&&!stack.isEmpty()&&!stack.isOf(ArcanaItems.MAGIC_PAPER)&&!stack.isOf(ArcanaItems.SPELL_PAGE))return;
+  if(slot==1&&!stack.isEmpty()&&!stack.isOf(ArcanaItems.MAGIC_PAPER))return;
   items.set(slot,stack);if(stack.getCount()>getMaxCountPerStack())stack.setCount(getMaxCountPerStack());markDirty();
  }
  public void setOutput(ItemStack stack){items.set(2,stack);markDirty();}
