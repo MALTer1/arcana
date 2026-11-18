@@ -60,10 +60,10 @@ public final class SpellCaster {
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         for (LivingEntity target : targets) {
             if (target.isRemoved()) continue;
-            applyElements(player, target, parts, reactions);
-            applyEffects(player, target, parts);
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
+            applyElements(player, target, parts, reactions, targetComposition.durationMultiplier());
+            applyEffects(player, target, parts, targetComposition.durationMultiplier());
             applyCompositionInteractions(player, target, targetComposition);
             affected++;
         }
@@ -254,35 +254,35 @@ public final class SpellCaster {
     }
 
     private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
-                                      List<ElementalReactionEngine.Reaction> reactions) {
+                                      List<ElementalReactionEngine.Reaction> reactions, double durationScale) {
         java.util.Set<String> consumed = ElementalReactionEngine.consumedElements(reactions);
         for (ElementalReactionEngine.Reaction reaction : reactions) {
             switch (reaction.id()) {
                 case "storm_steam" -> {
                     target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(50, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(80, durationScale), 0));
                 }
                 case "steam" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 45, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(45, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(60, durationScale), 0));
                 }
                 case "charged_water" -> {
                     target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(80, durationScale), 0));
                 }
                 case "magma" -> {
                     target.setOnFireFor(5);
                     target.damage(caster.getDamageSources().indirectMagic(caster, caster), 2.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(60, durationScale), 0));
                 }
                 case "frozen_water" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(120, durationScale), 2));
                     target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 100));
                 }
                 case "sandstorm" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(50, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(80, durationScale), 0));
                 }
                 case "wildfire" -> {
                     target.setOnFireFor(7);
@@ -290,47 +290,47 @@ public final class SpellCaster {
                     target.addVelocity(push.x, 0.3, push.z);
                     target.velocityModified = true;
                 }
-                case "lunar_tide" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+                case "lunar_tide" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(80, durationScale), 0));
                 case "solar_flare" -> {
                     target.setOnFireFor(7);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(80, durationScale), 0));
                 }
                 case "blizzard" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 140, 2));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(140, durationScale), 2));
                     target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 120));
                 }
                 case "mist" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 70, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 50, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(70, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(50, durationScale), 0));
                 }
                 case "mud" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 1));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 100, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(120, durationScale), 1));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, scaledTicks(100, durationScale), 0));
                 }
                 case "thermal_shock" -> {
                     target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 1));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(80, durationScale), 1));
                 }
                 case "eclipse" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 40, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, scaledTicks(80, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(40, durationScale), 0));
                 }
                 case "resonance" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 140, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 60, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(140, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, scaledTicks(60, durationScale), 0));
                 }
                 case "verdant_surge" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 180, 1));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(180, durationScale), 1));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, scaledTicks(1, durationScale), 0));
                 }
                 case "magnetic_arc" -> {
                     target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(100, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(60, durationScale), 0));
                 }
                 case "solar_eclipse" -> {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 100, 0));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 100, 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, scaledTicks(100, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, scaledTicks(100, durationScale), 0));
                 }
                 default -> { }
             }
@@ -347,62 +347,62 @@ public final class SpellCaster {
             target.velocityModified = true;
         }
         if (parts.contains("earth") && !consumed.contains("earth")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 100, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(100, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(60, durationScale), 0));
         }
         if (parts.contains("lightning") && !consumed.contains("lightning")) {
             target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F);
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 80, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(80, durationScale), 0));
         }
         if (parts.contains("ice") && !consumed.contains("ice")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 120, 2));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(120, durationScale), 2));
             target.setFrozenTicks(Math.min(target.getMinFreezeDamageTicks() * 2, target.getFrozenTicks() + 100));
         }
 
         // Additional registered elements have concrete first-pass status behavior.
-        if (parts.contains("light")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 200, 0));
-        if (parts.contains("shadow")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 100, 0));
-        if (parts.contains("nature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
-        if (parts.contains("metal")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 120, 1));
+        if (parts.contains("light")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(200, durationScale), 0));
+        if (parts.contains("shadow")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, scaledTicks(100, durationScale), 0));
+        if (parts.contains("nature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(100, durationScale), 0));
+        if (parts.contains("metal")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(120, durationScale), 1));
         if (parts.contains("crystal")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 160, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 80, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(160, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(80, durationScale), 0));
         }
         if (parts.contains("magma") && !parts.contains("fire") && !consumed.contains("magma")) {
             target.setOnFireFor(6);
             target.damage(caster.getDamageSources().indirectMagic(caster, caster), 3.0F);
         }
-        if (parts.contains("smoke")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 60, 0));
+        if (parts.contains("smoke")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(60, durationScale), 0));
         if (parts.contains("sound")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, 80, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 40, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NAUSEA, scaledTicks(80, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(40, durationScale), 0));
         }
         if (parts.contains("gravity")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(100, durationScale), 0));
             target.addVelocity(0.0, target.isOnGround() ? 0.45 : -0.35, 0.0);
             target.velocityModified = true;
         }
-        if (parts.contains("time")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 2));
+        if (parts.contains("time")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(100, durationScale), 2));
         if (parts.contains("space")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 100, 1));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 100, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, scaledTicks(100, durationScale), 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(100, durationScale), 0));
         }
-        if (parts.contains("poison")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, 100, 0));
+        if (parts.contains("poison")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.POISON, scaledTicks(100, durationScale), 0));
         if (parts.contains("sand")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 50, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 80, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, scaledTicks(50, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(80, durationScale), 0));
         }
         if (parts.contains("wood")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 60, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(100, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(60, durationScale), 0));
         }
         if (parts.contains("moon")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 200, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, scaledTicks(200, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(60, durationScale), 0));
         }
         if (parts.contains("sun")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 120, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 100, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(120, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, scaledTicks(100, durationScale), 0));
         }
     }
 
@@ -411,6 +411,10 @@ public final class SpellCaster {
      * This is separate from individual component effects so combinations can
      * alter outcomes without duplicating every base component implementation.
      */
+    private static int scaledTicks(int baseTicks, double multiplier) {
+        return Math.max(1, Math.min(2400, (int) Math.round(baseTicks * multiplier)));
+    }
+
     private static void applyCompositionInteractions(ServerPlayerEntity caster, LivingEntity target,
                                                      SpellCompositionEngine.Plan plan) {
         if (plan.impactDamageBonus() > 0.0) {
@@ -433,15 +437,16 @@ public final class SpellCaster {
         }
     }
 
-    private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts) {
-        if (parts.contains("healing")) { target.heal(6.0F); target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 100, 0)); }
+    private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
+                                     double durationScale) {
+        if (parts.contains("healing")) { target.heal(6.0F); target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(100, durationScale), 0)); }
         if (parts.contains("enhancement")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 240, 1));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 240, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, scaledTicks(240, durationScale), 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, scaledTicks(240, durationScale), 0));
         }
         if (parts.contains("barrier") || parts.contains("ward") || parts.contains("barrier_reinforcement")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 200, parts.contains("barrier_reinforcement") ? 2 : 1));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(200, durationScale), parts.contains("barrier_reinforcement") ? 2 : 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, scaledTicks(200, durationScale), 1));
         }
         if (parts.contains("explosion")) {
             target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F);
@@ -450,37 +455,37 @@ public final class SpellCaster {
         }
         if (parts.contains("binding")) {
             // Avoid extreme Jump Boost amplifiers: they can launch server-side mobs.
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 160, 5));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 100, 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, scaledTicks(160, durationScale), 5));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, scaledTicks(100, durationScale), 1));
         }
-        if (parts.contains("night_vision")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, 1200, 0));
-        if (parts.contains("water_breathing")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 1200, 0));
-        if (parts.contains("slow_falling")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 400, 0));
+        if (parts.contains("night_vision")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.NIGHT_VISION, scaledTicks(1200, durationScale), 0));
+        if (parts.contains("water_breathing")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, scaledTicks(1200, durationScale), 0));
+        if (parts.contains("slow_falling")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(400, durationScale), 0));
 
-        if (parts.contains("illumination")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 240, 0));
-        if (parts.contains("invisibility")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 240, 0));
-        if (parts.contains("disguise")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 100, 0));
-        if (parts.contains("levitation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, 80, 0));
+        if (parts.contains("illumination")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(240, durationScale), 0));
+        if (parts.contains("invisibility")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, scaledTicks(240, durationScale), 0));
+        if (parts.contains("disguise")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, scaledTicks(100, durationScale), 0));
+        if (parts.contains("levitation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION, scaledTicks(80, durationScale), 0));
         if (parts.contains("dash")) {
             Vec3d v = target.getRotationVec(1.0F).multiply(1.8);
             target.addVelocity(v.x, 0.2, v.z); target.velocityModified = true;
         }
-        if (parts.contains("haste") || parts.contains("focus")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 300, 1));
-        if (parts.contains("fatigue")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, 200, 1));
-        if (parts.contains("silence")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, 80, 0));
-        if (parts.contains("echo")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
+        if (parts.contains("haste") || parts.contains("focus")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, scaledTicks(300, durationScale), 1));
+        if (parts.contains("fatigue")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, scaledTicks(200, durationScale), 1));
+        if (parts.contains("silence")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DARKNESS, scaledTicks(80, durationScale), 0));
+        if (parts.contains("echo")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(100, durationScale), 0));
         if (parts.contains("reveal") || parts.contains("tracking") || parts.contains("waypoint") || parts.contains("dimension_sense"))
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 300, 0));
-        if (parts.contains("anchor")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 160, 0));
-        if (parts.contains("float") || parts.contains("glide")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 300, 0));
-        if (parts.contains("water_walking")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, 300, 0));
-        if (parts.contains("climb")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 240, 1));
-        if (parts.contains("jump")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, 240, 2));
-        if (parts.contains("sprint")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 240, 2));
-        if (parts.contains("temperature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 240, 0));
-        if (parts.contains("weather")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, 240, 0));
-        if (parts.contains("growth")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 160, 1));
-        if (parts.contains("harvest")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(300, durationScale), 0));
+        if (parts.contains("anchor")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(160, durationScale), 0));
+        if (parts.contains("float") || parts.contains("glide")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(300, durationScale), 0));
+        if (parts.contains("water_walking")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, scaledTicks(300, durationScale), 0));
+        if (parts.contains("climb")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, scaledTicks(240, durationScale), 1));
+        if (parts.contains("jump")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, scaledTicks(240, durationScale), 2));
+        if (parts.contains("sprint")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, scaledTicks(240, durationScale), 2));
+        if (parts.contains("temperature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, scaledTicks(240, durationScale), 0));
+        if (parts.contains("weather")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(240, durationScale), 0));
+        if (parts.contains("growth")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(160, durationScale), 1));
+        if (parts.contains("harvest")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, scaledTicks(1, durationScale), 0));
         if (parts.contains("repair")) target.heal(10.0F);
         if (parts.contains("cleanse") || parts.contains("purify")) {
             target.removeStatusEffect(StatusEffects.POISON);
@@ -490,30 +495,30 @@ public final class SpellCaster {
             target.removeStatusEffect(StatusEffects.BLINDNESS);
             target.removeStatusEffect(StatusEffects.NAUSEA);
         }
-        if (parts.contains("reflection")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 240, 2));
-        if (parts.contains("resistance")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
-        if (parts.contains("absorption")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 300, 2));
-        if (parts.contains("regeneration")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 300, 1));
+        if (parts.contains("reflection")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, scaledTicks(240, durationScale), 2));
+        if (parts.contains("resistance")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(300, durationScale), 1));
+        if (parts.contains("absorption")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, scaledTicks(300, durationScale), 2));
+        if (parts.contains("regeneration")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(300, durationScale), 1));
         if (parts.contains("stamina")) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, 1, 0));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 160, 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, scaledTicks(1, durationScale), 0));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(160, durationScale), 0));
         }
-        if (parts.contains("fortune")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 600, 0));
-        if (parts.contains("magnetism")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 200, 0));
+        if (parts.contains("fortune")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, scaledTicks(600, durationScale), 0));
+        if (parts.contains("magnetism")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, scaledTicks(200, durationScale), 0));
         if (parts.contains("repulsion")) {
             Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.2);
             target.addVelocity(away.x, 0.25, away.z); target.velocityModified = true;
         }
-        if (parts.contains("storage")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 200, 0));
-        if (parts.contains("transmutation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 100, 0));
-        if (parts.contains("duplication")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 200, 1));
-        if (parts.contains("decoy")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 80, 0));
+        if (parts.contains("storage")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, scaledTicks(200, durationScale), 0));
+        if (parts.contains("transmutation")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(100, durationScale), 0));
+        if (parts.contains("duplication")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, scaledTicks(200, durationScale), 1));
+        if (parts.contains("decoy")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, scaledTicks(80, durationScale), 0));
         if (parts.contains("portal")) {
             Vec3d destination = caster.getPos().add(caster.getRotationVec(1.0F).multiply(6.0));
             teleportSafely(target, destination);
         }
-        if (parts.contains("memory")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 60, 0));
-        if (parts.contains("alarm")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 400, 0));
+        if (parts.contains("memory")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(60, durationScale), 0));
+        if (parts.contains("alarm")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(400, durationScale), 0));
     }
 
     private static boolean summon(ServerPlayerEntity player) {
