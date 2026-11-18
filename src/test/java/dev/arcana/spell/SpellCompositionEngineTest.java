@@ -40,6 +40,17 @@ class SpellCompositionEngineTest {
     }
 
     @Test
+    void distinctComponentsFromTheSameCategoryAreAllowed() {
+        SpellDraft draft = new SpellDraft();
+        assertTrue(draft.add("projectile").success());
+        assertTrue(draft.add("chain").success());
+        assertTrue(draft.add("fire").success());
+        assertTrue(draft.add("wind").success());
+        assertTrue(draft.add("binding").success());
+        assertTrue(draft.isValid());
+    }
+
+    @Test
     void projectileElementsModifyTravelSpeed() {
         SpellCompositionEngine.Plan plan =
             SpellCompositionEngine.compose(List.of("projectile", "lightning"));
