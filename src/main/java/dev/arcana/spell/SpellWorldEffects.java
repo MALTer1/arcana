@@ -3,6 +3,7 @@ package dev.arcana.spell;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.CropBlock;
+import net.minecraft.block.Blocks;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -44,6 +45,12 @@ public final class SpellWorldEffects {
         }
         if (components.contains("repulsion")) {
             changed += repelItems(world, caster);
+        }
+        if (components.contains("storage")) {
+            changed += collectItems(world, caster);
+        }
+        if (components.contains("transmutation")) {
+            changed += transmuteBlock(world, center, components);
         }
         return changed;
     }
@@ -110,6 +117,47 @@ public final class SpellWorldEffects {
             }
         }
         return positions;
+    }
+
+    /**
+     * Stores nearby dropped items in the caster's ordinary inventory.
+     * Items that do not fit remain in the world; nothing is silently deleted.
+     */
+    private static int collectItems(ServerWorld world, ServerPlayerEntity caster) {
+        Box area = caster.getBoundingBox().expand(4.0);
+        var items = world.getEntitiesByClass(ItemEntity.class, area, entity -> entity.isAlive());
+        int collected = 0;
+        for (ItemEntity item : items) {
+            ItemStack stack = item.getStack();
+            if (stack.isEmpty()) continue;
+            int before = stack.getCount();
+            caster.getInventory().insertStack(stack);
+            int inserted = before - stack.getCount();
+            if (inserted <= 0) continue;
+            collected += inserted;
+            if (stack.isEmpty()) item.discard();
+            else item.setStack(stack);
+        }
+        return collected;
+    }
+
+    /**
+     * Small, explicit transmutation recipe set. The spell's elements determine
+     * the conversion; arbitrary blocks and block entities are never rewritten.
+     */
+    private static int transmuteBlock(ServerWorld world, BlockPos pos, java.util.List<String> components) {
+        BlockState state = world.getBlockState(pos);
+        BlockState result = null;
+        boolean heat = components.contains("fire") || components.contains("magma") || components.contains("sun");
+        boolean water = components.contains("water");
+        boolean earth = components.contains("earth");
+        if (state.isOf(Blocks.SAND) && heat) result = Blocks.GLASS.getDefaultState();
+        else if (state.isOf(Blocks.RED_SAND) && heat) result = Blocks.GLASS.getDefaultState();
+        else if (state.isOf(Blocks.COBBLESTONE) && heat) result = Blocks.STONE.getDefaultState();
+        else if (state.isOf(Blocks.DIRT) && water) result = Blocks.MUD.getDefaultState();
+        else if (state.isOf(Blocks.STONE) && earth) result = Blocks.COBBLESTONE.getDefaultState();
+        if (result == null || !world.getBlockState(pos).isOf(state.getBlock())) return 0;
+        return world.setBlockState(pos, result, Block.NOTIFY_ALL) ? 1 : 0;
     }
 
     private static int repairHeldItem(ServerPlayerEntity caster) {
