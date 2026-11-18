@@ -9,6 +9,7 @@ import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.GrimoireStore;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
+import dev.arcana.spell.SpellPageStore;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.component.DataComponentTypes;
@@ -63,15 +64,33 @@ public final class GrimoireNetwork {
             SpellBookStore.StoredSpell spell = GrimoireStore.remove(book, tier, name);
             if (spell == null) message = "That page is not in this Grimoire.";
             else {
-                ItemStack page = new ItemStack(ArcanaItems.SPELL_PAGE);
-                page.set(DataComponentTypes.CUSTOM_NAME, Text.literal(spell.name));
+                ItemStack page = new ItemStack(ArcanaItems.MAGIC_PAPER);
+                SpellPageStore.set(page, spell);
                 if (!player.getInventory().insertStack(page)) player.dropItem(page, false);
-                message = "Removed " + spell.name + " and returned its page.";
+                message = "Removed " + spell.name + " and returned its Magic Paper.";
             }
-        } else if ("insert".equals(action)) {
-            message = "New spells are engraved directly onto a Grimoire at the Magic Writer.";
+         } else if ("insert".equals(action)) {
+            ItemStack pageStack = findMagicPaper(player, name);
+            SpellBookStore.StoredSpell page = pageStack.isEmpty() ? null : SpellPageStore.get(pageStack);
+            if (page == null) message = "No engraved Magic Paper named '" + name + "' was found in your inventory.";
+            else if (GrimoireStore.insert(book, tier, page)) {
+                pageStack.decrement(1);
+                player.getInventory().markDirty();
+                message = "Inserted '" + page.name + "' into your Grimoire.";
+            } else message = "The Grimoire is full or already contains a page named '" + name + "'.";
         }
         send(player, buildState(player, book, tier), message);
+    }
+
+    private static ItemStack findMagicPaper(ServerPlayerEntity player, String name) {
+        for (int i = 0; i < player.getInventory().size(); i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if ((stack.isOf(ArcanaItems.MAGIC_PAPER) || stack.isOf(ArcanaItems.SPELL_PAGE))) {
+                SpellBookStore.StoredSpell page = SpellPageStore.get(stack);
+                if (page != null && page.name.equalsIgnoreCase(name)) return stack;
+            }
+        }
+        return ItemStack.EMPTY;
     }
 
     public static void syncHeldGrimoire(ServerPlayerEntity player) {
@@ -101,7 +120,10 @@ public final class GrimoireNetwork {
         JsonArray pages = new JsonArray();
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
-            if (stack.isOf(ArcanaItems.SPELL_PAGE) && stack.contains(DataComponentTypes.CUSTOM_NAME)) pages.add(stack.getName().getString());
+            if (stack.isOf(ArcanaItems.MAGIC_PAPER) || stack.isOf(ArcanaItems.SPELL_PAGE)) {
+                SpellBookStore.StoredSpell page = SpellPageStore.get(stack);
+                if (page != null) pages.add(page.name);
+            }
         }
         root.add("loosePages", pages);
         return root;
