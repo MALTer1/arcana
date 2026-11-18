@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 
 public final class ArcanaItems {
     public static final Item MAGIC_DUST = register("magic_dust", new Item(new Item.Settings()));
-    public static final Item MAGIC_PAPER = register("magic_paper", new Item(new Item.Settings().maxCount(1)));
+    public static final Item MAGIC_PAPER = register("magic_paper", new Item(new Item.Settings().maxCount(64)));
     // Legacy registry entry retained so existing worlds can still load old Spell Page stacks.
     // New pages are always represented by data-bearing Magic Paper.
     public static final Item SPELL_PAGE = register("spell_page", new Item(new Item.Settings()));
