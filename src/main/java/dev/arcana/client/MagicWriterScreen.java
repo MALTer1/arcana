@@ -1,82 +1,136 @@
 package dev.arcana.client;
 
+import dev.arcana.network.MagicWriterNetwork;
+import dev.arcana.screen.MagicWriterScreenHandler;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screen.ingame.HandledScreen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.text.Text;
 
-public final class MagicWriterScreen extends Screen {
-    private static final String[][] COMPONENTS = {
-        {"projectile", "Projectile"}, {"beam", "Beam"}, {"wave", "Wave"},
-        {"barrier", "Barrier"}, {"field", "Field"}, {"fire", "Fire"},
-        {"water", "Water"}, {"wind", "Wind"}, {"earth", "Earth"},
-        {"lightning", "Lightning"}, {"ice", "Ice"}, {"single_target", "Single Target"},
-        {"multiple_targets", "Multiple Targets"}, {"self", "Self"}, {"area", "Area"},
-        {"explosion", "Explosion"}, {"healing", "Healing"}, {"summoning", "Summoning"},
-        {"enhancement", "Enhancement"}, {"teleportation", "Teleportation"}, {"binding", "Binding"}
-    };
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
+public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHandler> {
+    private record Choice(String id, String label) {}
+    private static final List<Choice> CHOICES = List.of(
+        new Choice("projectile","Projectile"), new Choice("beam","Beam"), new Choice("wave","Wave"),
+        new Choice("barrier","Barrier"), new Choice("field","Field"),
+        new Choice("fire","Fire"), new Choice("water","Water"), new Choice("wind","Wind"),
+        new Choice("earth","Earth"), new Choice("lightning","Lightning"), new Choice("ice","Ice"),
+        new Choice("single_target","Single Target"), new Choice("multiple_targets","Multi Target"),
+        new Choice("self","Self"), new Choice("area","Area"),
+        new Choice("explosion","Explosion"), new Choice("healing","Healing"),
+        new Choice("summoning","Summoning"), new Choice("enhancement","Enhancement"),
+        new Choice("teleportation","Teleport"), new Choice("binding","Binding")
+    );
+
+    private final Set<String> selected = new LinkedHashSet<>();
+    private final List<ButtonWidget> componentButtons = new ArrayList<>();
     private TextFieldWidget spellName;
 
-    public MagicWriterScreen() {
-        super(Text.literal("Magic Writer"));
+    public MagicWriterScreen(MagicWriterScreenHandler handler, PlayerInventory inventory, Text title) {
+        super(handler, inventory, title);
+        backgroundWidth = 430;
+        backgroundHeight = 276;
+        playerInventoryTitleX = 8;
+        playerInventoryTitleY = 160;
+        titleX = 14;
+        titleY = 10;
     }
 
     @Override
     protected void init() {
-        int left = (width - 342) / 2;
-        int top = (height - 286) / 2;
-        int buttonWidth = 110;
-        int buttonHeight = 18;
-        for (int i = 0; i < COMPONENTS.length; i++) {
-            final String id = COMPONENTS[i][0];
-            String label = COMPONENTS[i][1];
+        super.init();
+        componentButtons.clear();
+        for (int i = 0; i < CHOICES.size(); i++) {
+            final Choice choice = CHOICES.get(i);
             int col = i % 3;
             int row = i / 3;
-            addDrawableChild(ButtonWidget.builder(Text.literal(label), button ->
-                sendCommand("arcana select " + id))
-                .dimensions(left + col * 116, top + 48 + row * 20, buttonWidth, buttonHeight).build());
+            ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> toggle(choice))
+                .dimensions(x + 132 + col * 88, y + 48 + row * 18, 84, 17).build();
+            componentButtons.add(button);
+            addDrawableChild(button);
         }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Clear draft"), button -> sendCommand("arcana clear"))
-            .dimensions(left, top + 198, 108, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("Preview"), button -> sendCommand("arcana preview"))
-            .dimensions(left + 117, top + 198, 108, 20).build());
-
-        spellName = new TextFieldWidget(textRenderer, left, top + 230, 225, 20, Text.literal("Spell name"));
+        spellName = new TextFieldWidget(textRenderer, x + 132, y + 199, 174, 20, Text.literal("Spell name"));
         spellName.setMaxLength(32);
-        spellName.setPlaceholder(Text.literal("Name your spell"));
+        spellName.setPlaceholder(Text.literal("Name this spell"));
         addDrawableChild(spellName);
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Engrave"), button -> {
-            String name = spellName.getText().trim();
-            if (!name.isEmpty()) sendCommand("arcana engrave " + name);
-        }).dimensions(left + 234, top + 230, 108, 20).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Close"), button -> close())
-            .dimensions(left + 234, top + 198, 108, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Engrave"), b -> engrave())
+            .dimensions(x + 312, y + 199, 84, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Clear"), b -> {
+            selected.clear();
+            refreshButtons();
+        }).dimensions(x + 312, y + 225, 84, 18).build());
     }
 
-    private void sendCommand(String command) {
-        if (client != null && client.player != null) {
-            client.player.networkHandler.sendChatCommand(command);
+    private Text buttonText(Choice choice) {
+        return Text.literal((selected.contains(choice.id()) ? "✓ " : "+ ") + choice.label());
+    }
+
+    private void toggle(Choice choice) {
+        if (selected.contains(choice.id())) selected.remove(choice.id());
+        else if (selected.size() < 5) selected.add(choice.id());
+        refreshButtons();
+    }
+
+    private void refreshButtons() {
+        for (int i = 0; i < componentButtons.size(); i++) {
+            componentButtons.get(i).setMessage(buttonText(CHOICES.get(i)));
         }
+    }
+
+    private void engrave() {
+        String ids = String.join(",", selected);
+        ClientPlayNetworking.send(new MagicWriterNetwork.EngravePayload(
+            handler.syncId, spellName.getText(), ids));
+    }
+
+    @Override
+    protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+        // A bespoke dark-wood and enchanted-parchment interface, drawn at runtime
+        // so it stays crisp at every GUI scale and needs no external texture pack.
+        context.fill(x, y, x + backgroundWidth, y + backgroundHeight, 0xEE171522);
+        context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFF30263A);
+        context.fill(x + 7, y + 7, x + backgroundWidth - 7, y + 34, 0xFF211B2C);
+        context.fill(x + 8, y + 38, x + 122, y + 153, 0xFF211B2B);
+        context.fill(x + 126, y + 38, x + 422, y + 190, 0xFF292238);
+        context.fill(x + 126, y + 194, x + 422, y + 250, 0xFF211B2B);
+        // Fine gold edging.
+        context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + 5, 0xFFB58A55);
+        context.fill(x + 3, y + backgroundHeight - 5, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFFB58A55);
+        context.fill(x + 3, y + 3, x + 5, y + backgroundHeight - 3, 0xFFB58A55);
+        context.fill(x + backgroundWidth - 5, y + 3, x + backgroundWidth - 3, y + backgroundHeight - 3, 0xFFB58A55);
+        context.fill(x + 126, y + 36, x + 422, y + 37, 0xFF80618C);
+        context.fill(x + 126, y + 192, x + 422, y + 193, 0xFF80618C);
+    }
+
+    @Override
+    protected void drawForeground(DrawContext context, int mouseX, int mouseY) {
+        context.drawTextWithShadow(textRenderer, "MAGIC WRITER", 14, 12, 0xF5D9A6);
+        context.drawTextWithShadow(textRenderer, "WORKING SLOTS", 16, 43, 0xD8B98A);
+        context.drawTextWithShadow(textRenderer, "GRIMOIRE", 16, 58, 0xE8DCCB);
+        context.drawTextWithShadow(textRenderer, "MAGIC PAPER", 16, 103, 0xE8DCCB);
+        context.drawTextWithShadow(textRenderer, "SPELL COMPONENTS  •  " + selected.size() + "/5", 134, 40, 0xD8B98A);
+        String preview = selected.isEmpty() ? "Select at least two components to begin." :
+            "Selected: " + String.join(" + ", selected);
+        context.drawTextWithShadow(textRenderer, preview, 134, 178, 0xE6D8C4);
+        context.drawTextWithShadow(textRenderer, "SPELL NAME", 134, 189, 0xD8B98A);
+        context.drawTextWithShadow(textRenderer, "Place a Grimoire and Magic Paper in the two slots.", 16, 143, 0xBCAFC7);
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
-        int left = (width - 342) / 2;
-        int top = (height - 286) / 2;
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, top + 10, 0xFFFFFF);
-        context.drawTextWithShadow(textRenderer, "Select spell components (maximum 5):", left, top + 34, 0xD6C8FF);
-        context.drawTextWithShadow(textRenderer, "Your draft and validation feedback appear in chat.", left, top + 260, 0xAAAAAA);
         super.render(context, mouseX, mouseY, delta);
+        drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
     @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    public boolean shouldPause() { return false; }
 }
