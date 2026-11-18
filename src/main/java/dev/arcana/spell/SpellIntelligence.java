@@ -60,6 +60,10 @@ public final class SpellIntelligence {
             issues.add("Summoning cannot use Self as its target.");
         if (selected.contains("binding") && selected.contains("self"))
             issues.add("Binding cannot target the caster.");
+        if (selected.contains("ally") && selected.contains("hostile"))
+            issues.add("Ally and Hostile are mutually exclusive target filters.");
+        if (selected.contains("single_target") && selected.contains("multiple_targets"))
+            warnings.add("Single Target and Multiple Targets are both selected; Multiple Targets takes precedence.");
 
         for (Map.Entry<ComponentCategory, Integer> entry : counts.entrySet()) {
             if (entry.getValue() > 1) {
