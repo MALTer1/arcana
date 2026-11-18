@@ -195,6 +195,23 @@ public final class SpellCompositionEngine {
             explanations.add("The target is already burning; the water component prioritizes extinguishing and cooling.");
         }
 
+        if (ids.contains("healing") && ids.contains("explosion")) {
+            interactions.add("Restorative shockwave");
+            explanations.add("Healing and explosion resolve by relationship: friendly targets receive restoration while hostile targets receive the outward burst.");
+        }
+        if (ids.contains("teleportation") && (ids.contains("projectile") || ids.contains("beam"))) {
+            interactions.add("Delivered teleportation");
+            explanations.add("The delivery shape selects the destination target, then spatial magic relocates that target to a safe point in front of the caster.");
+        }
+        if (ids.contains("summoning") && ids.contains("self")) {
+            interactions.add("Caster-side summoning");
+            explanations.add("Self targeting anchors the summoned helper beside the caster.");
+        }
+        if (ids.contains("binding") && ids.contains("self")) {
+            interactions.add("Self anchoring");
+            explanations.add("Binding applied to the caster is interpreted as a stabilizing anchor rather than hostile restraint.");
+        }
+
         // Multiple components in a category are composed, not rejected.
         long deliveryCount = ids.stream().filter(id -> isDelivery(id)).count();
         long elementCount = ids.stream().filter(id -> isElement(id)).count();
