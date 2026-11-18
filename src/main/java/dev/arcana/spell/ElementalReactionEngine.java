@@ -41,25 +41,54 @@ public final class ElementalReactionEngine {
             Set.of("moon", "water")),
         new Reaction("solar_flare", "Solar Flare",
             "Sun energy intensifies the spell's fire and radiance.",
-            Set.of("sun", "fire"))
+            Set.of("sun", "fire")),
+        new Reaction("blizzard", "Blizzard",
+            "Wind carries intense cold through a wider area.",
+            Set.of("wind", "ice")),
+        new Reaction("mist", "Mist",
+            "Wind disperses water into a drifting veil.",
+            Set.of("wind", "water")),
+        new Reaction("mud", "Mud",
+            "Water saturates earth into heavy, slowing mud.",
+            Set.of("earth", "water")),
+        new Reaction("thermal_shock", "Thermal Shock",
+            "Fire and ice create a sudden clash of extreme temperatures.",
+            Set.of("fire", "ice")),
+        new Reaction("eclipse", "Eclipse",
+            "Light and shadow interfere, creating a shifting veil.",
+            Set.of("light", "shadow")),
+        new Reaction("resonance", "Crystal Resonance",
+            "Sound vibrates through crystal and amplifies the signal.",
+            Set.of("sound", "crystal")),
+        new Reaction("verdant_surge", "Verdant Surge",
+            "Nature, water, and sunlight combine to nourish living growth.",
+            Set.of("nature", "water", "sun")),
+        new Reaction("magnetic_arc", "Magnetic Arc",
+            "Metal channels lightning into a focused electrical surge.",
+            Set.of("metal", "lightning")),
+        new Reaction("solar_eclipse", "Solar Eclipse",
+            "Moon and sun energies create a temporary dimming effect.",
+            Set.of("moon", "sun"))
     );
 
     /** Returns non-overlapping reactions, preferring the most specific combinations. */
     public static List<Reaction> resolve(List<String> componentIds) {
         Set<String> available = new LinkedHashSet<>(componentIds);
+        List<Reaction> matching = REACTIONS.stream()
+            .filter(reaction -> available.containsAll(reaction.elements()))
+            .sorted((a, b) -> Integer.compare(b.elements().size(), a.elements().size()))
+            .toList();
+
         List<Reaction> resolved = new ArrayList<>();
-        boolean changed;
-        do {
-            changed = false;
-            for (Reaction reaction : REACTIONS) {
-                if (available.containsAll(reaction.elements())) {
-                    resolved.add(reaction);
-                    available.removeAll(reaction.elements());
-                    changed = true;
-                    break;
-                }
-            }
-        } while (changed);
+        for (Reaction candidate : matching) {
+            // A specific multi-element reaction replaces its own simpler
+            // subsets, but independent overlapping reactions may coexist.
+            boolean coveredByMoreSpecific = resolved.stream().anyMatch(selected ->
+                selected.elements().containsAll(candidate.elements()));
+            if (coveredByMoreSpecific) continue;
+            resolved.removeIf(selected -> candidate.elements().containsAll(selected.elements()));
+            resolved.add(candidate);
+        }
         return List.copyOf(resolved);
     }
 
