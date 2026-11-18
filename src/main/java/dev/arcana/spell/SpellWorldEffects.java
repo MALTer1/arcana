@@ -53,7 +53,8 @@ public final class SpellWorldEffects {
         if (components.contains("transmutation")) {
             changed += transmuteBlock(world, center, components);
         }
-        if (components.contains("projectile_target")) {
+        if (components.contains("projectile_target") || components.contains("reflection")
+            || components.contains("barrier")) {
             changed += deflectProjectiles(world, caster);
         }
         return changed;
