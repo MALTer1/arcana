@@ -54,7 +54,7 @@ public final class MagicWriterBlockEntityRenderer implements BlockEntityRenderer
         float time = entity.getWorld().getTime() + tickDelta;
         float swing = (float) Math.sin(time * 0.12F) * 9.0F;
         matrices.push();
-        matrices.translate(0.5, 0.86, 0.30);
+        matrices.translate(0.5, 1.12, 0.70);
         matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(swing));
         matrices.scale(0.18F, 0.18F, 0.18F);
         itemRenderer.renderItem(new ItemStack(Items.END_ROD), ModelTransformationMode.GROUND,
