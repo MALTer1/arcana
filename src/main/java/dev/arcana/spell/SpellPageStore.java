@@ -22,6 +22,9 @@ public final class SpellPageStore {
   NbtCompound tag=new NbtCompound(); tag.putString("Name",spell.name); tag.putString("Behavior",spell.behavior==null?"":spell.behavior);
   NbtList ids=new NbtList(); if(spell.components!=null) spell.components.forEach(id->ids.add(NbtString.of(id)));
   tag.put("Components",ids); root.put(KEY,tag);
-  stack.set(DataComponentTypes.CUSTOM_DATA,NbtComponent.of(root)); stack.set(DataComponentTypes.CUSTOM_NAME,Text.literal(spell.name));
+  stack.set(DataComponentTypes.CUSTOM_DATA,NbtComponent.of(root));
+  // Engraved sheets are unique; only blank Magic Paper should stack to 64.
+  stack.set(DataComponentTypes.MAX_STACK_SIZE, 1);
+  stack.set(DataComponentTypes.CUSTOM_NAME,Text.literal(spell.name));
  }
 }
