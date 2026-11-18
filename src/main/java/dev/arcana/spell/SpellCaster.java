@@ -116,6 +116,8 @@ public final class SpellCaster {
                     final Vec3d chainOrigin = from;
                     LivingEntity next = candidates.stream()
                         .filter(entity -> !result.contains(entity))
+                        .filter(entity -> !parts.contains("ally") || entity.isTeammate(player))
+                        .filter(entity -> !parts.contains("hostile") || !entity.isTeammate(player))
                         .filter(entity -> entity.getBoundingBox().getCenter().squaredDistanceTo(chainOrigin) <= 8.0 * 8.0)
                         .min(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(chainOrigin)))
                         .orElse(null);
@@ -123,6 +125,19 @@ public final class SpellCaster {
                     result.add(next);
                     current = next;
                     from = current.getBoundingBox().getCenter();
+                }
+                boolean hasOtherDelivery = parts.stream().anyMatch(id ->
+                    List.of("projectile", "beam", "wave", "barrier", "field", "arc", "cone",
+                        "ring", "pulse", "orbit", "tether", "rune", "wall", "column").contains(id));
+                if (hasOtherDelivery && result.size() < (multiple ? 5 : 1)) {
+                    candidates.stream()
+                        .filter(entity -> !result.contains(entity))
+                        .filter(entity -> !parts.contains("ally") || entity.isTeammate(player))
+                        .filter(entity -> !parts.contains("hostile") || !entity.isTeammate(player))
+                        .filter(entity -> matchesDeliveryShape(entity, parts, origin, impact, look, range, composition))
+                        .sorted(Comparator.comparingDouble(entity -> entity.squaredDistanceTo(player)))
+                        .limit(Math.max(0, (multiple ? 5 : 1) - result.size()))
+                        .forEach(result::add);
                 }
             } else {
                 candidates.stream()
