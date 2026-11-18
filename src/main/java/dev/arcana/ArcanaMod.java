@@ -2,6 +2,7 @@ package dev.arcana;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.arcana.block.ArcanaBlocks;
+import dev.arcana.entity.ArcanaEntities;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.network.GrimoireNetwork;
@@ -35,6 +36,7 @@ public final class ArcanaMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
+        ArcanaEntities.register();
         GrimoireNetwork.initialize();
         GrimoireCommands.register();
         ArcanaItems.register();
