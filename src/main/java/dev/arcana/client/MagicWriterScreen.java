@@ -48,7 +48,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         super(handler, inventory, title);
         backgroundWidth = 390;
         backgroundHeight = 236;
-        playerInventoryTitleX = 104;
+        playerInventoryTitleX = 16;
         playerInventoryTitleY = 145;
         titleX = 14;
         titleY = 10;
@@ -143,7 +143,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.fill(x + 6, y + 6, x + backgroundWidth - 6, y + backgroundHeight - 6, 0xFF211A2A);
         context.fill(x + 10, y + 18, x + 120, y + 139, 0xFF302438);
         context.fill(x + 124, y + 18, x + 382, y + 143, 0xFF35283D);
-        context.fill(x + 98, y + 142, x + 270, y + 232, 0xFF2B2133);
+        context.fill(x + 10, y + 142, x + 190, y + 232, 0xFF2B2133);
         context.fill(x + 274, y + 148, x + 380, y + 228, 0xFF241B30);
 
         context.fill(x + 3, y + 3, x + backgroundWidth - 3, y + 5, 0xFFE1B76C);
@@ -153,7 +153,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
 
         context.fill(x + 128, y + 30, x + 378, y + 32, 0xFFB58B58);
         context.drawText(textRenderer, "OUTPUT", x + 86, y + 74, 0xFFFFD98D, false);
-        context.fill(x + 102, y + 152, x + 264, y + 154, 0xFFB58B58);
+        context.fill(x + 14, y + 152, x + 184, y + 154, 0xFFB58B58);
 
         int totalRows = (CHOICES.size() + COLUMNS - 1) / COLUMNS;
         int maxRows = Math.max(0, totalRows - VISIBLE_ROWS);
@@ -167,9 +167,9 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     protected void drawSlot(DrawContext context, Slot slot) {
         int sx = x + slot.x;
         int sy = y + slot.y;
-        boolean writerSlot = slot.x < 90;
-        int outer = writerSlot ? (slot.y < 90 ? 0xFFE6C477 : 0xFF9BC7D2) : 0xFF9A805C;
-        int inner = writerSlot ? (slot.y < 90 ? 0xFF49304F : 0xFF263C4A) : 0xFF3B3040;
+        boolean writerSlot = slot.id < 3;
+        int outer = writerSlot ? (slot.id == 1 ? 0xFF9BC7D2 : 0xFFE6C477) : 0xFF9A805C;
+        int inner = writerSlot ? (slot.id == 1 ? 0xFF263C4A : 0xFF49304F) : 0xFF3B3040;
         context.fill(sx - 2, sy - 2, sx + 18, sy + 18, 0xFF100B17);
         context.fill(sx - 1, sy - 1, sx + 17, sy + 17, outer);
         context.fill(sx, sy, sx + 16, sy + 16, inner);
@@ -189,7 +189,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.drawTextWithShadow(textRenderer, "COMPONENTS  " + selected.size() + "/5", 130, 20, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "SCROLL TO BROWSE", 270, 132, 0xFFD7C19F);
         context.drawTextWithShadow(textRenderer, "SPELL NAME", 274, 145, 0xFFFFD98D);
-        context.drawTextWithShadow(textRenderer, "Your inventory", 104, 145, 0xFFD8C4A4);
+        context.drawTextWithShadow(textRenderer, "Your inventory", 16, 145, 0xFFD8C4A4);
     }
 
     @Override
@@ -219,6 +219,5 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         drawMouseoverTooltip(context, mouseX, mouseY);
     }
 
-    @Override
-    public boolean shouldPause() { return false; }
+    @Override public boolean shouldPause() { return false; }
 }
