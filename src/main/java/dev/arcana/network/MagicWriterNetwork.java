@@ -35,6 +35,7 @@ public final class MagicWriterNetwork {
   for(String id:ids){var result=draft.add(id);if(!result.success()){player.sendMessage(Text.literal(result.message()),false);return;}}
   if(!draft.isValid()){draft.validationIssues().forEach(issue->player.sendMessage(Text.literal("• "+issue),false));return;}
   ItemStack book=writer.getStack(0),input=writer.getStack(1);
+  if(input.isEmpty()){player.sendMessage(Text.literal("Insert Magic Paper or an editable Spell Page."),false);return;}
   boolean page=input.isOf(ArcanaItems.SPELL_PAGE);
   if(page&&SpellPageStore.get(input)==null){player.sendMessage(Text.literal("That Spell Page has no editable spell data."),false);return;}
   GrimoireTier tier=writer.getInsertedTier();

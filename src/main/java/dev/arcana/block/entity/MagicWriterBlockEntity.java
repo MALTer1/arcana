@@ -6,6 +6,7 @@ import dev.arcana.screen.MagicWriterScreenHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.*;
+import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
 import net.minecraft.entity.player.*;
 import net.minecraft.inventory.*;
 import net.minecraft.item.ItemStack;
