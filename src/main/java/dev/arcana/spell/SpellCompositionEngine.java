@@ -74,13 +74,11 @@ public final class SpellCompositionEngine {
         // Delivery + element interactions.
         if (ids.contains("projectile") && ids.contains("lightning")) {
             speed *= 1.35;
-            range *= 1.20;
             interactions.add("Conductive projectile");
             explanations.add("Lightning energizes the projectile, increasing its planned travel speed and reach.");
         }
         if (ids.contains("projectile") && ids.contains("wind")) {
             speed *= 1.25;
-            range *= 1.10;
             interactions.add("Wind-accelerated projectile");
             explanations.add("Wind accelerates the projectile and carries it farther.");
         }
