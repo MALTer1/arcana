@@ -145,7 +145,8 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             }
             // While entering a name, consume keys here so inventory/other game
             // bindings cannot close the workstation or trigger gameplay actions.
-            return spellName.keyPressed(keyCode, scanCode, modifiers);
+            spellName.keyPressed(keyCode, scanCode, modifiers);
+            return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
