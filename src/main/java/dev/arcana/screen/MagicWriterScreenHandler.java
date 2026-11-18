@@ -31,27 +31,26 @@ public final class MagicWriterScreenHandler extends ScreenHandler {
         this.context = context;
         inventory.onOpen(player.player);
 
-        addSlot(new Slot(inventory, 0, 36, 54) {
+        addSlot(new Slot(inventory, 0, 24, 48) {
             public boolean canInsert(ItemStack stack) { return GrimoireTier.fromItem(stack.getItem()) != null; }
             public int getMaxItemCount() { return 1; }
         });
-        addSlot(new Slot(inventory, 1, 36, 104) {
-            public boolean canInsert(ItemStack stack) {
-                return stack.isOf(ArcanaItems.MAGIC_PAPER) || stack.isOf(ArcanaItems.SPELL_PAGE);
-            }
+        addSlot(new Slot(inventory, 1, 24, 88) {
+            public boolean canInsert(ItemStack stack) { return stack.isOf(ArcanaItems.MAGIC_PAPER); }
         });
-        addSlot(new Slot(inventory, 2, 116, 78) {
+        addSlot(new Slot(inventory, 2, 66, 68) {
             public boolean canInsert(ItemStack stack) { return false; }
             public int getMaxItemCount() { return 1; }
         });
 
+        // Vanilla inventory: 9 columns x 3 rows, then the hotbar.
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
-                addSlot(new Slot(player, col + row * 9 + 9, 12 + col * 18, 162 + row * 18));
+                addSlot(new Slot(player, col + row * 9 + 9, 79 + col * 18, 151 + row * 18));
             }
         }
         for (int col = 0; col < 9; col++) {
-            addSlot(new Slot(player, col, 12 + col * 18, 216));
+            addSlot(new Slot(player, col, 79 + col * 18, 205));
         }
     }
 
@@ -73,8 +72,7 @@ public final class MagicWriterScreenHandler extends ScreenHandler {
         } else {
             boolean moved = false;
             if (GrimoireTier.fromItem(stack.getItem()) != null) moved = insertItem(stack, 0, 1, false);
-            else if (stack.isOf(ArcanaItems.MAGIC_PAPER) || stack.isOf(ArcanaItems.SPELL_PAGE))
-                moved = insertItem(stack, 1, 2, false);
+            else if (stack.isOf(ArcanaItems.MAGIC_PAPER)) moved = insertItem(stack, 1, 2, false);
             if (!moved) return empty;
         }
 
