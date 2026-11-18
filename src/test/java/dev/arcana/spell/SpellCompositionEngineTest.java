@@ -27,7 +27,7 @@ class SpellCompositionEngineTest {
             .map(ElementalReactionEngine.Reaction::id)
             .collect(Collectors.toSet());
 
-        assertEquals(Set.of("steam", "wildfire"), ids);
+        assertEquals(Set.of("steam", "wildfire", "mist"), ids);
     }
 
     @Test
