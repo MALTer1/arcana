@@ -52,14 +52,14 @@ public final class SpellIntelligence {
 
         Set<String> selected = components.stream().map(SpellComponent::id).collect(Collectors.toSet());
         if (selected.contains("healing") && selected.contains("explosion"))
-            issues.add("Healing and Explosion currently have conflicting primary outcomes.");
+            warnings.add("Healing + Explosion is interpreted as a restorative shockwave: allies are healed while hostile targets receive the burst.");
         if (selected.contains("teleportation") &&
             (selected.contains("projectile") || selected.contains("beam")))
-            issues.add("Teleportation cannot currently be combined with Projectile or Beam delivery.");
+            warnings.add("Teleportation is delivered through the selected moving shape; valid targets are moved to the caster's forward destination.");
         if (selected.contains("summoning") && selected.contains("self"))
-            issues.add("Summoning cannot use Self as its target.");
+            warnings.add("Self-targeted summoning places the helper beside the caster.");
         if (selected.contains("binding") && selected.contains("self"))
-            issues.add("Binding cannot target the caster.");
+            warnings.add("Self-targeted binding acts as a temporary self-anchor.");
         if (selected.contains("ally") && selected.contains("hostile"))
             issues.add("Ally and Hostile are mutually exclusive target filters.");
         if (selected.contains("single_target") && selected.contains("multiple_targets"))
