@@ -90,6 +90,13 @@ public final class MagicWriterNetwork {
             player.sendMessage(Text.literal("Legendary spells can only be stored in a Master Grimoire."), false);
             return;
         }
+        int allowedComponents = keepLegendary ? 8 : (tier == null
+            ? SpellDraft.MAX_NORMAL_COMPONENTS : tier.maxComponents());
+        if (draft.selectedIds().size() > allowedComponents) {
+            player.sendMessage(Text.literal((keepLegendary ? "Legendary pages support up to 8 glyphs."
+                : "This page can hold up to " + allowedComponents + " glyphs.") ), false);
+            return;
+        }
         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
             name, draft.selectedIds(), draft.behavior(), keepLegendary,
             keepLegendary ? previous.legendaryEffect : "");
