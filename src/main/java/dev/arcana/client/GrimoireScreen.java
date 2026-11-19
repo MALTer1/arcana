@@ -317,25 +317,30 @@ public final class GrimoireScreen extends Screen {
                     Text.literal(spell.has("behavior") ? spell.get("behavior").getAsString() : ""), 184);
                 for (int i = 0; i < Math.min(2, behaviorLines.size()); i++)
                     context.drawText(textRenderer, behaviorLines.get(i), left + 230, top + 170 + i * 10, 0xFF4A3020, false);
-                context.drawText(textRenderer, "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0), left + 230, top + 191, 0xFF684D36, false);
+                String costLine = "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0);
+                context.drawText(textRenderer, textRenderer.trimToWidth(costLine, 184), left + 230, top + 191, 0xFF684D36, false);
+                if (spell.has("costBreakdown")) {
+                    String breakdown = textRenderer.trimToWidth(spell.get("costBreakdown").getAsString(), 184);
+                    context.drawText(textRenderer, breakdown, left + 230, top + 202, 0xFF806B4F, false);
+                }
                 JsonArray effects = spell.has("effects") ? spell.getAsJsonArray("effects") : new JsonArray();
                 String effectSummary = effects.size() == 0 ? "None" : effects.get(0).getAsString();
                 if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
-                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 204, 0xFF684D36, false);
+                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 214, 0xFF684D36, false);
                 JsonArray descriptions = spell.has("effectDescriptions") ? spell.getAsJsonArray("effectDescriptions") : new JsonArray();
                 if (!descriptions.isEmpty()) {
                     String detail = textRenderer.trimToWidth(descriptions.get(0).getAsString(), 184);
-                    context.drawText(textRenderer, detail, left + 230, top + 216, 0xFF684D36, false);
+                    context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, false);
                 }
                 if (legendary) {
-                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 228, 0xFF9A6510, false);
+                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 238, 0xFF9A6510, false);
                     String signature = textRenderer.trimToWidth(spell.get("legendaryEffect").getAsString(), 184);
-                    context.drawText(textRenderer, signature, left + 230, top + 239, 0xFF9A6510, false);
+                    context.drawText(textRenderer, signature, left + 230, top + 249, 0xFF9A6510, false);
                 } else {
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
                     if (!warnings.isEmpty()) {
                         String synergy = textRenderer.trimToWidth("Synergy: " + warnings.get(0).getAsString(), 184);
-                        context.drawText(textRenderer, synergy, left + 230, top + 228, 0xFF684D36, false);
+                        context.drawText(textRenderer, synergy, left + 230, top + 238, 0xFF684D36, false);
                     }
                 }
                 if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, false);
