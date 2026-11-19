@@ -38,6 +38,8 @@ public final class ArcanaFieldEntity extends Entity {
         DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Boolean> LEGENDARY =
         DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Integer> MAX_LIFETIME =
+        DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.INTEGER);
 
     private final Set<UUID> affectedTargets = new HashSet<>();
     private final Set<UUID> deflectedProjectiles = new HashSet<>();
@@ -55,6 +57,7 @@ public final class ArcanaFieldEntity extends Entity {
         builder.add(RADIUS, 3.5F);
         builder.add(FACING_YAW, 0.0F);
         builder.add(LEGENDARY, false);
+        builder.add(MAX_LIFETIME, 200);
     }
 
     public static boolean launch(ServerPlayerEntity owner, SpellBookStore.StoredSpell spell,
@@ -87,6 +90,8 @@ public final class ArcanaFieldEntity extends Entity {
         field.dataTracker.set(RADIUS, (float) Math.max(1.5, Math.min(8.0, baseRadius * plan.areaMultiplier())));
         field.dataTracker.set(FACING_YAW, owner.getYaw());
         field.dataTracker.set(LEGENDARY, spell.legendary);
+        int lifetimeTicks = (int)Math.round(200.0 * plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+        field.dataTracker.set(MAX_LIFETIME, Math.max(200, Math.min(600, lifetimeTicks)));
         return owner.getWorld().spawnEntity(field);
     }
 
@@ -102,7 +107,7 @@ public final class ArcanaFieldEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (++lifetime > 20 * 10) {
+        if (++lifetime > dataTracker.get(MAX_LIFETIME)) {
             discard();
             return;
         }
@@ -199,6 +204,7 @@ public final class ArcanaFieldEntity extends Entity {
         dataTracker.set(RADIUS, nbt.getFloat("Radius"));
         dataTracker.set(FACING_YAW, nbt.getFloat("FacingYaw"));
         dataTracker.set(LEGENDARY, nbt.getBoolean("Legendary"));
+        dataTracker.set(MAX_LIFETIME, nbt.contains("MaxLifetime") ? nbt.getInt("MaxLifetime") : 200);
         readUuidSet(nbt.getString("AffectedTargets"), affectedTargets);
         readUuidSet(nbt.getString("DeflectedProjectiles"), deflectedProjectiles);
     }
@@ -212,6 +218,7 @@ public final class ArcanaFieldEntity extends Entity {
         nbt.putFloat("Radius", dataTracker.get(RADIUS));
         nbt.putFloat("FacingYaw", dataTracker.get(FACING_YAW));
         nbt.putBoolean("Legendary", dataTracker.get(LEGENDARY));
+        nbt.putInt("MaxLifetime", dataTracker.get(MAX_LIFETIME));
         nbt.putString("AffectedTargets", joinUuidSet(affectedTargets));
         nbt.putString("DeflectedProjectiles", joinUuidSet(deflectedProjectiles));
     }
