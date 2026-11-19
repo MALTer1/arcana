@@ -13,6 +13,20 @@ public final class LegendarySpellEngine {
 
     public static String describe(List<String> ids) {
         if (ids == null) return "Arcane Ascendance";
+        if (ids.contains("fire") && ids.contains("water") && ids.contains("lightning"))
+            return "Tempest Crucible — charged steam erupts in a blinding, electrified second wave.";
+        if (ids.contains("fire") && ids.contains("water"))
+            return "Steam Tempest — the spell releases a second wave of scalding mist.";
+        if (ids.contains("nature") && ids.contains("water") && ids.contains("sun"))
+            return "Worldroot — sunlight and water drive a powerful restorative surge.";
+        if (ids.contains("wind") && ids.contains("ice"))
+            return "Whiteout — a wide frost pulse leaves hostile targets slowed and exposed.";
+        if (ids.contains("metal") && ids.contains("lightning"))
+            return "Magnetic Cataclysm — the spell unleashes a focused electrical surge.";
+        if (ids.contains("fire") && ids.contains("earth"))
+            return "Magmaheart — the spell releases a molten second wave.";
+        if (ids.contains("light") && ids.contains("shadow"))
+            return "Eclipse Crown — the spell creates a shifting veil of radiant darkness.";
         if (ids.contains("fire") || ids.contains("magma") || ids.contains("sun"))
             return "Solar Cataclysm — a second wave of searing arcane force.";
         if (ids.contains("water") || ids.contains("ice"))
