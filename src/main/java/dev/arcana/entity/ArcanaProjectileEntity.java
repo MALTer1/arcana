@@ -111,14 +111,18 @@ public final class ArcanaProjectileEntity extends Entity {
             start, end, RaycastContext.ShapeType.COLLIDER,
             RaycastContext.FluidHandling.NONE, this));
 
+        // Use a swept segment with a forgiving collision margin. The previous
+        // narrow box could let fast projectiles pass beside a mob without impact.
         Entity entityHit = getWorld().getOtherEntities(this,
-                getBoundingBox().stretch(velocity).expand(0.25),
+                getBoundingBox().stretch(velocity).expand(0.8),
                 candidate -> candidate instanceof LivingEntity && candidate.isAlive()
                     && candidate.getId() != dataTracker.get(OWNER_ID)
                     && !hitEntityIds.contains(candidate.getId()))
             .stream()
+            .filter(candidate -> distanceSquaredToSegment(
+                candidate.getBoundingBox().getCenter(), start, end) <= 1.0)
             .min(java.util.Comparator.comparingDouble(candidate ->
-                candidate.getBoundingBox().getCenter().squaredDistanceTo(start)))
+                distanceAlongSegment(candidate.getBoundingBox().getCenter(), start, end)))
             .orElse(null);
 
         double blockDistance = blockHit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK
@@ -133,6 +137,7 @@ public final class ArcanaProjectileEntity extends Entity {
         }
         if (blockHit.getType() == net.minecraft.util.hit.HitResult.Type.BLOCK) {
             setPosition(blockHit.getPos());
+            impactBlockNearby();
             impact(null);
             return;
         }
@@ -141,6 +146,41 @@ public final class ArcanaProjectileEntity extends Entity {
         setVelocity(dataTracker.get(ARC_TRAJECTORY)
             ? velocity.add(0.0, -0.012, 0.0).multiply(0.995)
             : velocity.multiply(0.995));
+    }
+
+    private static double distanceAlongSegment(Vec3d point, Vec3d start, Vec3d end) {
+        Vec3d segment = end.subtract(start);
+        double lengthSquared = segment.lengthSquared();
+        if (lengthSquared < 1.0E-8) return point.squaredDistanceTo(start);
+        double t = Math.max(0.0, Math.min(1.0, point.subtract(start).dotProduct(segment) / lengthSquared));
+        return t;
+    }
+
+    private static double distanceSquaredToSegment(Vec3d point, Vec3d start, Vec3d end) {
+        Vec3d segment = end.subtract(start);
+        double lengthSquared = segment.lengthSquared();
+        if (lengthSquared < 1.0E-8) return point.squaredDistanceTo(start);
+        double t = Math.max(0.0, Math.min(1.0, point.subtract(start).dotProduct(segment) / lengthSquared));
+        return point.squaredDistanceTo(start.add(segment.multiply(t)));
+    }
+
+    private void impactBlockNearby() {
+        if (!(getWorld() instanceof ServerWorld world)) return;
+        Entity owner = world.getEntityById(dataTracker.get(OWNER_ID));
+        if (!(owner instanceof ServerPlayerEntity player)) return;
+        List<String> ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
+            .filter(id -> !id.isBlank()).toList();
+        // A projectile striking terrain still releases its payload at the impact point.
+        // This prevents ordinary block contact from silently cancelling the spell.
+        double radius = ids.contains("expand") || ids.contains("area") ? 4.0 : 2.0;
+        for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class,
+            getBoundingBox().expand(radius), entity -> entity.isAlive()
+                && entity.getBoundingBox().getCenter().squaredDistanceTo(getPos()) <= radius * radius)) {
+            SpellCaster.impactProjectile(player,
+                new SpellBookStore.StoredSpell("Arcane Impact", ids, "",
+                    dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
+                        ? dev.arcana.spell.LegendarySpellEngine.describe(ids) : ""), target);
+        }
     }
 
     private void impact(Entity hit) {
