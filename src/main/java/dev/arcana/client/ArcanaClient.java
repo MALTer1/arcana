@@ -44,12 +44,20 @@ public final class ArcanaClient implements ClientModInitializer {
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
-            if (stack.isOf(ArcanaItems.MAGIC_PAPER)) {
+            if (stack.isOf(ArcanaItems.LEGENDARY_SCROLL)) {
+                lines.add(Text.literal("§6Legendary Upgrade"));
+                lines.add(Text.literal("§7Awakens one engraved spell page."));
+                lines.add(Text.literal("§8Legendary spells require a Master Grimoire."));
+                return;
+            }
+            if (stack.isOf(ArcanaItems.MAGIC_PAPER) || stack.isOf(ArcanaItems.SPELL_PAGE)) {
                 var page = SpellPageStore.get(stack);
                 if (page != null) {
-                    lines.add(Text.literal("§6Engraved Magic Paper"));
+                    lines.add(Text.literal(page.legendary ? "§6✦ Legendary Spell Page" : "§6Engraved Magic Paper"));
                     lines.add(Text.literal("§7Components: " + String.join(", ", page.components)));
-                    lines.add(Text.literal("§8Insert into a Magic Writer to edit."));
+                    lines.add(Text.literal("§7Arcana cost: " + page.arcanaCost()));
+                    if (page.legendary) lines.add(Text.literal("§e" + page.legendaryEffect));
+                    lines.add(Text.literal("§8Insert into a Grimoire to store it."));
                 }
                 return;
             }
@@ -57,7 +65,7 @@ public final class ArcanaClient implements ClientModInitializer {
             if (tier == null) return;
             var spells = GrimoireStore.get(stack, tier);
             lines.add(Text.literal("§6" + spells.size() + " / " + tier.spellSlots() + " engraved pages"));
-            for (var spell : spells) lines.add(Text.literal("§7✦ " + spell.name));
+            for (var spell : spells) lines.add(Text.literal((spell.legendary ? "§6✦ " : "§7✦ ") + spell.name + " §8(" + spell.arcanaCost() + " Arcana)"));
             if (spells.isEmpty()) lines.add(Text.literal("§8An untouched grimoire"));
         });
 
@@ -81,7 +89,7 @@ public final class ArcanaClient implements ClientModInitializer {
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!world.isClient || activeTier(MinecraftClient.getInstance()) == null)
+            if (!world.isClient || GrimoireTier.fromItem(player.getStackInHand(hand).getItem()) == null)
                 return TypedActionResult.pass(player.getStackInHand(hand));
             if (player.isSneaking()) {
                 GrimoireHud.castSelected();
