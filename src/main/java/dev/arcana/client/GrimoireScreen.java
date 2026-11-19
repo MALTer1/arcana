@@ -100,8 +100,8 @@ public final class GrimoireScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.literal("Refresh Arcana"), b -> send("refresh", ""))
                 .dimensions(left + 250, top + 198, 156, 20).build());
         }
-        addDrawableChild(ButtonWidget.builder(Text.literal("Close book"), b -> close())
-            .dimensions(left + 300, top + 222, 108, 20).build());
+        if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal("Close book"), b -> close())
+            .dimensions(left + 300, top + 8, 108, 20).build());
     }
 
     private void buildEditor(int left, int top, String spellName, JsonObject spell) {
@@ -109,15 +109,17 @@ public final class GrimoireScreen extends Screen {
         for (int i = 0; i < Math.min(8, components.size()); i++) {
             String id = components.get(i).getAsString();
             final String name = spellName;
+            int column = i / 4;
+            int row = i % 4;
+            int cellX = left + 224 + column * 90;
+            int cellY = top + 91 + row * 18;
             addDrawableChild(ButtonWidget.builder(Text.literal("− " + shortName(id)), b -> send("edit_remove", name + "|" + id))
-                .dimensions(left + 224, top + 91 + (i % 4) * 18, 86, 17).build());
-            if (i < 8) {
-                final String moveId = id;
-                addDrawableChild(ButtonWidget.builder(Text.literal("↑"), b -> send("edit_move_up", name + "|" + moveId))
-                    .dimensions(left + 312, top + 91 + (i % 4) * 18, 20, 17).build());
-                addDrawableChild(ButtonWidget.builder(Text.literal("↓"), b -> send("edit_move_down", name + "|" + moveId))
-                    .dimensions(left + 334, top + 91 + (i % 4) * 18, 20, 17).build());
-            }
+                .dimensions(cellX, cellY, 48, 17).build());
+            final String moveId = id;
+            addDrawableChild(ButtonWidget.builder(Text.literal("↑"), b -> send("edit_move_up", name + "|" + moveId))
+                .dimensions(cellX + 50, cellY, 16, 17).build());
+            addDrawableChild(ButtonWidget.builder(Text.literal("↓"), b -> send("edit_move_down", name + "|" + moveId))
+                .dimensions(cellX + 68, cellY, 16, 17).build());
         }
         JsonArray glyphs = array("glyphs");
         int start = glyphPage * 4;
@@ -193,7 +195,9 @@ public final class GrimoireScreen extends Screen {
                 context.drawText(textRenderer, spell.has("behavior") ? spell.get("behavior").getAsString() : "", left + 230, top + 172, 0xFF4A3020, false);
                 context.drawText(textRenderer, "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0), left + 230, top + 186, 0xFF684D36, false);
                 JsonArray effects = spell.has("effects") ? spell.getAsJsonArray("effects") : new JsonArray();
-                context.drawText(textRenderer, "Effects: " + effects.toString(), left + 230, top + 200, 0xFF684D36, false);
+                String effectSummary = effects.size() == 0 ? "None" : effects.get(0).getAsString();
+                if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
+                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 200, 0xFF684D36, false);
                 if (legendary) {
                     context.drawText(textRenderer, "LEGENDARY", left + 230, top + 212, 0xFF9A6510, false);
                     context.drawText(textRenderer, spell.get("legendaryEffect").getAsString(), left + 230, top + 224, 0xFF9A6510, false);
