@@ -18,6 +18,42 @@ class SpellCompositionEngineTest {
         }
     }
 
+
+    @Test
+    void spellProgramPreservesOrderAndAttachesAugmentsToThePreviousPayload() {
+        ComponentRegistry.bootstrap();
+        SpellProgram.Compilation program = SpellProgram.compile(
+            List.of("projectile", "fire", "explosion", "multiple_targets", "lightning"));
+
+        assertTrue(program.valid(), () -> String.join("; ", program.issues()));
+        assertEquals(5, program.steps().size());
+        assertEquals(SpellProgram.Role.FORM, program.steps().get(0).role());
+        assertEquals(SpellProgram.Role.AUGMENT, program.steps().get(1).role());
+        assertEquals(0, program.steps().get(1).modifiesStep());
+        assertEquals(SpellProgram.Role.EFFECT, program.steps().get(2).role());
+        assertEquals(SpellProgram.Role.AUGMENT, program.steps().get(3).role());
+        assertEquals(2, program.steps().get(3).modifiesStep());
+        assertEquals(2, program.steps().get(4).modifiesStep());
+    }
+
+    @Test
+    void spellProgramRequiresAFormAndAtLeastOneEffect() {
+        ComponentRegistry.bootstrap();
+        assertFalse(SpellProgram.compile(List.of("fire", "healing")).valid());
+        assertFalse(SpellProgram.compile(List.of("projectile", "fire")).valid());
+        assertTrue(SpellProgram.compile(List.of("projectile", "fire", "healing")).valid());
+    }
+
+    @Test
+    void draftRetainsThePlayersGlyphOrder() {
+        ComponentRegistry.bootstrap();
+        SpellDraft draft = new SpellDraft();
+        assertTrue(draft.add("projectile").success());
+        assertTrue(draft.add("fire").success());
+        assertTrue(draft.add("healing").success());
+        assertEquals(List.of("projectile", "fire", "healing"), draft.selectedIds());
+    }
+
     @Test
     void specificThreeElementReactionReplacesItsPairReactions() {
         List<ElementalReactionEngine.Reaction> reactions =
