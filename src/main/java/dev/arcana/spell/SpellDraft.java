@@ -23,13 +23,9 @@ public final class SpellDraft {
     public void clear() { selected.clear(); }
 
     /** Distinct components from the same category are intentionally allowed. */
+    /** Preserve the exact glyph order chosen by the player. */
     public List<String> selectedIds() {
-        return selected.stream()
-            .map(ComponentRegistry::get)
-            .sorted(Comparator.comparingInt((SpellComponent c) -> c.category().ordinal())
-                .thenComparing(SpellComponent::displayName))
-            .map(SpellComponent::id)
-            .toList();
+        return List.copyOf(selected);
     }
 
     public boolean isValid() { return !selected.isEmpty() && validationIssues().isEmpty(); }
@@ -49,10 +45,7 @@ public final class SpellDraft {
             return lines;
         }
 
-        List<SpellComponent> components = selected.stream().map(ComponentRegistry::get)
-            .sorted(Comparator.comparingInt((SpellComponent c) -> c.category().ordinal())
-                .thenComparing(SpellComponent::displayName))
-            .toList();
+        List<SpellComponent> components = selected.stream().map(ComponentRegistry::get).toList();
         SpellIntelligence.Analysis analysis = SpellIntelligence.analyze("Unnamed Spell", selectedIds());
         lines.add("=== MAGIC WRITER PREVIEW ===");
         lines.add("Components (" + components.size() + "/5): " +
