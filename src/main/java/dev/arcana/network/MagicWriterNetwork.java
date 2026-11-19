@@ -99,7 +99,7 @@ public final class MagicWriterNetwork {
         }
         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
             name, draft.selectedIds(), draft.behavior(), keepLegendary,
-            keepLegendary ? previous.legendaryEffect : "");
+            keepLegendary ? LegendarySpellEngine.describe(draft.selectedIds()) : "");
 
         if (tier == null) {
             // The spell is written onto the same item type the player inserted.
