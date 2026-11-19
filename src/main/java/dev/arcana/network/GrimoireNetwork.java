@@ -101,7 +101,8 @@ public final class GrimoireNetwork {
                     if (!analysis.isValid()) message = String.join(" ", analysis.issues());
                     else {
                         SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(
-                            old.name, ids, analysis.summary(), old.legendary, old.legendaryEffect);
+                            old.name, ids, analysis.summary(), old.legendary,
+                            old.legendary ? LegendarySpellEngine.describe(ids) : "");
                         if (GrimoireStore.replace(book, tier, updated)) {
                             player.getInventory().markDirty();
                             message = "Updated " + old.name + ". New Arcana cost: " + updated.arcanaCost() + ".";
