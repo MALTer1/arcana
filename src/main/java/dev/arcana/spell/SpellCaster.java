@@ -37,7 +37,7 @@ public final class SpellCaster {
         List<String> parts = spell.components;
         boolean self = parts.contains("self");
         boolean area = parts.contains("area");
-        boolean multiple = parts.contains("multiple_targets");
+        boolean multiple = parts.contains("multiple_targets") || parts.contains("split") || parts.contains("ricochet");
         boolean single = parts.contains("single_target");
         boolean teleport = parts.contains("teleportation");
         SpellCompositionEngine.Plan composition = SpellCompositionEngine.compose(parts);
@@ -91,7 +91,9 @@ public final class SpellCaster {
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
             applyElements(player, target, parts, reactions, targetComposition.durationMultiplier());
-            applyEffects(player, target, parts, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+            double effectScale = targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
+            applyEffects(player, target, parts, effectScale);
+            if (parts.contains("repeat")) applyEffects(player, target, parts, effectScale * 0.65);
             LegendarySpellEngine.apply(player, target, spell);
             applyCompositionInteractions(player, target, targetComposition);
             affected++;
@@ -144,8 +146,23 @@ public final class SpellCaster {
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         applyElements(caster, target, parts, reactions, plan.durationMultiplier());
-        applyEffects(caster, target, parts, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+        double effectScale = plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
+        applyEffects(caster, target, parts, effectScale);
+        if (parts.contains("repeat")) applyEffects(caster, target, parts, effectScale * 0.65);
         LegendarySpellEngine.apply(caster, target, spell);
+        if (parts.contains("split")) {
+            List<LivingEntity> nearby = caster.getWorld().getEntitiesByClass(LivingEntity.class,
+                target.getBoundingBox().expand(4.0), entity -> entity != target && entity.isAlive()
+                    && (!parts.contains("hostile") || isHostileTarget(entity, caster))
+                    && (!parts.contains("ally") || entity.isTeammate(caster)));
+            for (LivingEntity extra : nearby.stream().limit(3).toList()) {
+                applyElements(caster, extra, parts, reactions, plan.durationMultiplier());
+                applyEffects(caster, extra, parts, effectScale);
+                if (parts.contains("repeat")) applyEffects(caster, extra, parts, effectScale * 0.65);
+                LegendarySpellEngine.apply(caster, extra, spell);
+                applyCompositionInteractions(caster, extra, plan);
+            }
+        }
         applyCompositionInteractions(caster, target, plan);
         if (executeWorldActions) {
             SpellWorldEffects.apply(caster, parts);
