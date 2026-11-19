@@ -82,8 +82,15 @@ public final class MagicWriterNetwork {
         }
 
         GrimoireTier tier = writer.getInsertedTier();
-        SpellBookStore.StoredSpell spell =
-            new SpellBookStore.StoredSpell(name, draft.selectedIds(), draft.behavior());
+        SpellBookStore.StoredSpell existingPage = SpellPageStore.get(input);
+        boolean keepLegendary = existingPage != null && existingPage.legendary;
+        if (keepLegendary && tier != null && tier != GrimoireTier.MASTER) {
+            player.sendMessage(Text.literal("Legendary spells can only be stored in a Master Grimoire."), false);
+            return;
+        }
+        SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
+            name, draft.selectedIds(), draft.behavior(), keepLegendary,
+            keepLegendary ? existingPage.legendaryEffect : "");
 
         if (tier == null) {
             // The spell is written onto the same item type the player inserted.
@@ -120,7 +127,7 @@ public final class MagicWriterNetwork {
             return;
         }
 
-        if (draft.selectedIds().size() > tier.maxComponents()) {
+        if (draft.selectedIds().size() > (keepLegendary ? 8 : tier.maxComponents())) {
             player.sendMessage(Text.literal(tier.displayName() + " supports up to " + tier.maxComponents() + " components."), false);
             return;
         }
