@@ -236,7 +236,7 @@ public final class GrimoireHud {
                 }
                 int shownRows = visibleComponents + (components.size() > visibleComponents ? 1 : 0);
                 int costY = componentY + shownRows * 10 + 4;
-                int cost = spell.has("cost") ? spell.get("cost").getAsInt() : 0;
+                int cost = selected.has("cost") ? selected.get("cost").getAsInt() : 0;
                 line(draw, client, "Cost: " + cost + " Arcana", rightX + innerX, costY, accent);
                 String behavior = selected.has("behavior") ? selected.get("behavior").getAsString() : "No description available.";
                 int behaviorY = costY + 14;
