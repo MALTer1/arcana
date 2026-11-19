@@ -10,9 +10,8 @@ import net.minecraft.util.Identifier;
 public final class ArcanaItems {
     public static final Item MAGIC_DUST = register("magic_dust", new Item(new Item.Settings()));
     public static final Item MAGIC_PAPER = register("magic_paper", new Item(new Item.Settings().maxCount(64)));
-    // Legacy registry entry retained so existing worlds can still load old Spell Page stacks.
-    // New pages are always represented by data-bearing Magic Paper.
     public static final Item SPELL_PAGE = register("spell_page", new Item(new Item.Settings()));
+    public static final Item LEGENDARY_SCROLL = register("legendary_scroll", new LegendaryScrollItem(new Item.Settings()));
     public static final Item NOVICE_GRIMOIRE = register("novice_grimoire", new Item(new Item.Settings().maxCount(1)));
     public static final Item APPRENTICE_GRIMOIRE = register("apprentice_grimoire", new Item(new Item.Settings().maxCount(1)));
     public static final Item ADEPT_GRIMOIRE = register("adept_grimoire", new Item(new Item.Settings().maxCount(1)));
@@ -26,6 +25,7 @@ public final class ArcanaItems {
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.INGREDIENTS).register(entries -> {
             entries.add(MAGIC_DUST);
             entries.add(MAGIC_PAPER);
+            entries.add(LEGENDARY_SCROLL);
         });
         ItemGroupEvents.modifyEntriesEvent(ItemGroups.TOOLS).register(entries -> {
             entries.add(NOVICE_GRIMOIRE);
