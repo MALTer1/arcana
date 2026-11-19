@@ -26,6 +26,7 @@ public final class GrimoireHud {
             }
             selectedSpell = Math.max(0, Math.min(selectedSpell, Math.max(0, spells().size() - 1)));
             selectedLoosePage = Math.max(0, Math.min(selectedLoosePage, Math.max(0, pages().size() - 1)));
+            GrimoireScreen.receiveState(json);
         } catch (RuntimeException ignored) {
             notice = "Could not read grimoire pages.";
             noticeUntil = System.currentTimeMillis() + 3500;
