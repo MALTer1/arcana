@@ -256,6 +256,11 @@ public final class GrimoireScreen extends Screen {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
                 boolean legendary = spell.has("legendary") && spell.get("legendary").getAsBoolean();
+                JsonArray orderedGlyphs = spell.has("components") ? spell.getAsJsonArray("components") : new JsonArray();
+                java.util.List<String> glyphNames = new java.util.ArrayList<>();
+                for (int i = 0; i < orderedGlyphs.size(); i++) glyphNames.add(shortName(orderedGlyphs.get(i).getAsString()));
+                String glyphOrder = textRenderer.trimToWidth("Order: " + String.join(" → ", glyphNames), 184);
+                context.drawText(textRenderer, glyphOrder, left + 230, top + 72, 0xFF684D36, false);
                 drawPreviewAnimation(context, left, top, spell, legendary);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL PREVIEW", left + 320, top + 145, 0xFF684D36);
                 context.drawCenteredTextWithShadow(textRenderer, name, left + 320, top + 58, 0xFF4A3020);
@@ -304,7 +309,7 @@ public final class GrimoireScreen extends Screen {
             context.drawText(textRenderer, "Normal glyph limit: " + (state.has("maxComponents") ? state.get("maxComponents").getAsInt() : 0), left + 28, top + 116, 0xFF5A3D28, false);
             context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, false);
         }
-        context.drawText(textRenderer, notice, left + 14, top + 226, 0xFFEEE0C4, false);
+        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 226, 0xFFEEE0C4, false);
         super.render(context, mouseX, mouseY, delta);
     }
     @Override public boolean shouldPause() { return false; }
