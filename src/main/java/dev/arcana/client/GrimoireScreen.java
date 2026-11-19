@@ -333,9 +333,8 @@ public final class GrimoireScreen extends Screen {
                     context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, false);
                 }
                 if (legendary) {
-                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 238, 0xFF9A6510, false);
-                    String signature = textRenderer.trimToWidth(spell.get("legendaryEffect").getAsString(), 184);
-                    context.drawText(textRenderer, signature, left + 230, top + 249, 0xFF9A6510, false);
+                    String signature = textRenderer.trimToWidth("LEGENDARY: " + spell.get("legendaryEffect").getAsString(), 184);
+                    context.drawText(textRenderer, signature, left + 230, top + 238, 0xFF9A6510, false);
                 } else {
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
                     if (!warnings.isEmpty()) {
