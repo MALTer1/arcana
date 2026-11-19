@@ -91,8 +91,8 @@ public final class SpellCaster {
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
             applyElements(player, target, parts, reactions,
-                targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
-            double effectScale = targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
+                enhancedDurationScale(spell, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
+            double effectScale = enhancedDurationScale(spell, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
             applyProgramEffects(player, target, spell, effectScale);
             LegendarySpellEngine.apply(player, target, spell);
             applyCompositionInteractions(player, target, targetComposition);
@@ -146,8 +146,8 @@ public final class SpellCaster {
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         applyElements(caster, target, parts, reactions,
-            plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
-        double effectScale = plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
+            enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
+        double effectScale = enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
         applyProgramEffects(caster, target, spell, effectScale);
         LegendarySpellEngine.apply(caster, target, spell);
         if (parts.contains("split")) {
@@ -157,7 +157,7 @@ public final class SpellCaster {
                     && (!parts.contains("ally") || entity.isTeammate(caster)));
             for (LivingEntity extra : nearby.stream().limit(3).toList()) {
                 applyElements(caster, extra, parts, reactions,
-                    plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+                    enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
                 applyProgramEffects(caster, extra, spell, effectScale);
                 LegendarySpellEngine.apply(caster, extra, spell);
                 applyCompositionInteractions(caster, extra, plan);
@@ -494,6 +494,11 @@ public final class SpellCaster {
      * This is separate from individual component effects so combinations can
      * alter outcomes without duplicating every base component implementation.
      */
+    private static double enhancedDurationScale(SpellBookStore.StoredSpell spell, double baseScale) {
+        // High-investment spells (100+ Arcana) receive a 75% strength increase.
+        return baseScale * (spell != null && spell.arcanaCost() >= 100 ? 1.75 : 1.0);
+    }
+
     private static int scaledTicks(int baseTicks, double multiplier) {
         return Math.max(1, Math.min(2400, (int) Math.round(baseTicks * multiplier)));
     }
@@ -550,6 +555,7 @@ public final class SpellCaster {
             }
             scope.add(effect.componentId());
             if (spell.legendary) scope.add("legendary_spell");
+            if (spell.arcanaCost() >= 100) scope.add("high_cost_spell");
             applyEffects(caster, target, scope, durationScale);
             if (scope.contains("repeat")) applyEffects(caster, target, scope, durationScale * 0.65);
         }
@@ -557,7 +563,7 @@ public final class SpellCaster {
 
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                      double durationScale) {
-        float powerScale = parts.contains("legendary_spell") ? 1.75F : 1.0F;
+        float powerScale = (parts.contains("legendary_spell") || parts.contains("high_cost_spell")) ? 1.75F : 1.0F;
         if (parts.contains("amplify")) powerScale *= 1.5F;
         if (parts.contains("dampen")) powerScale *= 0.6F;
         if (parts.contains("healing") && parts.contains("explosion")) {
