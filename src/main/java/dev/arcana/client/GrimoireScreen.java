@@ -286,7 +286,7 @@ public final class GrimoireScreen extends Screen {
         int top = (height - 250) / 2;
         context.fill(0, 0, width, height, 0x880B0710);
         context.fill(left - 5, top + 5, left + 435, top + 300, 0xFF211629);
-        context.fill(left, top, left + 430, top + 244, 0xFF765333);
+        context.fill(left, top, left + 430, top + 294, 0xFF765333);
         context.fill(left + 5, top + 5, left + 425, top + 289, 0xFF2B1D2E);
         context.fill(left + 10, top + 10, left + 210, top + 284, 0xFFF0DDB7);
         context.fill(left + 220, top + 10, left + 420, top + 284, 0xFFF4E6C8);
