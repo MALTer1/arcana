@@ -30,10 +30,11 @@ public final class GrimoireScreen extends Screen {
     public static void receiveState(String json) {
         if (active == null) return;
         try {
+            boolean firstState = active.state.size() == 0;
             active.state = JsonParser.parseString(json).getAsJsonObject();
             String message = active.state.has("message") ? active.state.get("message").getAsString() : "";
             if (!message.isBlank()) active.notice = message;
-            if (active.state.size() == 0 || !message.isBlank()) active.rebuild();
+            if (firstState || !message.isBlank()) active.rebuild();
         } catch (RuntimeException ignored) {
             active.notice = "The grimoire could not read its pages.";
         }
