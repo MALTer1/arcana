@@ -53,7 +53,7 @@ public final class ArcanaProjectileEntity extends Entity {
         Vec3d look = owner.getRotationVec(1.0F).normalize();
         boolean arc = spell.components.contains("arc");
         Vec3d direction = arc ? look.add(0.0, 0.16, 0.0).normalize() : look;
-        double speed = 1.55 * composition.travelSpeedMultiplier();
+        double speed = 1.55 * composition.travelSpeedMultiplier() * (spell.legendary ? 1.35 : 1.0);
         projectile.refreshPositionAndAngles(
             owner.getX() + look.x * 0.65,
             owner.getEyeY() - 0.15 + look.y * 0.65,
@@ -73,6 +73,7 @@ public final class ArcanaProjectileEntity extends Entity {
         String encodedComponents = dataTracker.get(COMPONENTS);
         int maxLifetime = encodedComponents.contains("extend") || encodedComponents.contains("homing")
             || encodedComponents.contains("ricochet") ? 160 : 100;
+        if (dataTracker.get(LEGENDARY)) maxLifetime = Math.min(240, maxLifetime * 2);
         if (++lifetime > maxLifetime) {
             discard();
             return;
