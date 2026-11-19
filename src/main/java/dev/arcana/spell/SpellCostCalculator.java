@@ -44,8 +44,10 @@ public final class SpellCostCalculator {
         int complexity = Math.max(0, uniqueEffects.size() - 1) * 3
             + Math.max(0, ids.size() - 3) * 2;
         int legendaryCost = legendary ? 35 : 0;
-        int total = Math.max(1, formCost + effectCost + augmentCost + elementalCost
-            + complexity + legendaryCost);
+        int subtotal = formCost + effectCost + augmentCost + elementalCost + complexity + legendaryCost;
+        if (ids.contains("efficiency")) subtotal = (int)Math.ceil(subtotal * 0.75);
+        if (ids.contains("dampen")) subtotal = (int)Math.ceil(subtotal * 0.85);
+        int total = Math.max(1, subtotal);
         return new Cost(total, formCost, effectCost, augmentCost, elementalCost, complexity, legendaryCost);
     }
 
@@ -75,6 +77,10 @@ public final class SpellCostCalculator {
             case "multiple_targets", "self_and_nearby", "area" -> 8;
             case "hostile", "ally", "projectile_target" -> 4;
             case "single_target", "self", "ground", "block" -> 2;
+            case "amplify", "repeat", "pierce", "ricochet", "split" -> 9;
+            case "accelerate", "homing", "expand", "extend", "linger" -> 7;
+            case "efficiency" -> 4;
+            case "dampen", "stabilize" -> 3;
             default -> 5;
         };
     }
