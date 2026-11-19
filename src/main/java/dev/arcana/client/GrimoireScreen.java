@@ -147,17 +147,18 @@ public final class GrimoireScreen extends Screen {
         int pulse = (int)(Math.sin(age * 0.16) * 5.0);
         int color = legendary ? 0xFFFFD35A : 0xFF7545A0;
         JsonArray components = spell.has("components") ? spell.getAsJsonArray("components") : new JsonArray();
-        String form = "rune";
+        String form = "";
         String element = "";
         for (int i = 0; i < components.size(); i++) {
             String id = components.get(i).getAsString();
             if (java.util.Set.of("projectile", "beam", "wave", "barrier", "field", "arc", "chain",
                 "cone", "ring", "pulse", "orbit", "tether", "rune", "wall", "column").contains(id)
-                && form.equals("rune")) form = id;
+                && form.isEmpty()) form = id;
             if (java.util.Set.of("fire", "water", "wind", "earth", "lightning", "ice", "light",
                 "shadow", "nature", "metal", "crystal", "magma", "smoke", "sound", "gravity",
                 "time", "space", "poison", "sand", "wood", "moon", "sun").contains(id)) element = id;
         }
+        if (form.isEmpty()) form = "rune";
         color = switch (element) {
             case "fire", "magma", "sun" -> 0xFFE66A32;
             case "water", "ice" -> 0xFF4AA8D8;
