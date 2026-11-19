@@ -81,9 +81,14 @@ public final class ArcanaClient implements ClientModInitializer {
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!world.isClient || !player.isSneaking() || activeTier(MinecraftClient.getInstance()) == null)
+            if (!world.isClient || activeTier(MinecraftClient.getInstance()) == null)
                 return TypedActionResult.pass(player.getStackInHand(hand));
-            GrimoireHud.castSelected();
+            if (player.isSneaking()) {
+                GrimoireHud.castSelected();
+            } else {
+                MinecraftClient.getInstance().setScreen(new GrimoireScreen());
+                GrimoireHud.refresh();
+            }
             return TypedActionResult.success(player.getStackInHand(hand), true);
         });
     }
