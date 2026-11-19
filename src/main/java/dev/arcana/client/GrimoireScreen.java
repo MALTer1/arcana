@@ -257,6 +257,36 @@ public final class GrimoireScreen extends Screen {
             }
             default -> context.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, effectColor);
         }
+        // Show every selected element as a moving orbiting mote, not just the last element.
+        int mote = 0;
+        for (int i = 0; i < components.size(); i++) {
+            String id = components.get(i).getAsString();
+            int moteColor = switch (id) {
+                case "fire", "magma", "sun" -> 0xFFFF7138;
+                case "water", "ice" -> 0xFF59C8F0;
+                case "lightning" -> 0xFFFFE45C;
+                case "nature", "wood" -> 0xFF65C96B;
+                case "shadow", "poison" -> 0xFFAD72D8;
+                case "light", "moon" -> 0xFFFFE8A0;
+                case "wind" -> 0xFFB5E8DD;
+                case "earth", "sand" -> 0xFFB88A52;
+                case "metal", "crystal" -> 0xFFC7D2E0;
+                default -> 0;
+            };
+            if (moteColor != 0) {
+                double angle = age * 0.055 + mote * (Math.PI * 2.0 / 5.0);
+                int px = centerX + (int)(Math.cos(angle) * 27.0);
+                int py = centerY + (int)(Math.sin(angle) * 27.0);
+                context.fill(px - 3, py - 3, px + 3, py + 3, moteColor);
+                context.fill(px - 1, py - 1, px + 1, py + 1, 0xFFFFFFFF);
+                mote++;
+            }
+        }
+        if (components.contains("amplify") || components.contains("expand")) {
+            int halo = 22 + Math.floorMod(age / 2, 7);
+            context.fill(centerX - halo, centerY - halo, centerX + halo, centerY - halo + 1, 0x88FFFFFF);
+            context.fill(centerX - halo, centerY + halo - 1, centerX + halo, centerY + halo, 0x88FFFFFF);
+        }
         if (legendary) {
             context.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, 0xFFFFE9A0);
         }
@@ -293,14 +323,14 @@ public final class GrimoireScreen extends Screen {
         context.fill(left + 214, top + 10, left + 216, top + 284, 0xFF9B7950);
         context.drawCenteredTextWithShadow(textRenderer, state.has("tier") ? state.get("tier").getAsString() : "Grimoire", left + 215, top + 17, 0xFFF0DDB7);
         String[] tabs = {"SPELLS", "LOOSE PAGES", "ARCANA", "BOOK"};
-        context.drawText(textRenderer, tabs[tab], left + 24, top + 39, 0xFF5A3D28, false);
+        context.drawText(textRenderer, tabs[tab], left + 24, top + 39, 0xFF5A3D28, true);
 
         if (tab == 0) {
             JsonArray spells = array("spells");
-            context.drawText(textRenderer, "Select a spell to inspect or adjust", left + 22, top + 54, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "Select a spell to inspect or adjust", left + 22, top + 54, 0xFF5A3D28, true);
             if (spells.isEmpty()) {
-                context.drawText(textRenderer, "This book is empty.", left + 25, top + 88, 0xFF5A3D28, false);
-                context.drawText(textRenderer, "Engrave pages at the Magic Writer.", left + 25, top + 101, 0xFF5A3D28, false);
+                context.drawText(textRenderer, "This book is empty.", left + 25, top + 88, 0xFF5A3D28, true);
+                context.drawText(textRenderer, "Engrave pages at the Magic Writer.", left + 25, top + 101, 0xFF5A3D28, true);
             } else if (selected < spells.size()) {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
@@ -309,60 +339,63 @@ public final class GrimoireScreen extends Screen {
                 java.util.List<String> glyphNames = new java.util.ArrayList<>();
                 for (int i = 0; i < orderedGlyphs.size(); i++) glyphNames.add(shortName(orderedGlyphs.get(i).getAsString()));
                 String glyphOrder = textRenderer.trimToWidth("Order: " + String.join(" → ", glyphNames), 184);
-                context.drawText(textRenderer, glyphOrder, left + 230, top + 72, 0xFF684D36, false);
+                context.drawText(textRenderer, glyphOrder, left + 230, top + 72, 0xFF684D36, true);
                 drawPreviewAnimation(context, left, top, spell, legendary);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL PREVIEW", left + 320, top + 145, 0xFF684D36);
                 context.drawCenteredTextWithShadow(textRenderer, name, left + 320, top + 58, 0xFF4A3020);
                 java.util.List<net.minecraft.text.OrderedText> behaviorLines = textRenderer.wrapLines(
                     Text.literal(spell.has("behavior") ? spell.get("behavior").getAsString() : ""), 184);
                 for (int i = 0; i < Math.min(2, behaviorLines.size()); i++)
-                    context.drawText(textRenderer, behaviorLines.get(i), left + 230, top + 170 + i * 10, 0xFF4A3020, false);
+                    context.drawText(textRenderer, behaviorLines.get(i), left + 230, top + 170 + i * 10, 0xFF4A3020, true);
                 String costLine = "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0);
-                context.drawText(textRenderer, textRenderer.trimToWidth(costLine, 184), left + 230, top + 191, 0xFF684D36, false);
+                context.drawText(textRenderer, textRenderer.trimToWidth(costLine, 184), left + 230, top + 191, 0xFF684D36, true);
                 if (spell.has("costBreakdown")) {
                     String breakdown = textRenderer.trimToWidth(spell.get("costBreakdown").getAsString(), 184);
-                    context.drawText(textRenderer, breakdown, left + 230, top + 202, 0xFF806B4F, false);
+                    context.drawText(textRenderer, breakdown, left + 230, top + 202, 0xFF806B4F, true);
                 }
                 JsonArray effects = spell.has("effects") ? spell.getAsJsonArray("effects") : new JsonArray();
                 String effectSummary = effects.size() == 0 ? "None" : effects.get(0).getAsString();
                 if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
-                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 214, 0xFF684D36, false);
+                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 214, 0xFF684D36, true);
                 JsonArray descriptions = spell.has("effectDescriptions") ? spell.getAsJsonArray("effectDescriptions") : new JsonArray();
                 if (legendary) {
-                    String signature = textRenderer.trimToWidth("LEGENDARY: " + spell.get("legendaryEffect").getAsString(), 184);
-                    context.drawText(textRenderer, signature, left + 230, top + 226, 0xFF9A6510, false);
+                    String signature = "LEGENDARY EFFECT: " + (spell.has("legendaryEffect") ? spell.get("legendaryEffect").getAsString() : "Arcane Ascendance");
+                    java.util.List<net.minecraft.text.OrderedText> signatureLines =
+                        textRenderer.wrapLines(Text.literal(signature), 184);
+                    for (int i = 0; i < Math.min(4, signatureLines.size()); i++)
+                        context.drawText(textRenderer, signatureLines.get(i), left + 230, top + 226 + i * 10, 0xFF8A4D08, true);
                 } else {
                     if (!descriptions.isEmpty()) {
                         String detail = textRenderer.trimToWidth(descriptions.get(0).getAsString(), 184);
-                        context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, false);
+                        context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, true);
                     }
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
                     if (!warnings.isEmpty()) {
                         String synergy = textRenderer.trimToWidth("Synergy: " + warnings.get(0).getAsString(), 184);
-                        context.drawText(textRenderer, synergy, left + 230, top + 238, 0xFF684D36, false);
+                        context.drawText(textRenderer, synergy, left + 230, top + 238, 0xFF684D36, true);
                     }
                 }
-                if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, false);
+                if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, true);
             }
         } else if (tab == 1) {
-            context.drawText(textRenderer, "Engraved Magic Paper in your inventory", left + 24, top + 55, 0xFF5A3D28, false);
-            if (array("loosePages").isEmpty()) context.drawText(textRenderer, "No engraved Magic Paper.", left + 28, top + 88, 0xFF5A3D28, false);
-            context.drawText(textRenderer, "Insert a page or awaken it with a Legendary Scroll.", left + 235, top + 85, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "Engraved Magic Paper in your inventory", left + 24, top + 55, 0xFF5A3D28, true);
+            if (array("loosePages").isEmpty()) context.drawText(textRenderer, "No engraved Magic Paper.", left + 28, top + 88, 0xFF5A3D28, true);
+            context.drawText(textRenderer, "Insert a page or awaken it with a Legendary Scroll.", left + 235, top + 85, 0xFF5A3D28, true);
         } else if (tab == 2) {
             int current = state.has("arcana") ? state.get("arcana").getAsInt() : 0;
             int max = state.has("maxArcana") ? state.get("maxArcana").getAsInt() : 100;
-            context.drawText(textRenderer, "ARCANA RESERVE", left + 28, top + 68, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "ARCANA RESERVE", left + 28, top + 68, 0xFF5A3D28, true);
             context.fill(left + 28, top + 92, left + 190, top + 105, 0xFF8B8175);
             context.fill(left + 28, top + 92, left + 28 + (int)(162.0 * current / Math.max(1,max)), top + 105, 0xFF7950A0);
-            context.drawText(textRenderer, current + " / " + max, left + 28, top + 116, 0xFF5A3D28, false);
-            context.drawText(textRenderer, "Casting spends the cost shown on each spell page.", left + 235, top + 80, 0xFF5A3D28, false);
+            context.drawText(textRenderer, current + " / " + max, left + 28, top + 116, 0xFF5A3D28, true);
+            context.drawText(textRenderer, "Casting spends the cost shown on each spell page.", left + 235, top + 80, 0xFF5A3D28, true);
         } else {
-            context.drawText(textRenderer, "A grimoire holds engraved spell pages.", left + 28, top + 72, 0xFF5A3D28, false);
-            context.drawText(textRenderer, "Pages: " + array("spells").size() + " / " + (state.has("slots") ? state.get("slots").getAsInt() : 0), left + 28, top + 98, 0xFF5A3D28, false);
-            context.drawText(textRenderer, "Normal glyph limit: " + (state.has("maxComponents") ? state.get("maxComponents").getAsInt() : 0), left + 28, top + 116, 0xFF5A3D28, false);
-            context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, false);
+            context.drawText(textRenderer, "A grimoire holds engraved spell pages.", left + 28, top + 72, 0xFF5A3D28, true);
+            context.drawText(textRenderer, "Pages: " + array("spells").size() + " / " + (state.has("slots") ? state.get("slots").getAsInt() : 0), left + 28, top + 98, 0xFF5A3D28, true);
+            context.drawText(textRenderer, "Normal glyph limit: " + (state.has("maxComponents") ? state.get("maxComponents").getAsInt() : 0), left + 28, top + 116, 0xFF5A3D28, true);
+            context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, true);
         }
-        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 270, 0xFFEEE0C4, false);
+        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 270, 0xFFEEE0C4, true);
         super.render(context, mouseX, mouseY, delta);
     }
     @Override public boolean shouldPause() { return false; }
