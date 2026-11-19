@@ -52,28 +52,31 @@ public final class LegendarySpellEngine {
         List<String> ids = spell.components;
         boolean friendly = target == caster || target.isTeammate(caster);
         if (friendly) {
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 600, 2));
-            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 300, 1));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, 1200, 4));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, 600, 2));
+            target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 600, 2));
             if (ids.contains("healing") || ids.contains("regeneration") || ids.contains("nature")
                 || ids.contains("wood") || ids.contains("growth")) {
-                target.heal(12.0F);
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 400, 2));
+                target.heal(24.0F);
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 800, 3));
             } else {
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 400, 2));
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 400, 2));
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 800, 3));
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.STRENGTH, 600, 2));
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.HASTE, 800, 3));
             }
             return;
         }
 
-        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 300, 1));
-        target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 300, 1));
+        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 600, 3));
+        target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS, 600, 2));
+        target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 600, 0));
         if (ids.contains("fire") || ids.contains("magma") || ids.contains("sun")) {
             target.setOnFireFor(10);
-            target.damage(caster.getDamageSources().indirectMagic(caster, caster), 12.0F);
+            target.damage(caster.getDamageSources().indirectMagic(caster, caster), 24.0F);
         } else if (ids.contains("lightning") || ids.contains("explosion") || ids.contains("binding")) {
             target.damage(caster.getDamageSources().indirectMagic(caster, caster), 12.0F);
-            Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.8);
-            target.addVelocity(away.x, 0.45, away.z);
+            Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(3.0);
+            target.addVelocity(away.x, 0.8, away.z);
             target.velocityModified = true;
         } else if (ids.contains("ice") || ids.contains("water") || ids.contains("shadow")
             || ids.contains("poison") || ids.contains("gravity") || ids.contains("space")
