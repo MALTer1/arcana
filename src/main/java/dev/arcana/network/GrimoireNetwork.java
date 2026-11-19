@@ -102,8 +102,10 @@ public final class GrimoireNetwork {
                     else {
                         SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(
                             old.name, ids, analysis.summary(), old.legendary, old.legendaryEffect);
-                        GrimoireStore.replace(book, tier, updated);
-                        message = "Updated " + old.name + ". New Arcana cost: " + updated.arcanaCost() + ".";
+                        if (GrimoireStore.replace(book, tier, updated)) {
+                            player.getInventory().markDirty();
+                            message = "Updated " + old.name + ". New Arcana cost: " + updated.arcanaCost() + ".";
+                        } else message = "The Grimoire rejected the edited page.";
                     }
                 }
             }
@@ -116,8 +118,10 @@ public final class GrimoireNetwork {
             else {
                 SpellBookStore.StoredSpell upgraded = new SpellBookStore.StoredSpell(old.name, old.components,
                     old.behavior, true, LegendarySpellEngine.describe(old.components));
-                GrimoireStore.replace(book, tier, upgraded);
-                message = old.name + " has become LEGENDARY! " + upgraded.legendaryEffect;
+                if (GrimoireStore.replace(book, tier, upgraded)) {
+                    player.getInventory().markDirty();
+                    message = old.name + " has become LEGENDARY! " + upgraded.legendaryEffect;
+                } else message = "The Master Grimoire could not store this Legendary page.";
             }
         } else if ("legendary_page".equals(action)) {
             ItemStack pageStack = findMagicPaper(player, value);
@@ -128,6 +132,7 @@ public final class GrimoireNetwork {
             else {
                 SpellPageStore.set(pageStack, new SpellBookStore.StoredSpell(old.name, old.components,
                     old.behavior, true, LegendarySpellEngine.describe(old.components)));
+                player.getInventory().markDirty();
                 message = old.name + " page awakened as Legendary. It can now only be inserted into a Master Grimoire.";
             }
         }
