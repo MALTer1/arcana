@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 public final class SpellDraft {
     public static final int MAX_COMPONENTS = 8;
+    public static final int MAX_NORMAL_COMPONENTS = 5;
     private final List<String> selected = new ArrayList<>();
     public record AddResult(boolean success, String message) {}
 
