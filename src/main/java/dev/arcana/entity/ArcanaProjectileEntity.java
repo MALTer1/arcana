@@ -30,6 +30,9 @@ public final class ArcanaProjectileEntity extends Entity {
         DataTracker.registerData(ArcanaProjectileEntity.class, TrackedDataHandlerRegistry.STRING);
     private static final TrackedData<Boolean> ARC_TRAJECTORY =
         DataTracker.registerData(ArcanaProjectileEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private static final TrackedData<Boolean> LEGENDARY =
+        DataTracker.registerData(ArcanaProjectileEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
+    private final java.util.Set<Integer> hitEntityIds = new java.util.HashSet<>();
     private int lifetime;
 
     public ArcanaProjectileEntity(EntityType<? extends ArcanaProjectileEntity> type, World world) {
@@ -41,6 +44,7 @@ public final class ArcanaProjectileEntity extends Entity {
         builder.add(OWNER_ID, -1);
         builder.add(COMPONENTS, "");
         builder.add(ARC_TRAJECTORY, false);
+        builder.add(LEGENDARY, false);
     }
 
     public static boolean launch(ServerPlayerEntity owner, SpellBookStore.StoredSpell spell,
@@ -59,6 +63,7 @@ public final class ArcanaProjectileEntity extends Entity {
         projectile.dataTracker.set(OWNER_ID, owner.getId());
         projectile.dataTracker.set(COMPONENTS, String.join(",", spell.components));
         projectile.dataTracker.set(ARC_TRAJECTORY, arc);
+        projectile.dataTracker.set(LEGENDARY, spell.legendary);
         return owner.getWorld().spawnEntity(projectile);
     }
 
@@ -79,6 +84,23 @@ public final class ArcanaProjectileEntity extends Entity {
             return;
         }
 
+        List<String> activeIds = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
+            .filter(id -> !id.isBlank()).toList();
+        if (activeIds.contains("homing") || (activeIds.contains("ricochet") && !hitEntityIds.isEmpty())) {
+            LivingEntity guidedTarget = getWorld().getEntitiesByClass(LivingEntity.class,
+                getBoundingBox().expand(16.0), candidate -> candidate.isAlive()
+                    && candidate.getId() != dataTracker.get(OWNER_ID)
+                    && !hitEntityIds.contains(candidate.getId()))
+                .stream().min(java.util.Comparator.comparingDouble(candidate ->
+                    candidate.squaredDistanceTo(this))).orElse(null);
+            if (guidedTarget != null) {
+                Vec3d desired = guidedTarget.getBoundingBox().getCenter().subtract(getPos()).normalize();
+                double speedNow = Math.max(0.2, velocity.length());
+                velocity = velocity.normalize().multiply(0.78).add(desired.multiply(0.22)).normalize().multiply(speedNow);
+                setVelocity(velocity);
+            }
+        }
+
         Vec3d start = getPos();
         Vec3d end = start.add(velocity);
         BlockHitResult blockHit = getWorld().raycast(new RaycastContext(
@@ -88,7 +110,8 @@ public final class ArcanaProjectileEntity extends Entity {
         Entity entityHit = getWorld().getOtherEntities(this,
                 getBoundingBox().stretch(velocity).expand(0.25),
                 candidate -> candidate instanceof LivingEntity && candidate.isAlive()
-                    && candidate.getId() != dataTracker.get(OWNER_ID))
+                    && candidate.getId() != dataTracker.get(OWNER_ID)
+                    && !hitEntityIds.contains(candidate.getId()))
             .stream()
             .min(java.util.Comparator.comparingDouble(candidate ->
                 candidate.getBoundingBox().getCenter().squaredDistanceTo(start)))
@@ -127,7 +150,14 @@ public final class ArcanaProjectileEntity extends Entity {
                 List<String> ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
                     .filter(id -> !id.isBlank()).toList();
                 SpellCaster.impactProjectile(player,
-                    new SpellBookStore.StoredSpell("Arcane Projectile", ids, ""), living);
+                    new SpellBookStore.StoredSpell("Arcane Projectile", ids, "",
+                        dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
+                            ? dev.arcana.spell.LegendarySpellEngine.describe(ids) : ""), living);
+                hitEntityIds.add(living.getId());
+                if (ids.contains("pierce") && hitEntityIds.size() <= 3) {
+                    setPosition(getPos().add(getVelocity().normalize().multiply(0.35)));
+                    return;
+                }
             }
         }
         discard();
@@ -139,6 +169,7 @@ public final class ArcanaProjectileEntity extends Entity {
         dataTracker.set(OWNER_ID, nbt.getInt("OwnerId"));
         dataTracker.set(COMPONENTS, nbt.getString("Components"));
         dataTracker.set(ARC_TRAJECTORY, nbt.getBoolean("ArcTrajectory"));
+        dataTracker.set(LEGENDARY, nbt.getBoolean("Legendary"));
     }
 
     @Override
@@ -147,5 +178,6 @@ public final class ArcanaProjectileEntity extends Entity {
         nbt.putInt("OwnerId", dataTracker.get(OWNER_ID));
         nbt.putString("Components", dataTracker.get(COMPONENTS));
         nbt.putBoolean("ArcTrajectory", dataTracker.get(ARC_TRAJECTORY));
+        nbt.putBoolean("Legendary", dataTracker.get(LEGENDARY));
     }
 }
