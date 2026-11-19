@@ -283,7 +283,7 @@ public final class GrimoireScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         int left = (width - 430) / 2;
-        int top = (height - 250) / 2;
+        int top = (height - 300) / 2;
         context.fill(0, 0, width, height, 0x880B0710);
         context.fill(left - 5, top + 5, left + 435, top + 300, 0xFF211629);
         context.fill(left, top, left + 430, top + 294, 0xFF765333);
