@@ -229,6 +229,65 @@ public final class SpellCompositionEngine {
             explanations.add("Effect components are layered and can modify the same outcome when their properties are compatible.");
         }
 
+        // Dedicated augments modify the payload they are attached to.
+        if (ids.contains("amplify")) {
+            damage += 3.0;
+            interactions.add("Amplified payload");
+            explanations.add("Amplify increases the payload's impact strength.");
+        }
+        if (ids.contains("accelerate")) {
+            speed *= 1.5;
+            interactions.add("Accelerated delivery");
+            explanations.add("Accelerate increases the travel speed of moving delivery.");
+        }
+        if (ids.contains("extend")) {
+            range *= 1.25;
+            duration *= 1.5;
+            interactions.add("Extended payload");
+            explanations.add("Extend increases reach and effect duration.");
+        }
+        if (ids.contains("expand")) {
+            area *= 1.4;
+            interactions.add("Expanded coverage");
+            explanations.add("Expand increases the affected area.");
+        }
+        if (ids.contains("split")) {
+            area *= 1.2;
+            interactions.add("Split payload");
+            explanations.add("Split distributes the payload across additional targets.");
+        }
+        if (ids.contains("homing")) {
+            speed *= 1.1;
+            range *= 1.1;
+            interactions.add("Homing guidance");
+            explanations.add("Homing adds target guidance to moving delivery.");
+        }
+        if (ids.contains("repeat")) {
+            duration *= 1.35;
+            interactions.add("Repeated payload");
+            explanations.add("Repeat schedules another application of the payload.");
+        }
+        if (ids.contains("ricochet")) {
+            range *= 1.25;
+            interactions.add("Ricochet path");
+            explanations.add("Ricochet extends the spell's possible path between targets.");
+        }
+        if (ids.contains("linger")) {
+            duration *= 1.5;
+            interactions.add("Lingering effect");
+            explanations.add("Linger extends the time the effect remains active.");
+        }
+        if (ids.contains("dampen")) {
+            damage *= 0.6;
+            interactions.add("Dampened output");
+            explanations.add("Dampen reduces raw intensity for a more controlled effect.");
+        }
+        if (ids.contains("stabilize")) {
+            duration *= 1.15;
+            interactions.add("Stabilized payload");
+            explanations.add("Stabilize makes the effect more consistent.");
+        }
+
         // Clamp accumulated modifiers so adding many compatible components
         // cannot create unbounded range, coverage, duration, or damage.
         speed = clamp(speed, 0.50, 2.0);
@@ -259,6 +318,12 @@ public final class SpellCompositionEngine {
             case "wave", "cone", "ring", "pulse", "orbit" -> result.add(Property.AREA_DELIVERY);
             case "field", "rune" -> { result.add(Property.AREA_DELIVERY); result.add(Property.PERSISTENT); }
             case "barrier" -> result.add(Property.DEFENSIVE_DELIVERY);
+            case "accelerate", "homing" -> result.add(Property.MOVING_DELIVERY);
+            case "repeat", "ricochet" -> result.add(Property.REPEATING);
+            case "linger", "extend" -> result.add(Property.PERSISTENT);
+            case "amplify", "dampen", "stabilize", "efficiency" -> result.add(Property.CONTROL);
+            case "split", "expand" -> result.add(Property.AREA_DELIVERY);
+            case "pierce" -> result.add(Property.PROJECTILE_IMPACT);
 
             // Elements.
             case "fire", "magma", "sun" -> result.add(Property.HEAT);
@@ -345,7 +410,9 @@ public final class SpellCompositionEngine {
     private static boolean isEffect(String id) {
         return !isDelivery(id) && !isElement(id) && !Set.of("single_target", "multiple_targets",
             "self", "area", "self_and_nearby", "ally", "hostile", "ground", "block",
-            "projectile_target").contains(id);
+            "projectile_target", "amplify", "accelerate", "pierce", "split", "extend",
+            "homing", "repeat", "ricochet", "linger", "dampen", "efficiency", "expand",
+            "stabilize").contains(id);
     }
 
     private static double clamp(double value, double min, double max) {
