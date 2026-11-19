@@ -328,14 +328,14 @@ public final class GrimoireScreen extends Screen {
                 if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
                 context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 214, 0xFF684D36, false);
                 JsonArray descriptions = spell.has("effectDescriptions") ? spell.getAsJsonArray("effectDescriptions") : new JsonArray();
-                if (!descriptions.isEmpty()) {
-                    String detail = textRenderer.trimToWidth(descriptions.get(0).getAsString(), 184);
-                    context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, false);
-                }
                 if (legendary) {
                     String signature = textRenderer.trimToWidth("LEGENDARY: " + spell.get("legendaryEffect").getAsString(), 184);
-                    context.drawText(textRenderer, signature, left + 230, top + 238, 0xFF9A6510, false);
+                    context.drawText(textRenderer, signature, left + 230, top + 226, 0xFF9A6510, false);
                 } else {
+                    if (!descriptions.isEmpty()) {
+                        String detail = textRenderer.trimToWidth(descriptions.get(0).getAsString(), 184);
+                        context.drawText(textRenderer, detail, left + 230, top + 226, 0xFF684D36, false);
+                    }
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
                     if (!warnings.isEmpty()) {
                         String synergy = textRenderer.trimToWidth("Synergy: " + warnings.get(0).getAsString(), 184);
