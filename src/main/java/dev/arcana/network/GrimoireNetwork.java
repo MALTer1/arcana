@@ -75,7 +75,7 @@ public final class GrimoireNetwork {
             } else message = page.legendary && tier != GrimoireTier.MASTER
                 ? "Legendary pages can only be stored in a Master Grimoire."
                 : "The Grimoire is full, already contains that page, or has too few glyph slots.";
-        } else if ("edit_add".equals(action) || "edit_remove".equals(action)) {
+        } else if ("edit_add".equals(action) || "edit_remove".equals(action) || "edit_move_up".equals(action) || "edit_move_down".equals(action)) {
             int split = value.indexOf('|');
             String spellName = split < 0 ? "" : value.substring(0, split);
             String glyph = split < 0 ? "" : value.substring(split + 1);
@@ -89,7 +89,13 @@ public final class GrimoireNetwork {
                     else if (ids.size() >= (old.legendary ? 8 : tier.maxComponents()))
                         message = "This spell page has reached its glyph limit.";
                     else ids.add(glyph);
-                } else if (!ids.remove(glyph)) message = "That glyph is not on this page.";
+                } else if ("edit_remove".equals(action) && !ids.remove(glyph)) message = "That glyph is not on this page.";
+                else if ("edit_move_up".equals(action) || "edit_move_down".equals(action)) {
+                    int at = ids.indexOf(glyph);
+                    int next = at + ("edit_move_up".equals(action) ? -1 : 1);
+                    if (at < 0 || next < 0 || next >= ids.size()) message = "That glyph cannot move in that direction.";
+                    else { java.util.Collections.swap(ids, at, next); }
+                }
                 if (message.isEmpty()) {
                     SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(old.name, ids);
                     if (!analysis.isValid()) message = String.join(" ", analysis.issues());
