@@ -116,6 +116,10 @@ public final class ArcanaMod implements ModInitializer {
                             return 0;
                         }
                         SpellDraft spellDraft = draft(player);
+                        if (spellDraft.selectedIds().size() > SpellDraft.MAX_NORMAL_COMPONENTS) {
+                            player.sendMessage(Text.literal("Normal spell pages support up to five glyphs. A Legendary Scroll raises that limit to eight."), false);
+                            return 0;
+                        }
                         if (!spellDraft.isValid()) {
                             player.sendMessage(Text.literal("This draft cannot be engraved. Use /arcana preview to see what needs fixing."), false);
                             return 0;
