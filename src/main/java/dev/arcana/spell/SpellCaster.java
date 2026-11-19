@@ -90,7 +90,8 @@ public final class SpellCaster {
             if (target.isRemoved()) continue;
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
-            applyElements(player, target, parts, reactions, targetComposition.durationMultiplier());
+            applyElements(player, target, parts, reactions,
+                targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
             double effectScale = targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
             applyProgramEffects(player, target, spell, effectScale);
             LegendarySpellEngine.apply(player, target, spell);
@@ -144,7 +145,8 @@ public final class SpellCaster {
         SpellCompositionEngine.Plan plan = SpellCompositionEngine.compose(parts,
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
-        applyElements(caster, target, parts, reactions, plan.durationMultiplier());
+        applyElements(caster, target, parts, reactions,
+            plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
         double effectScale = plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
         applyProgramEffects(caster, target, spell, effectScale);
         LegendarySpellEngine.apply(caster, target, spell);
@@ -154,7 +156,8 @@ public final class SpellCaster {
                     && (!parts.contains("hostile") || isHostileTarget(entity, caster))
                     && (!parts.contains("ally") || entity.isTeammate(caster)));
             for (LivingEntity extra : nearby.stream().limit(3).toList()) {
-                applyElements(caster, extra, parts, reactions, plan.durationMultiplier());
+                applyElements(caster, extra, parts, reactions,
+                    plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
                 applyProgramEffects(caster, extra, spell, effectScale);
                 LegendarySpellEngine.apply(caster, extra, spell);
                 applyCompositionInteractions(caster, extra, plan);
