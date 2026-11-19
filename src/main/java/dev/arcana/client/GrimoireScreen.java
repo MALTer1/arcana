@@ -43,7 +43,7 @@ public final class GrimoireScreen extends Screen {
     @Override
     protected void init() {
         int left = (width - 430) / 2;
-        int top = (height - 250) / 2;
+        int top = (height - 300) / 2;
         addDrawableChild(ButtonWidget.builder(Text.literal("Spells"), b -> changeTab(0)).dimensions(left - 58, top + 28, 54, 22).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Pages"), b -> changeTab(1)).dimensions(left - 58, top + 54, 54, 22).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("Arcana"), b -> changeTab(2)).dimensions(left - 58, top + 80, 54, 22).build());
@@ -75,16 +75,16 @@ public final class GrimoireScreen extends Screen {
                 }).dimensions(left + 302, top + 30, 72, 20).build());
                 if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
-                }).dimensions(left + 230, top + 194, 144, 20).build());
+                }).dimensions(left + 230, top + 270, 72, 18).build());
                 if (!editMode && spell.has("legendary") && !spell.get("legendary").getAsBoolean()) {
-                    addDrawableChild(ButtonWidget.builder(Text.literal("USE LEGENDARY SCROLL"), b -> send("legendary", name))
-                        .dimensions(left + 230, top + 218, 144, 18).build());
+                    addDrawableChild(ButtonWidget.builder(Text.literal("LEGENDARY SCROLL"), b -> send("legendary", name))
+                        .dimensions(left + 306, top + 270, 100, 18).build());
                 }
                 if (editMode) buildEditor(left, top, name, spell);
                 if (removeMode) {
                     // In removal mode the selected page is returned as engraved Magic Paper.
                     addDrawableChild(ButtonWidget.builder(Text.literal("CONFIRM REMOVE"), b -> send("remove", name))
-                        .dimensions(left + 18, top + 218, 180, 18).build());
+                        .dimensions(left + 18, top + 270, 180, 18).build());
                 }
             }
         } else if (tab == 1) {
@@ -285,12 +285,12 @@ public final class GrimoireScreen extends Screen {
         int left = (width - 430) / 2;
         int top = (height - 250) / 2;
         context.fill(0, 0, width, height, 0x880B0710);
-        context.fill(left - 5, top + 5, left + 435, top + 250, 0xFF211629);
+        context.fill(left - 5, top + 5, left + 435, top + 300, 0xFF211629);
         context.fill(left, top, left + 430, top + 244, 0xFF765333);
-        context.fill(left + 5, top + 5, left + 425, top + 239, 0xFF2B1D2E);
-        context.fill(left + 10, top + 10, left + 210, top + 234, 0xFFF0DDB7);
-        context.fill(left + 220, top + 10, left + 420, top + 234, 0xFFF4E6C8);
-        context.fill(left + 214, top + 10, left + 216, top + 234, 0xFF9B7950);
+        context.fill(left + 5, top + 5, left + 425, top + 289, 0xFF2B1D2E);
+        context.fill(left + 10, top + 10, left + 210, top + 284, 0xFFF0DDB7);
+        context.fill(left + 220, top + 10, left + 420, top + 284, 0xFFF4E6C8);
+        context.fill(left + 214, top + 10, left + 216, top + 284, 0xFF9B7950);
         context.drawCenteredTextWithShadow(textRenderer, state.has("tier") ? state.get("tier").getAsString() : "Grimoire", left + 215, top + 17, 0xFFF0DDB7);
         String[] tabs = {"SPELLS", "LOOSE PAGES", "ARCANA", "BOOK"};
         context.drawText(textRenderer, tabs[tab], left + 24, top + 39, 0xFF5A3D28, false);
@@ -362,7 +362,7 @@ public final class GrimoireScreen extends Screen {
             context.drawText(textRenderer, "Normal glyph limit: " + (state.has("maxComponents") ? state.get("maxComponents").getAsInt() : 0), left + 28, top + 116, 0xFF5A3D28, false);
             context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, false);
         }
-        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 226, 0xFFEEE0C4, false);
+        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 282, 0xFFEEE0C4, false);
         super.render(context, mouseX, mouseY, delta);
     }
     @Override public boolean shouldPause() { return false; }
