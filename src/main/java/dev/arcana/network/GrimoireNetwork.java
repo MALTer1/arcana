@@ -182,11 +182,16 @@ public final class GrimoireNetwork {
             if (spell.components != null) spell.components.forEach(components::add);
             item.add("components", components);
             JsonArray effects = new JsonArray();
+            JsonArray effectDescriptions = new JsonArray();
             if (spell.components != null) for (String id : spell.components) {
                 SpellComponent component = ComponentRegistry.get(id);
-                if (component != null && component.category() == ComponentCategory.EFFECT) effects.add(component.displayName());
+                if (component != null && component.category() == ComponentCategory.EFFECT) {
+                    effects.add(component.displayName());
+                    effectDescriptions.add(component.displayName() + ": " + component.description());
+                }
             }
             item.add("effects", effects);
+            item.add("effectDescriptions", effectDescriptions);
             SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(spell.name, spell.components);
             JsonArray warnings = new JsonArray();
             analysis.warnings().forEach(warnings::add);
