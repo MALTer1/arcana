@@ -92,9 +92,9 @@ public final class GrimoireScreen extends Screen {
             for (int i = 0; i < Math.min(6, pages.size()); i++) {
                 String name = pages.get(i).getAsString();
                 addDrawableChild(ButtonWidget.builder(Text.literal("Insert: " + name), b -> send("insert", name))
-                    .dimensions(left + 30, top + 65 + i * 25, 350, 21).build());
+                    .dimensions(left + 25, top + 65 + i * 25, 110, 21).build());
                 addDrawableChild(ButtonWidget.builder(Text.literal("Legendary"), b -> send("legendary_page", name))
-                    .dimensions(left + 330, top + 65 + i * 25, 74, 21).build());
+                    .dimensions(left + 138, top + 65 + i * 25, 72, 21).build());
             }
         } else if (tab == 2) {
             addDrawableChild(ButtonWidget.builder(Text.literal("Refresh Arcana"), b -> send("refresh", ""))
