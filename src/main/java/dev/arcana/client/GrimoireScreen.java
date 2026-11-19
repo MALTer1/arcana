@@ -142,6 +142,76 @@ public final class GrimoireScreen extends Screen {
         }).dimensions(left + 294, top + 222, 72, 17).build());
     }
 
+    private void drawPreviewAnimation(DrawContext context, int left, int top, JsonObject spell, boolean legendary) {
+        int age = MinecraftClient.getInstance().player == null ? 0 : MinecraftClient.getInstance().player.age;
+        int pulse = (int)(Math.sin(age * 0.16) * 5.0);
+        int color = legendary ? 0xFFFFD35A : 0xFF7545A0;
+        JsonArray components = spell.has("components") ? spell.getAsJsonArray("components") : new JsonArray();
+        String form = "rune";
+        String element = "";
+        for (int i = 0; i < components.size(); i++) {
+            String id = components.get(i).getAsString();
+            if (java.util.Set.of("projectile", "beam", "wave", "barrier", "field", "arc", "chain",
+                "cone", "ring", "pulse", "orbit", "tether", "rune", "wall", "column").contains(id)
+                && form.equals("rune")) form = id;
+            if (java.util.Set.of("fire", "water", "wind", "earth", "lightning", "ice", "light",
+                "shadow", "nature", "metal", "crystal", "magma", "smoke", "sound", "gravity",
+                "time", "space", "poison", "sand", "wood", "moon", "sun").contains(id)) element = id;
+        }
+        color = switch (element) {
+            case "fire", "magma", "sun" -> 0xFFE66A32;
+            case "water", "ice" -> 0xFF4AA8D8;
+            case "lightning" -> 0xFFE5C94B;
+            case "nature", "wood" -> 0xFF55A65B;
+            case "shadow", "poison" -> 0xFF8051A8;
+            case "light", "moon" -> 0xFFE6D18A;
+            case "wind" -> 0xFF9BC9C6;
+            default -> color;
+        };
+        context.fill(left + 278, top + 83, left + 362, top + 166, 0xFFDFD0B0);
+        context.fill(left + 281, top + 86, left + 359, top + 163, 0xFFEEE4CD);
+        int centerX = left + 320;
+        int centerY = top + 122;
+        switch (form) {
+            case "projectile", "arc", "chain" -> {
+                int travel = Math.floorMod(age * 2, 52);
+                context.fill(left + 291 + travel, centerY - 3, left + 297 + travel, centerY + 3, color);
+                context.fill(left + 294 + travel, centerY - 1, left + 296 + travel, centerY + 1, 0xFFFFFFFF);
+            }
+            case "beam" -> {
+                context.fill(left + 291, centerY - 2 - pulse / 3, left + 349, centerY + 2 + pulse / 3, color);
+                context.fill(left + 291, centerY - 1, left + 349, centerY + 1, 0xFFFFFFFF);
+            }
+            case "field", "rune", "orbit", "tether" -> {
+                int radius = 12 + Math.floorMod(age, 20);
+                context.fill(centerX - radius, centerY - radius, centerX + radius, centerY - radius + 2, color);
+                context.fill(centerX - radius, centerY + radius - 2, centerX + radius, centerY + radius, color);
+                context.fill(centerX - radius, centerY - radius, centerX - radius + 2, centerY + radius, color);
+                context.fill(centerX + radius - 2, centerY - radius, centerX + radius, centerY + radius, color);
+            }
+            case "barrier", "wall" -> {
+                context.fill(centerX - 18, centerY - 22, centerX - 14, centerY + 22, color);
+                context.fill(centerX + 14, centerY - 22, centerX + 18, centerY + 22, color);
+                context.fill(centerX - 18, centerY - 22, centerX + 18, centerY - 18, color);
+                context.fill(centerX - 18, centerY + 18, centerX + 18, centerY + 22, color);
+            }
+            case "wave", "ring", "pulse", "cone", "column" -> {
+                int radius = 10 + Math.floorMod(age, 24);
+                context.fill(centerX - radius, centerY - radius, centerX + radius, centerY - radius + 2, color);
+                context.fill(centerX - radius, centerY + radius - 2, centerX + radius, centerY + radius, color);
+                context.fill(centerX - radius, centerY - radius, centerX - radius + 2, centerY + radius, color);
+                context.fill(centerX + radius - 2, centerY - radius, centerX + radius, centerY + radius, color);
+            }
+            default -> {
+                context.fill(centerX - 3, centerY - 18, centerX + 3, centerY + 18, color);
+                context.fill(centerX - 18, centerY - 3, centerX + 18, centerY + 3, color);
+            }
+        }
+        if (legendary) {
+            context.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, 0xFFFFE9A0);
+        }
+    }
+
     private String shortName(String id) {
         JsonArray glyphs = array("glyphs");
         for (int i = 0; i < glyphs.size(); i++) {
@@ -185,11 +255,7 @@ public final class GrimoireScreen extends Screen {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
                 boolean legendary = spell.has("legendary") && spell.get("legendary").getAsBoolean();
-                int pulse = (int)(Math.sin((MinecraftClient.getInstance().player == null ? 0 : MinecraftClient.getInstance().player.age) * 0.16) * 18.0);
-                int runeColor = legendary ? 0xFFFFD35A : 0xFF7545A0;
-                context.fill(left + 278, top + 83, left + 362, top + 166, 0xFFDFD0B0);
-                context.fill(left + 281, top + 86, left + 359, top + 163, 0xFFEEE4CD);
-                context.drawCenteredTextWithShadow(textRenderer, legendary ? "✦" : "✧", left + 320, top + 102, runeColor + Math.max(0, pulse));
+                drawPreviewAnimation(context, left, top, spell, legendary);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL PREVIEW", left + 320, top + 145, 0xFF684D36);
                 context.drawCenteredTextWithShadow(textRenderer, name, left + 320, top + 58, 0xFF4A3020);
                 context.drawText(textRenderer, spell.has("behavior") ? spell.get("behavior").getAsString() : "", left + 230, top + 172, 0xFF4A3020, false);
