@@ -258,15 +258,25 @@ public final class GrimoireScreen extends Screen {
                 drawPreviewAnimation(context, left, top, spell, legendary);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL PREVIEW", left + 320, top + 145, 0xFF684D36);
                 context.drawCenteredTextWithShadow(textRenderer, name, left + 320, top + 58, 0xFF4A3020);
-                context.drawText(textRenderer, spell.has("behavior") ? spell.get("behavior").getAsString() : "", left + 230, top + 172, 0xFF4A3020, false);
-                context.drawText(textRenderer, "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0), left + 230, top + 186, 0xFF684D36, false);
+                java.util.List<net.minecraft.text.OrderedText> behaviorLines = textRenderer.wrapLines(
+                    Text.literal(spell.has("behavior") ? spell.get("behavior").getAsString() : ""), 184);
+                for (int i = 0; i < Math.min(2, behaviorLines.size()); i++)
+                    context.drawText(textRenderer, behaviorLines.get(i), left + 230, top + 170 + i * 10, 0xFF4A3020, false);
+                context.drawText(textRenderer, "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0), left + 230, top + 191, 0xFF684D36, false);
                 JsonArray effects = spell.has("effects") ? spell.getAsJsonArray("effects") : new JsonArray();
                 String effectSummary = effects.size() == 0 ? "None" : effects.get(0).getAsString();
                 if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
-                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 200, 0xFF684D36, false);
+                context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 204, 0xFF684D36, false);
                 if (legendary) {
-                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 212, 0xFF9A6510, false);
-                    context.drawText(textRenderer, spell.get("legendaryEffect").getAsString(), left + 230, top + 224, 0xFF9A6510, false);
+                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 216, 0xFF9A6510, false);
+                    java.util.List<net.minecraft.text.OrderedText> legendaryLines = textRenderer.wrapLines(
+                        Text.literal(spell.get("legendaryEffect").getAsString()), 184);
+                    if (!legendaryLines.isEmpty())
+                        context.drawText(textRenderer, legendaryLines.get(0), left + 230, top + 227, 0xFF9A6510, false);
+                } else {
+                    JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
+                    if (!warnings.isEmpty())
+                        context.drawText(textRenderer, "Synergy: " + warnings.get(0).getAsString(), left + 230, top + 216, 0xFF684D36, false);
                 }
                 if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, false);
             }
