@@ -36,6 +36,8 @@ public final class ArcanaFieldEntity extends Entity {
         DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.FLOAT);
     private static final TrackedData<Float> FACING_YAW =
         DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.FLOAT);
+    private static final TrackedData<Boolean> LEGENDARY =
+        DataTracker.registerData(ArcanaFieldEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
 
     private final Set<UUID> affectedTargets = new HashSet<>();
     private final Set<UUID> deflectedProjectiles = new HashSet<>();
@@ -52,6 +54,7 @@ public final class ArcanaFieldEntity extends Entity {
         builder.add(SHAPE, "field");
         builder.add(RADIUS, 3.5F);
         builder.add(FACING_YAW, 0.0F);
+        builder.add(LEGENDARY, false);
     }
 
     public static boolean launch(ServerPlayerEntity owner, SpellBookStore.StoredSpell spell,
@@ -83,6 +86,7 @@ public final class ArcanaFieldEntity extends Entity {
         field.dataTracker.set(SHAPE, shape);
         field.dataTracker.set(RADIUS, (float) Math.max(1.5, Math.min(8.0, baseRadius * plan.areaMultiplier())));
         field.dataTracker.set(FACING_YAW, owner.getYaw());
+        field.dataTracker.set(LEGENDARY, spell.legendary);
         return owner.getWorld().spawnEntity(field);
     }
 
@@ -128,7 +132,9 @@ public final class ArcanaFieldEntity extends Entity {
                 var ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
                     .filter(id -> !id.isBlank()).toList();
                 SpellCaster.impactDelivery(owner,
-                    new SpellBookStore.StoredSpell("Persistent Arcana", ids, ""), target);
+                    new SpellBookStore.StoredSpell("Persistent Arcana", ids, "",
+                        dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
+                            ? dev.arcana.spell.LegendarySpellEngine.describe(ids) : ""), target);
                 affectedTargets.add(target.getUuid());
             }
         }
@@ -192,6 +198,7 @@ public final class ArcanaFieldEntity extends Entity {
         dataTracker.set(SHAPE, nbt.getString("Shape"));
         dataTracker.set(RADIUS, nbt.getFloat("Radius"));
         dataTracker.set(FACING_YAW, nbt.getFloat("FacingYaw"));
+        dataTracker.set(LEGENDARY, nbt.getBoolean("Legendary"));
         readUuidSet(nbt.getString("AffectedTargets"), affectedTargets);
         readUuidSet(nbt.getString("DeflectedProjectiles"), deflectedProjectiles);
     }
@@ -204,6 +211,7 @@ public final class ArcanaFieldEntity extends Entity {
         nbt.putString("Shape", dataTracker.get(SHAPE));
         nbt.putFloat("Radius", dataTracker.get(RADIUS));
         nbt.putFloat("FacingYaw", dataTracker.get(FACING_YAW));
+        nbt.putBoolean("Legendary", dataTracker.get(LEGENDARY));
         nbt.putString("AffectedTargets", joinUuidSet(affectedTargets));
         nbt.putString("DeflectedProjectiles", joinUuidSet(deflectedProjectiles));
     }
