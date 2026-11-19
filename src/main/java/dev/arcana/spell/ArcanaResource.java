@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** World-persistent Arcana pool for each player. */
 public final class ArcanaResource {
-    public static final int MAX_ARCANA = 100;
+    public static final int MAX_ARCANA = 200;
     private static final int REGEN_PER_SECOND = 2;
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type DATA_TYPE = new TypeToken<Map<String, Integer>>() {}.getType();
