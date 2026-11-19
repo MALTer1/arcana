@@ -35,6 +35,18 @@ This is still a prototype, not a finished gameplay system. Some registered conce
 
 The composition engine is deterministic and rule-based. Its interaction library is expandable, but it does not yet infer every possible combination or every world situation automatically.
 
+## Spellbook, augments, and Legendary pages
+
+- Right-click a held Grimoire to open the Spellbook. Sneak-use the Grimoire to cast the currently selected page.
+- Select a spell page to inspect its Form, Effects, elemental combination, behavior summary, and calculated Arcana cost.
+- The preview animates a schematic version of the selected delivery shape and elemental color. It is an explanatory preview, not a full simulation of the spell in the world.
+- Use **Adjust** to add, remove, or reorder glyphs. The server recompiles the ordered program and rejects combinations that do not make sense before saving them.
+- Spell Effects execute in authored order. Augments attach to the Form or the nearest preceding Effect, so their position in the sequence matters.
+- Arcana cost is weighted by Form, Effect strength, Augments, elements, and program complexity. Efficiency and Dampen can reduce cost; Legendary status adds a substantial surcharge. Arcana capacity is 200 to support the strongest spell pages.
+- Dedicated Augments include Amplify, Accelerate, Pierce, Split, Extend, Homing, Repeat, Ricochet, Linger, Dampen, Efficiency, Expand, and Stabilize. Some have full runtime behavior (such as Repeat, Split, Homing, and Pierce); others currently modify the compiled plan or cost and will continue to receive dedicated runtime behavior.
+- A **Legendary Scroll** is crafted from one Nether Star, four Echo Shards, and four Magic Dust. Use it from the Spellbook's Loose Pages tab to awaken an engraved page, or use it on a spell already stored in a Master Grimoire.
+- Legendary spells can contain up to eight glyphs and can only be stored in a Master Grimoire. Their payload duration and strength are increased, and each receives an additional signature Legendary Effect determined by its spell composition.
+
 ## Commands
 
 - `/arcana components` — list all registered components.
