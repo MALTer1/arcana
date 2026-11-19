@@ -92,8 +92,7 @@ public final class SpellCaster {
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
             applyElements(player, target, parts, reactions, targetComposition.durationMultiplier());
             double effectScale = targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
-            applyEffects(player, target, parts, effectScale);
-            if (parts.contains("repeat")) applyEffects(player, target, parts, effectScale * 0.65);
+            applyProgramEffects(player, target, spell, effectScale);
             LegendarySpellEngine.apply(player, target, spell);
             applyCompositionInteractions(player, target, targetComposition);
             affected++;
@@ -147,8 +146,7 @@ public final class SpellCaster {
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         applyElements(caster, target, parts, reactions, plan.durationMultiplier());
         double effectScale = plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0);
-        applyEffects(caster, target, parts, effectScale);
-        if (parts.contains("repeat")) applyEffects(caster, target, parts, effectScale * 0.65);
+        applyProgramEffects(caster, target, spell, effectScale);
         LegendarySpellEngine.apply(caster, target, spell);
         if (parts.contains("split")) {
             List<LivingEntity> nearby = caster.getWorld().getEntitiesByClass(LivingEntity.class,
@@ -157,8 +155,7 @@ public final class SpellCaster {
                     && (!parts.contains("ally") || entity.isTeammate(caster)));
             for (LivingEntity extra : nearby.stream().limit(3).toList()) {
                 applyElements(caster, extra, parts, reactions, plan.durationMultiplier());
-                applyEffects(caster, extra, parts, effectScale);
-                if (parts.contains("repeat")) applyEffects(caster, extra, parts, effectScale * 0.65);
+                applyProgramEffects(caster, extra, spell, effectScale);
                 LegendarySpellEngine.apply(caster, extra, spell);
                 applyCompositionInteractions(caster, extra, plan);
             }
@@ -517,6 +514,38 @@ public final class SpellCaster {
         if (plan.slowTicks() > 0 && plan.stunTicks() == 0) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
                 plan.slowTicks(), 2));
+        }
+    }
+
+    /**
+     * Execute Effect glyphs in their authored order. Augments are scoped to
+     * the Form or Effect step selected by the spell compiler.
+     */
+    private static void applyProgramEffects(ServerPlayerEntity caster, LivingEntity target,
+                                            SpellBookStore.StoredSpell spell, double durationScale) {
+        List<String> all = spell.components;
+        if (all.contains("healing") && all.contains("explosion")) {
+            // This pair has a dedicated restorative-shockwave resolution.
+            applyEffects(caster, target, all, durationScale);
+            return;
+        }
+        SpellProgram.Compilation program = SpellProgram.compile(all);
+        int formIndex = program.steps().stream()
+            .filter(step -> step.role() == SpellProgram.Role.FORM)
+            .mapToInt(SpellProgram.Step::index).findFirst().orElse(-1);
+        for (SpellProgram.Step effect : program.steps()) {
+            if (effect.role() != SpellProgram.Role.EFFECT) continue;
+            List<String> scope = new ArrayList<>();
+            for (SpellProgram.Step step : program.steps()) {
+                if (step.role() == SpellProgram.Role.FORM
+                    || (step.role() == SpellProgram.Role.AUGMENT
+                        && (step.modifiesStep() == formIndex || step.modifiesStep() == effect.index()))) {
+                    scope.add(step.componentId());
+                }
+            }
+            scope.add(effect.componentId());
+            applyEffects(caster, target, scope, durationScale);
+            if (scope.contains("repeat")) applyEffects(caster, target, scope, durationScale * 0.65);
         }
     }
 
