@@ -114,6 +114,19 @@ public final class ComponentRegistry {
         register("dimension_sense", ComponentCategory.EFFECT, "Dimension Sense", "Senses nearby dimensional boundaries.");
         register("memory", ComponentCategory.EFFECT, "Memory", "Records a short visual snapshot for later review.");
         register("alarm", ComponentCategory.EFFECT, "Alarm", "Creates a signal when a chosen condition is met.");
+        register("amplify", ComponentCategory.TARGET, "Amplify", "Strengthens the payload this glyph is attached to.");
+        register("accelerate", ComponentCategory.TARGET, "Accelerate", "Increases the speed of a moving Form.");
+        register("pierce", ComponentCategory.TARGET, "Pierce", "Allows a moving spell to continue through its first valid impact.");
+        register("split", ComponentCategory.TARGET, "Split", "Splits a payload across additional targets.");
+        register("extend", ComponentCategory.TARGET, "Extend", "Increases the reach and duration of the attached payload.");
+        register("homing", ComponentCategory.TARGET, "Homing", "Steers a moving spell toward its selected target.");
+        register("repeat", ComponentCategory.TARGET, "Repeat", "Repeats the attached payload after its first resolution.");
+        register("ricochet", ComponentCategory.TARGET, "Ricochet", "Allows a moving spell to redirect toward another target.");
+        register("linger", ComponentCategory.TARGET, "Linger", "Makes the attached effect persist for longer.");
+        register("dampen", ComponentCategory.TARGET, "Dampen", "Reduces intensity while improving control and efficiency.");
+        register("efficiency", ComponentCategory.TARGET, "Efficiency", "Reduces the Arcana cost of the attached payload.");
+        register("expand", ComponentCategory.TARGET, "Expand", "Increases the area covered by the attached payload.");
+        register("stabilize", ComponentCategory.TARGET, "Stabilize", "Reduces unwanted variation and improves spell control.");
         bootstrapped = true;
     }
 
