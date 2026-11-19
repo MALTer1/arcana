@@ -208,6 +208,55 @@ public final class GrimoireScreen extends Screen {
                 context.fill(centerX - 18, centerY - 3, centerX + 18, centerY + 3, color);
             }
         }
+        String effect = "";
+        JsonArray glyphs = array("glyphs");
+        for (int i = 0; i < components.size() && effect.isEmpty(); i++) {
+            String id = components.get(i).getAsString();
+            for (int j = 0; j < glyphs.size(); j++) {
+                JsonObject glyph = glyphs.get(j).getAsJsonObject();
+                if (glyph.get("id").getAsString().equals(id)
+                    && glyph.get("category").getAsString().equals("Power and Effect")) {
+                    effect = id;
+                    break;
+                }
+            }
+        }
+        int effectSize = 4 + Math.floorMod(age / 3, 5);
+        int effectColor = switch (effect) {
+            case "healing", "regeneration", "growth", "cleanse" -> 0xFF55A65B;
+            case "explosion", "repulsion" -> 0xFFE66A32;
+            case "teleportation", "portal", "recall" -> 0xFF6B73D8;
+            case "binding", "anchor", "fatigue" -> 0xFF8051A8;
+            case "summoning", "enhancement", "haste" -> 0xFFE6B84D;
+            default -> color;
+        };
+        switch (effect) {
+            case "healing", "regeneration", "growth", "cleanse" -> {
+                context.fill(centerX - 2, centerY - effectSize, centerX + 2, centerY + effectSize, effectColor);
+                context.fill(centerX - effectSize, centerY - 2, centerX + effectSize, centerY + 2, effectColor);
+            }
+            case "explosion", "repulsion" -> {
+                context.fill(centerX - effectSize, centerY - 2, centerX + effectSize, centerY + 2, effectColor);
+                context.fill(centerX - 2, centerY - effectSize, centerX + 2, centerY + effectSize, effectColor);
+                context.fill(centerX - effectSize, centerY - effectSize, centerX - effectSize + 3, centerY - effectSize + 3, effectColor);
+                context.fill(centerX + effectSize - 3, centerY + effectSize - 3, centerX + effectSize, centerY + effectSize, effectColor);
+            }
+            case "teleportation", "portal", "recall" -> {
+                context.fill(centerX - effectSize, centerY - effectSize, centerX + effectSize, centerY - effectSize + 2, effectColor);
+                context.fill(centerX - effectSize, centerY + effectSize - 2, centerX + effectSize, centerY + effectSize, effectColor);
+                context.fill(centerX - effectSize, centerY - effectSize, centerX - effectSize + 2, centerY + effectSize, effectColor);
+                context.fill(centerX + effectSize - 2, centerY - effectSize, centerX + effectSize, centerY + effectSize, effectColor);
+            }
+            case "binding", "anchor", "fatigue" -> {
+                context.fill(centerX - effectSize, centerY - 5, centerX + effectSize, centerY - 2, effectColor);
+                context.fill(centerX - effectSize, centerY + 2, centerX + effectSize, centerY + 5, effectColor);
+            }
+            case "summoning", "enhancement", "haste" -> {
+                context.fill(centerX - 2, centerY - effectSize, centerX + 2, centerY + effectSize, effectColor);
+                context.fill(centerX - effectSize, centerY - 2, centerX + effectSize, centerY + 2, effectColor);
+            }
+            default -> context.fill(centerX - 3, centerY - 3, centerX + 3, centerY + 3, effectColor);
+        }
         if (legendary) {
             context.fill(centerX - 2, centerY - 2, centerX + 2, centerY + 2, 0xFFFFE9A0);
         }
