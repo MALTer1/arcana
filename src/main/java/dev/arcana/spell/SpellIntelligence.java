@@ -48,7 +48,11 @@ public final class SpellIntelligence {
             counts.merge(component.category(), 1, Integer::sum);
         }
 
-        if (components.size() < 2) issues.add("Choose at least two components.");
+        if (components.size() < 2) issues.add("Choose at least two glyphs.");
+
+        SpellProgram.Compilation program = SpellProgram.compile(
+            components.stream().map(SpellComponent::id).toList());
+        issues.addAll(program.issues());
 
         Set<String> selected = components.stream().map(SpellComponent::id).collect(Collectors.toSet());
         if (selected.contains("healing") && selected.contains("explosion"))
