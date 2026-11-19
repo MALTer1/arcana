@@ -73,10 +73,10 @@ public final class GrimoireScreen extends Screen {
                 addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "ADJUST"), b -> {
                     editMode = !editMode; glyphPage = 0; rebuild();
                 }).dimensions(left + 302, top + 30, 72, 20).build());
-                addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
+                if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
                 }).dimensions(left + 230, top + 194, 144, 20).build());
-                if (spell.has("legendary") && !spell.get("legendary").getAsBoolean()) {
+                if (!editMode && spell.has("legendary") && !spell.get("legendary").getAsBoolean()) {
                     addDrawableChild(ButtonWidget.builder(Text.literal("USE LEGENDARY SCROLL"), b -> send("legendary", name))
                         .dimensions(left + 230, top + 218, 144, 18).build());
                 }
