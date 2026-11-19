@@ -142,6 +142,13 @@ public final class GrimoireScreen extends Screen {
         }).dimensions(left + 294, top + 222, 72, 17).build());
     }
 
+    private static boolean containsComponent(JsonArray components, String id) {
+        for (int i = 0; i < components.size(); i++) {
+            if (id.equals(components.get(i).getAsString())) return true;
+        }
+        return false;
+    }
+
     private void drawPreviewAnimation(DrawContext context, int left, int top, JsonObject spell, boolean legendary) {
         int age = MinecraftClient.getInstance().player == null ? 0 : MinecraftClient.getInstance().player.age;
         int pulse = (int)(Math.sin(age * 0.16) * 5.0);
@@ -282,7 +289,7 @@ public final class GrimoireScreen extends Screen {
                 mote++;
             }
         }
-        if (components.contains("amplify") || components.contains("expand")) {
+        if (containsComponent(components, "amplify") || containsComponent(components, "expand")) {
             int halo = 22 + Math.floorMod(age / 2, 7);
             context.fill(centerX - halo, centerY - halo, centerX + halo, centerY - halo + 1, 0x88FFFFFF);
             context.fill(centerX - halo, centerY + halo - 1, centerX + halo, centerY + halo, 0x88FFFFFF);
