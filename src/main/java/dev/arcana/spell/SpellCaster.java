@@ -555,6 +555,8 @@ public final class SpellCaster {
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                      double durationScale) {
         float powerScale = parts.contains("legendary_spell") ? 1.75F : 1.0F;
+        if (parts.contains("amplify")) powerScale *= 1.5F;
+        if (parts.contains("dampen")) powerScale *= 0.6F;
         if (parts.contains("healing") && parts.contains("explosion")) {
             if (target == caster || target.isTeammate(caster)) {
                 target.heal(8.0F * powerScale);
