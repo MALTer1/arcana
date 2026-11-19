@@ -75,16 +75,16 @@ public final class GrimoireScreen extends Screen {
                 }).dimensions(left + 302, top + 30, 72, 20).build());
                 if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
-                }).dimensions(left + 230, top + 270, 72, 18).build());
+                }).dimensions(left + 230, top + 260, 72, 18).build());
                 if (!editMode && spell.has("legendary") && !spell.get("legendary").getAsBoolean()) {
                     addDrawableChild(ButtonWidget.builder(Text.literal("LEGENDARY SCROLL"), b -> send("legendary", name))
-                        .dimensions(left + 306, top + 270, 100, 18).build());
+                        .dimensions(left + 306, top + 260, 100, 18).build());
                 }
                 if (editMode) buildEditor(left, top, name, spell);
                 if (removeMode) {
                     // In removal mode the selected page is returned as engraved Magic Paper.
                     addDrawableChild(ButtonWidget.builder(Text.literal("CONFIRM REMOVE"), b -> send("remove", name))
-                        .dimensions(left + 18, top + 270, 180, 18).build());
+                        .dimensions(left + 18, top + 260, 180, 18).build());
                 }
             }
         } else if (tab == 1) {
