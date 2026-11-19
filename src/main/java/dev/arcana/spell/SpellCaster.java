@@ -526,7 +526,9 @@ public final class SpellCaster {
         List<String> all = spell.components;
         if (all.contains("healing") && all.contains("explosion")) {
             // This pair has a dedicated restorative-shockwave resolution.
-            applyEffects(caster, target, all, durationScale);
+            List<String> combined = new ArrayList<>(all);
+            if (spell.legendary) combined.add("legendary_spell");
+            applyEffects(caster, target, combined, durationScale);
             return;
         }
         SpellProgram.Compilation program = SpellProgram.compile(all);
@@ -544,6 +546,7 @@ public final class SpellCaster {
                 }
             }
             scope.add(effect.componentId());
+            if (spell.legendary) scope.add("legendary_spell");
             applyEffects(caster, target, scope, durationScale);
             if (scope.contains("repeat")) applyEffects(caster, target, scope, durationScale * 0.65);
         }
@@ -551,22 +554,23 @@ public final class SpellCaster {
 
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                      double durationScale) {
+        float powerScale = parts.contains("legendary_spell") ? 1.75F : 1.0F;
         if (parts.contains("healing") && parts.contains("explosion")) {
             if (target == caster || target.isTeammate(caster)) {
-                target.heal(8.0F);
+                target.heal(8.0F * powerScale);
                 target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION,
                     scaledTicks(140, durationScale), 1));
                 Vec3d outward = target.getPos().subtract(caster.getPos()).normalize().multiply(0.35);
                 target.addVelocity(outward.x, 0.12, outward.z);
                 target.velocityModified = true;
             } else {
-                target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F);
+                target.damage(caster.getDamageSources().indirectMagic(caster, caster), 8.0F * powerScale);
                 Vec3d away = target.getPos().subtract(caster.getPos()).normalize().multiply(1.4);
                 target.addVelocity(away.x, 0.55, away.z);
                 target.velocityModified = true;
             }
         } else if (parts.contains("healing")) {
-            target.heal(6.0F);
+            target.heal(6.0F * powerScale);
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION,
                 scaledTicks(100, durationScale), 0));
         }
@@ -616,7 +620,7 @@ public final class SpellCaster {
         if (parts.contains("weather")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(240, durationScale), 0));
         if (parts.contains("growth")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(160, durationScale), 1));
         if (parts.contains("harvest")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, scaledTicks(1, durationScale), 0));
-        if (parts.contains("repair")) target.heal(10.0F);
+        if (parts.contains("repair")) target.heal(10.0F * powerScale);
         if (parts.contains("cleanse") || parts.contains("purify")) {
             target.removeStatusEffect(StatusEffects.POISON);
             target.removeStatusEffect(StatusEffects.WITHER);
