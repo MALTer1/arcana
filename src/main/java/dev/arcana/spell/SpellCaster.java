@@ -25,9 +25,6 @@ import java.util.List;
  * supply the spell's main action.
  */
 public final class SpellCaster {
-    private static final int BASE_COST = 10;
-    private static final int COMPONENT_COST = 5;
-
     private SpellCaster() {}
 
     public record CastResult(boolean success, String message, int cost) {}
@@ -55,7 +52,7 @@ public final class SpellCaster {
             return new CastResult(false, "No valid target was found. Aim at a nearby creature or choose a different target type.", 0);
         }
 
-        int cost = BASE_COST + parts.size() * COMPONENT_COST;
+        int cost = spell.arcanaCost();
         if (!ArcanaResource.trySpend(player, cost)) {
             return new CastResult(false, "Not enough Arcana. Need " + cost + ", currently have " +
                 ArcanaResource.current(player) + ".", cost);
@@ -94,7 +91,8 @@ public final class SpellCaster {
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
             applyElements(player, target, parts, reactions, targetComposition.durationMultiplier());
-            applyEffects(player, target, parts, targetComposition.durationMultiplier());
+            applyEffects(player, target, parts, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+            LegendarySpellEngine.apply(player, target, spell);
             applyCompositionInteractions(player, target, targetComposition);
             affected++;
         }
@@ -146,7 +144,8 @@ public final class SpellCaster {
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         applyElements(caster, target, parts, reactions, plan.durationMultiplier());
-        applyEffects(caster, target, parts, plan.durationMultiplier());
+        applyEffects(caster, target, parts, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+        LegendarySpellEngine.apply(caster, target, spell);
         applyCompositionInteractions(caster, target, plan);
         if (executeWorldActions) {
             SpellWorldEffects.apply(caster, parts);
