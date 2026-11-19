@@ -64,7 +64,7 @@ public final class SpellProgram {
                         lastPayloadIndex = index;
                     }
                 }
-                case ELEMENT, TARGET -> {
+                case ELEMENT, TARGET, AUGMENT -> {
                     if (formIndex < 0) {
                         issues.add(component.displayName() + " must come after a Form.");
                         steps.add(new Step(index, id, Role.AUGMENT, -1, component.category()));
