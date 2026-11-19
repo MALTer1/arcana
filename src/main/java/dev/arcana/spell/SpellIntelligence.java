@@ -55,6 +55,23 @@ public final class SpellIntelligence {
         issues.addAll(program.issues());
 
         Set<String> selected = components.stream().map(SpellComponent::id).collect(Collectors.toSet());
+        Set<String> movingForms = Set.of("projectile", "arc", "chain", "beam", "wave");
+        Set<String> areaForms = Set.of("field", "wave", "cone", "ring", "pulse", "orbit", "rune", "wall", "column");
+        boolean hasMovingForm = selected.stream().anyMatch(movingForms::contains);
+        boolean hasAreaForm = selected.stream().anyMatch(areaForms::contains);
+        if ((selected.contains("pierce") || selected.contains("homing")
+            || selected.contains("accelerate") || selected.contains("ricochet")) && !hasMovingForm) {
+            issues.add("Pierce, Homing, Accelerate, and Ricochet need a moving Form such as Projectile, Arc, Chain, Beam, or Wave.");
+        }
+        if (selected.contains("expand") && !hasAreaForm) {
+            issues.add("Expand needs an area-capable Form such as Field, Wave, Cone, Ring, Pulse, or Rune.");
+        }
+        if (selected.contains("amplify") && selected.contains("dampen")) {
+            issues.add("Amplify and Dampen oppose each other; remove one so the spell has a clear intensity.");
+        }
+        if (selected.contains("self") && selected.contains("hostile")) {
+            issues.add("Self targeting cannot be combined with the Hostile target filter.");
+        }
         if (selected.contains("healing") && selected.contains("explosion"))
             warnings.add("Healing + Explosion is interpreted as a restorative shockwave: allies are healed while hostile targets receive the burst.");
         if (selected.contains("teleportation") &&
