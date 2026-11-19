@@ -408,11 +408,8 @@ public final class SpellCompositionEngine {
     }
 
     private static boolean isEffect(String id) {
-        return !isDelivery(id) && !isElement(id) && !Set.of("single_target", "multiple_targets",
-            "self", "area", "self_and_nearby", "ally", "hostile", "ground", "block",
-            "projectile_target", "amplify", "accelerate", "pierce", "split", "extend",
-            "homing", "repeat", "ricochet", "linger", "dampen", "efficiency", "expand",
-            "stabilize").contains(id);
+        SpellComponent component = ComponentRegistry.get(id);
+        return component != null && component.category() == ComponentCategory.EFFECT;
     }
 
     private static double clamp(double value, double min, double max) {
