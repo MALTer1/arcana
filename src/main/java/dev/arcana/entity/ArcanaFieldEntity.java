@@ -87,7 +87,9 @@ public final class ArcanaFieldEntity extends Entity {
         field.dataTracker.set(OWNER_ID, owner.getId());
         field.dataTracker.set(COMPONENTS, String.join(",", spell.components));
         field.dataTracker.set(SHAPE, shape);
-        field.dataTracker.set(RADIUS, (float) Math.max(1.5, Math.min(8.0, baseRadius * plan.areaMultiplier())));
+        double legendaryArea = spell.legendary ? 1.5 : 1.0;
+        field.dataTracker.set(RADIUS, (float) Math.max(1.5,
+            Math.min(8.0, baseRadius * plan.areaMultiplier() * legendaryArea)));
         field.dataTracker.set(FACING_YAW, owner.getYaw());
         field.dataTracker.set(LEGENDARY, spell.legendary);
         int lifetimeTicks = (int)Math.round(200.0 * plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
