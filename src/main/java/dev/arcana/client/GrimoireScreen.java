@@ -268,16 +268,21 @@ public final class GrimoireScreen extends Screen {
                 String effectSummary = effects.size() == 0 ? "None" : effects.get(0).getAsString();
                 if (effects.size() > 1) effectSummary += " +" + (effects.size() - 1) + " more";
                 context.drawText(textRenderer, "Effects: " + effectSummary, left + 230, top + 204, 0xFF684D36, false);
+                JsonArray descriptions = spell.has("effectDescriptions") ? spell.getAsJsonArray("effectDescriptions") : new JsonArray();
+                if (!descriptions.isEmpty()) {
+                    String detail = textRenderer.trimToWidth(descriptions.get(0).getAsString(), 184);
+                    context.drawText(textRenderer, detail, left + 230, top + 216, 0xFF684D36, false);
+                }
                 if (legendary) {
-                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 216, 0xFF9A6510, false);
-                    java.util.List<net.minecraft.text.OrderedText> legendaryLines = textRenderer.wrapLines(
-                        Text.literal(spell.get("legendaryEffect").getAsString()), 184);
-                    if (!legendaryLines.isEmpty())
-                        context.drawText(textRenderer, legendaryLines.get(0), left + 230, top + 227, 0xFF9A6510, false);
+                    context.drawText(textRenderer, "LEGENDARY", left + 230, top + 228, 0xFF9A6510, false);
+                    String signature = textRenderer.trimToWidth(spell.get("legendaryEffect").getAsString(), 184);
+                    context.drawText(textRenderer, signature, left + 230, top + 239, 0xFF9A6510, false);
                 } else {
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
-                    if (!warnings.isEmpty())
-                        context.drawText(textRenderer, "Synergy: " + warnings.get(0).getAsString(), left + 230, top + 216, 0xFF684D36, false);
+                    if (!warnings.isEmpty()) {
+                        String synergy = textRenderer.trimToWidth("Synergy: " + warnings.get(0).getAsString(), 184);
+                        context.drawText(textRenderer, synergy, left + 230, top + 228, 0xFF684D36, false);
+                    }
                 }
                 if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, false);
             }
