@@ -362,7 +362,7 @@ public final class GrimoireScreen extends Screen {
             context.drawText(textRenderer, "Normal glyph limit: " + (state.has("maxComponents") ? state.get("maxComponents").getAsInt() : 0), left + 28, top + 116, 0xFF5A3D28, false);
             context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, false);
         }
-        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 282, 0xFFEEE0C4, false);
+        context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 270, 0xFFEEE0C4, false);
         super.render(context, mouseX, mouseY, delta);
     }
     @Override public boolean shouldPause() { return false; }
