@@ -184,8 +184,9 @@ public final class GrimoireNetwork {
             item.addProperty("legendaryEffect", spell.legendaryEffect == null ? "" : spell.legendaryEffect);
             SpellCostCalculator.Cost cost = SpellCostCalculator.calculate(spell.components, spell.legendary);
             item.addProperty("cost", cost.total());
-            item.addProperty("costBreakdown", "Form " + cost.formCost() + " · Effects " + cost.effectCost()
-                + " · Augments " + cost.augmentCost() + " · Elements " + cost.elementalCost());
+            item.addProperty("costBreakdown", "F" + cost.formCost() + " E" + cost.effectCost()
+                + " A" + cost.augmentCost() + " El" + cost.elementalCost()
+                + " C" + cost.complexityCost() + " L" + cost.legendaryCost());
             JsonArray components = new JsonArray();
             if (spell.components != null) spell.components.forEach(components::add);
             item.add("components", components);
