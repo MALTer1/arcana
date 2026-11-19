@@ -35,6 +35,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private final List<ButtonWidget> componentButtons = new ArrayList<>();
     private TextFieldWidget spellName;
     private int scrollRow;
+    private boolean legendaryDraft;
 
     public MagicWriterScreen(MagicWriterScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
@@ -65,6 +66,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         spellName.setPlaceholder(Text.literal("Spell name"));
         ItemStack paper = handler.getWriterInventory().getStack(1);
         SpellBookStore.StoredSpell existing = paper.isOf(ArcanaItems.MAGIC_PAPER) ? SpellPageStore.get(paper) : null;
+        legendaryDraft = existing != null && existing.legendary;
         if (existing != null) {
             spellName.setText(existing.name);
             selected.addAll(existing.components);
@@ -90,7 +92,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private Text buttonText(Choice c) { return Text.literal((selected.contains(c.id()) ? "✦ " : "+ ") + c.label()); }
     private void toggle(Choice c) {
         if (selected.contains(c.id())) selected.remove(c.id());
-        else if (selected.size() < 8) selected.add(c.id());
+        else if (selected.size() < (legendaryDraft ? 8 : 5)) selected.add(c.id());
         refreshButtons();
     }
     private void refreshButtons() {
@@ -153,7 +155,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         c.drawTextWithShadow(textRenderer, "OUTPUT", 88, 58, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL DETAILS", 164, 34, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL NAME", 164, 49, 0xFFFFD98D);
-        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/8", 330, 28, 0xFFFFD98D);
+        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/" + (legendaryDraft ? 8 : 5), 330, 28, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), false).total(), 164, 119, 0xFFB9DDE7);
         c.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
