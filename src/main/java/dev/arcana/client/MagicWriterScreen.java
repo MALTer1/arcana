@@ -2,6 +2,7 @@ package dev.arcana.client;
 
 import dev.arcana.network.MagicWriterNetwork;
 import dev.arcana.item.ArcanaItems;
+import dev.arcana.item.GrimoireTier;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.spell.ComponentRegistry;
@@ -89,10 +90,15 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             b.active = b.visible;
         }
     }
+    private int componentLimit() {
+        if (legendaryDraft) return 8;
+        GrimoireTier tier = GrimoireTier.fromItem(handler.getWriterInventory().getStack(0).getItem());
+        return tier == null ? 5 : tier.maxComponents();
+    }
     private Text buttonText(Choice c) { return Text.literal((selected.contains(c.id()) ? "✦ " : "+ ") + c.label()); }
     private void toggle(Choice c) {
         if (selected.contains(c.id())) selected.remove(c.id());
-        else if (selected.size() < (legendaryDraft ? 8 : 5)) selected.add(c.id());
+        else if (selected.size() < componentLimit()) selected.add(c.id());
         refreshButtons();
     }
     private void refreshButtons() {
@@ -155,7 +161,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         c.drawTextWithShadow(textRenderer, "OUTPUT", 88, 58, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL DETAILS", 164, 34, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL NAME", 164, 49, 0xFFFFD98D);
-        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/" + (legendaryDraft ? 8 : 5), 330, 28, 0xFFFFD98D);
+        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/" + componentLimit(), 330, 28, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), false).total(), 164, 119, 0xFFB9DDE7);
         c.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
