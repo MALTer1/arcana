@@ -5,6 +5,7 @@ import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.spell.ComponentRegistry;
+import dev.arcana.spell.SpellCostCalculator;
 import dev.arcana.screen.MagicWriterScreenHandler;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
@@ -89,7 +90,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private Text buttonText(Choice c) { return Text.literal((selected.contains(c.id()) ? "✦ " : "+ ") + c.label()); }
     private void toggle(Choice c) {
         if (selected.contains(c.id())) selected.remove(c.id());
-        else if (selected.size() < 5) selected.add(c.id());
+        else if (selected.size() < 8) selected.add(c.id());
         refreshButtons();
     }
     private void refreshButtons() {
@@ -152,7 +153,8 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         c.drawTextWithShadow(textRenderer, "OUTPUT", 88, 58, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL DETAILS", 164, 34, 0xFFFFD98D);
         c.drawTextWithShadow(textRenderer, "SPELL NAME", 164, 49, 0xFFFFD98D);
-        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/5", 330, 28, 0xFFFFD98D);
+        c.drawTextWithShadow(textRenderer, "COMPONENTS " + selected.size() + "/8", 330, 28, 0xFFFFD98D);
+        c.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), false).total(), 164, 119, 0xFFB9DDE7);
         c.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
 
