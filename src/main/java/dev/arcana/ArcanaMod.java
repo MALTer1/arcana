@@ -148,7 +148,8 @@ public final class ArcanaMod implements ModInitializer {
                     }
                     player.sendMessage(Text.literal("=== YOUR SPELLBOOK (" + spells.size() + ") ==="), false);
                     spells.forEach(spell -> player.sendMessage(
-                        Text.literal("• " + spell.name + " — " + String.join(", ", spell.components)), false));
+                        Text.literal("• " + spell.name + " — " + String.join(", ", spell.components)
+                            + " — " + spell.arcanaCost() + " Arcana" + (spell.legendary ? " — LEGENDARY" : "")), false));
                     return spells.size();
                 }))
                 .then(CommandManager.literal("inspect")
@@ -163,6 +164,8 @@ public final class ArcanaMod implements ModInitializer {
                         player.sendMessage(Text.literal("=== " + spell.name + " ==="), false);
                         player.sendMessage(Text.literal("Components: " + String.join(" + ", spell.components)), false);
                         player.sendMessage(Text.literal("Behavior: " + spell.behavior), false);
+                        player.sendMessage(Text.literal("Arcana cost: " + spell.arcanaCost()), false);
+                        if (spell.legendary) player.sendMessage(Text.literal("LEGENDARY EFFECT: " + spell.legendaryEffect), false);
                         player.sendMessage(Text.literal("This spell is stored in your spellbook. Use /arcana cast " + spell.name + " to cast it."), false);
                         return 1;
                     })))
