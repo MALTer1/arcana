@@ -84,7 +84,13 @@ public final class ArcanaMod implements ModInitializer {
                         .executes(context -> {
                             ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
                             String id = StringArgumentType.getString(context, "component");
-                            SpellDraft.AddResult result = draft(player).add(id);
+                            SpellDraft currentDraft = draft(player);
+                            if (currentDraft.selectedIds().size() >= SpellDraft.MAX_NORMAL_COMPONENTS
+                                && !currentDraft.selectedIds().contains(id)) {
+                                player.sendMessage(Text.literal("Normal spell drafts support five glyphs. Upgrade a page with a Legendary Scroll before adding more."), false);
+                                return 0;
+                            }
+                            SpellDraft.AddResult result = currentDraft.add(id);
                             player.sendMessage(Text.literal(result.message()), false);
                             return result.success() ? 1 : 0;
                         })))
