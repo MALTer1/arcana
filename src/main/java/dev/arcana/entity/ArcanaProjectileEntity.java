@@ -70,7 +70,10 @@ public final class ArcanaProjectileEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (++lifetime > 100) {
+        String encodedComponents = dataTracker.get(COMPONENTS);
+        int maxLifetime = encodedComponents.contains("extend") || encodedComponents.contains("homing")
+            || encodedComponents.contains("ricochet") ? 160 : 100;
+        if (++lifetime > maxLifetime) {
             discard();
             return;
         }
