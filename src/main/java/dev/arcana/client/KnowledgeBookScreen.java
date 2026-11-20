@@ -129,9 +129,11 @@ public final class KnowledgeBookScreen extends Screen {
                 boolean known = item.has("known") && item.get("known").getAsBoolean();
                 if (known) {
                     context.drawCenteredTextWithShadow(textRenderer, item.get("name").getAsString(), left + 365, top + 83, 0xFF4A3020);
-                    List<net.minecraft.client.font.MultilineText> unused = List.of();
-                    for (var line : textRenderer.wrapLines(Text.literal(item.get("description").getAsString()), 112))
-                        context.drawText(textRenderer, line, left + 310, top + 106 + (line == null ? 0 : 0), 0xFF684D36, true);
+                    int detailY = top + 106;
+                    for (var line : textRenderer.wrapLines(Text.literal(item.get("description").getAsString()), 112)) {
+                        context.drawText(textRenderer, line, left + 310, detailY, 0xFF684D36, true);
+                        detailY += 10;
+                    }
                 } else {
                     context.drawCenteredTextWithShadow(textRenderer, "???", left + 365, top + 83, 0xFF4A3020);
                     context.drawText(textRenderer, "Not yet recorded in your spell knowledge.", left + 310, top + 106, 0xFF684D36, true);
