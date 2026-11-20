@@ -23,6 +23,14 @@ public final class ArcanaEntities {
                 .trackingTickInterval(5)
                 .build("arcana:magic_field"));
 
+    public static final EntityType<ArcanaEffectEntity> MAGIC_EFFECT =
+        Registry.register(Registries.ENTITY_TYPE, Identifier.of("arcana", "magic_effect"),
+            EntityType.Builder.<ArcanaEffectEntity>create(ArcanaEffectEntity::new, SpawnGroup.MISC)
+                .dimensions(0.1F, 0.1F)
+                .maxTrackingRange(64)
+                .trackingTickInterval(1)
+                .build("arcana:magic_effect"));
+
     private ArcanaEntities() {}
 
     public static void register() {
