@@ -225,7 +225,7 @@ public final class ArcanaMod implements ModInitializer {
                                 server.execute(() -> {
                                     String result = error == null ? answer
                                         : "Request failed — " + ArcanaAiService.failureMessage(error);
-                                    player.sendMessage(Text.literal("[Arcana AI] " + result), false);
+                                    sendAiResponse(player, result);
                                 });
                             });
                             return 1;
@@ -244,6 +244,32 @@ public final class ArcanaMod implements ModInitializer {
                 }))
             )
         );
+    }
+
+    /**
+     * Sends long AI replies in ordered chat-sized pieces so the client does not
+     * display one enormous message as a single clipped block.
+     */
+    private static void sendAiResponse(ServerPlayerEntity player, String response) {
+        if (response == null || response.isBlank()) {
+            player.sendMessage(Text.literal("[Arcana AI] The model returned an empty response."), false);
+            return;
+        }
+        String remaining = response.trim();
+        boolean first = true;
+        while (!remaining.isEmpty()) {
+            int end = Math.min(240, remaining.length());
+            if (end < remaining.length()) {
+                int boundary = Math.max(remaining.lastIndexOf(' ', end), remaining.lastIndexOf('\\n', end));
+                if (boundary > 100) end = boundary;
+            }
+            String part = remaining.substring(0, end).trim();
+            if (!part.isEmpty()) {
+                player.sendMessage(Text.literal((first ? "[Arcana AI] " : "    ") + part), false);
+                first = false;
+            }
+            remaining = remaining.substring(end).trim();
+        }
     }
 
     private static SpellDraft draft(ServerPlayerEntity player) {
