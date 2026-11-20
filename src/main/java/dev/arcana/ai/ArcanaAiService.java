@@ -76,6 +76,7 @@ public final class ArcanaAiService {
         } catch (Exception exception) {
             System.err.println("[Arcana AI] Could not save normalized config: " + exception.getMessage());
         }
+        warmUpOllama();
     }
 
     public static synchronized void load(MinecraftServer server) {
@@ -247,7 +248,7 @@ public final class ArcanaAiService {
         body.addProperty("think", false);
         body.addProperty("keep_alive", "10m");
         JsonObject options = new JsonObject();
-        options.addProperty("num_predict", 256);
+        options.addProperty("num_predict", 600);
         options.addProperty("num_ctx", 4096);
         body.add("options", options);
         JsonArray messages = new JsonArray();
@@ -256,6 +257,43 @@ public final class ArcanaAiService {
         body.add("messages", messages);
         return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(300))
             .thenApply(response -> response.getAsJsonObject("message").get("content").getAsString());
+    }
+
+    /**
+     * Starts loading the local model in the background during mod initialization.
+     * This does not block Minecraft's startup thread.
+     */
+    private static void warmUpOllama() {
+        String enabled;
+        String baseUrl;
+        String model;
+        synchronized (ArcanaAiService.class) {
+            enabled = Boolean.toString(config.ollamaEnabled);
+            baseUrl = config.ollamaBaseUrl;
+            model = config.ollamaModel;
+        }
+        if (!Boolean.parseBoolean(enabled)) return;
+
+        JsonObject body = new JsonObject();
+        body.addProperty("model", model);
+        body.addProperty("stream", false);
+        body.addProperty("think", false);
+        body.addProperty("keep_alive", "10m");
+        JsonObject options = new JsonObject();
+        options.addProperty("num_predict", 1);
+        body.add("options", options);
+        JsonArray messages = new JsonArray();
+        messages.add(message("user", "Reply with OK."));
+        body.add("messages", messages);
+
+        System.out.println("[Arcana AI] Warming up local Ollama model '" + model + "' in the background...");
+        post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(300))
+            .thenAccept(response -> System.out.println("[Arcana AI] Local Ollama model is ready."))
+            .exceptionally(error -> {
+                System.err.println("[Arcana AI] Automatic Ollama warm-up failed: " + safeErrorMessage(error)
+                    + ". The model will still be attempted when requested.");
+                return null;
+            });
     }
 
     private static JsonObject message(String role, String text) {
