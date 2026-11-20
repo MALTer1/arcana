@@ -128,7 +128,7 @@ public final class ArcanaEffectEntity extends Entity {
                         5, radius * 0.3, 0.2, radius * 0.3, 0.01);
                 }
             }
-            case "mud" -> world.spawnParticles(ParticleTypes.FALLING_MUD, pos.x, pos.y + 0.3, pos.z,
+            case "mud" -> world.spawnParticles(ParticleTypes.WHITE_ASH, pos.x, pos.y + 0.3, pos.z,
                 8, radius * 0.4, 0.3, radius * 0.4, 0.01);
             case "thermal_shock" -> {
                 world.spawnParticles(ParticleTypes.FLAME, pos.x, pos.y + 0.3, pos.z,
