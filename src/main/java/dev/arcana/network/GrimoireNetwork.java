@@ -176,7 +176,9 @@ public final class GrimoireNetwork {
             else if (!consumeScroll(player)) message = "You need a Legendary Scroll in your inventory.";
             else {
                 SpellPageStore.set(pageStack, new SpellBookStore.StoredSpell(old.name, old.components,
-                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription));
+                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription, old.componentPowerPercentages));
+                SpellBookStore.update(player.getUuid(), SpellPageStore.get(pageStack));
+                SpellBookStore.save(player.getServer());
                 player.getInventory().markDirty();
                 message = old.name + " page awakened as Legendary. It can now only be inserted into a Master Grimoire.";
             }
