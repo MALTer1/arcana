@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BDB",
+    "APA",
+    "BDB"
+  ],
+  "key": {
+    "B": { "item": "minecraft:book" },
+    "D": { "item": "arcana:magic_dust" },
+    "A": { "item": "minecraft:amethyst_shard" },
+    "P": { "item": "arcana:magic_paper" }
+  },
+  "result": {
+    "id": "arcana:magic_writer",
+    "count": 1
+  }
+}
