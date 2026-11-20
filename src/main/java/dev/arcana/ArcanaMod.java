@@ -6,6 +6,7 @@ import dev.arcana.entity.ArcanaEntities;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.network.GrimoireNetwork;
+import dev.arcana.network.KnowledgeBookNetwork;
 import dev.arcana.network.MagicWriterNetwork;
 import dev.arcana.screen.MagicWriterScreenHandlers;
 import dev.arcana.spell.ArcanaResource;
@@ -38,6 +39,7 @@ public final class ArcanaMod implements ModInitializer {
         ComponentRegistry.bootstrap();
         ArcanaEntities.register();
         GrimoireNetwork.initialize();
+        KnowledgeBookNetwork.initialize();
         GrimoireCommands.register();
         ArcanaItems.register();
         ArcanaBlocks.register();
