@@ -130,14 +130,15 @@ public final class SpellIntelligence {
         checkIntentHint(text, selected, warnings, new String[]{"lightning", "electric", "shock", "thunder"}, "lightning", "Your description mentions electricity, but it has no Lightning element.");
         checkIntentHint(text, selected, warnings, new String[]{"teleport", "blink", "warp"}, "teleportation", "Your description says the spell should move a target instantly, but it has no Teleportation effect.");
         checkIntentHint(text, selected, warnings, new String[]{"summon", "summoning", "call forth"}, "summoning", "Your description says the spell should summon something, but it has no Summoning effect.");
-        checkIntentHint(text, selected, warnings, new String[]{"protect", "shield", "defend", "barrier"}, "barrier", "Your description promises protection, but the spell has no Barrier or Ward component.");
-        checkIntentHint(text, selected, warnings, new String[]{"track", "reveal", "locate", "find"}, "tracking", "Your description mentions locating a target, but it has no Tracking or Reveal component.");
+        checkIntentHint(text, selected, warnings, new String[]{"protect", "shield", "defend", "barrier"}, "barrier|ward|barrier_reinforcement", "Your description promises protection, but the spell has no Barrier, Ward, or Barrier Reinforcement component.");
+        checkIntentHint(text, selected, warnings, new String[]{"track", "reveal", "locate", "find"}, "tracking|reveal|waypoint", "Your description mentions locating a target, but it has no Tracking, Reveal, or Waypoint component.");
     }
 
     private static void checkIntentHint(String text, Set<String> selected, List<String> warnings,
                                         String[] words, String required, String warning) {
+        boolean hasRequired = java.util.Arrays.stream(required.split("\\|")).anyMatch(selected::contains);
         for (String word : words) {
-            if (text.contains(word) && !selected.contains(required)) {
+            if (text.contains(word) && !hasRequired) {
                 warnings.add(warning + " The written description does not add this ability.");
                 return;
             }
