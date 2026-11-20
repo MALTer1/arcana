@@ -536,7 +536,8 @@ public final class SpellCaster {
             // This pair has a dedicated restorative-shockwave resolution.
             List<String> combined = new ArrayList<>(all);
             if (spell.legendary) combined.add("legendary_spell");
-            applyEffects(caster, target, combined, durationScale);
+            double combinedScale = (spell.powerPercent("healing") + spell.powerPercent("explosion")) / 200.0;
+            applyEffects(caster, target, combined, durationScale * combinedScale, (float) combinedScale);
             return;
         }
         SpellProgram.Compilation program = SpellProgram.compile(all);
@@ -556,15 +557,17 @@ public final class SpellCaster {
             scope.add(effect.componentId());
             if (spell.legendary) scope.add("legendary_spell");
             if (spell.arcanaCost() >= 100) scope.add("high_cost_spell");
-            applyEffects(caster, target, scope, durationScale);
-            if (scope.contains("repeat")) applyEffects(caster, target, scope, durationScale * 0.65);
+            double componentScale = spell.powerPercent(effect.componentId()) / 100.0;
+            applyEffects(caster, target, scope, durationScale * componentScale, (float) componentScale);
+            if (scope.contains("repeat")) applyEffects(caster, target, scope,
+                durationScale * componentScale * 0.65, (float) componentScale);
         }
     }
 
     private static void applyEffects(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
-                                     double durationScale) {
-        float powerScale = parts.contains("legendary_spell") ? 2.0F
-            : parts.contains("high_cost_spell") ? 1.75F : 1.0F;
+                                     double durationScale, float componentPowerScale) {
+        float powerScale = (parts.contains("legendary_spell") ? 2.0F
+            : parts.contains("high_cost_spell") ? 1.75F : 1.0F) * componentPowerScale;
         if (parts.contains("amplify")) powerScale *= 1.5F;
         if (parts.contains("dampen")) powerScale *= 0.6F;
         if (parts.contains("healing") && parts.contains("explosion")) {
