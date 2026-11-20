@@ -536,7 +536,8 @@ public final class SpellCaster {
             // This pair has a dedicated restorative-shockwave resolution.
             List<String> combined = new ArrayList<>(all);
             if (spell.legendary) combined.add("legendary_spell");
-            double combinedScale = (spell.powerPercent("healing") + spell.powerPercent("explosion")) / 200.0;
+            double overallScale = spell.components.stream().mapToInt(spell::powerPercent).average().orElse(100.0) / 100.0;
+            double combinedScale = (overallScale + (spell.powerPercent("healing") + spell.powerPercent("explosion")) / 200.0) / 2.0;
             applyEffects(caster, target, combined, durationScale * combinedScale, (float) combinedScale);
             return;
         }
@@ -557,7 +558,8 @@ public final class SpellCaster {
             scope.add(effect.componentId());
             if (spell.legendary) scope.add("legendary_spell");
             if (spell.arcanaCost() >= 100) scope.add("high_cost_spell");
-            double componentScale = spell.powerPercent(effect.componentId()) / 100.0;
+            double overallScale = spell.components.stream().mapToInt(spell::powerPercent).average().orElse(100.0) / 100.0;
+            double componentScale = (overallScale + spell.powerPercent(effect.componentId()) / 100.0) / 2.0;
             applyEffects(caster, target, scope, durationScale * componentScale, (float) componentScale);
             if (scope.contains("repeat")) applyEffects(caster, target, scope,
                 durationScale * componentScale * 0.65, (float) componentScale);
