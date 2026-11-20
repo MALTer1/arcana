@@ -12,6 +12,7 @@ import dev.arcana.network.MagicWriterNetwork;
 import dev.arcana.screen.MagicWriterScreenHandlers;
 import dev.arcana.spell.ArcanaResource;
 import dev.arcana.spell.ComponentRegistry;
+import dev.arcana.spell.ComponentKnowledgeStore;
 import dev.arcana.spell.GrimoireStore;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
@@ -60,12 +61,14 @@ public final class ArcanaMod implements ModInitializer {
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SpellBookStore.load(server);
+            ComponentKnowledgeStore.load(server);
             ArcanaAiService.load(server);
             GrimoireStore.load(server);
             ArcanaResource.load(server);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             SpellBookStore.save(server);
+            ComponentKnowledgeStore.save(server);
             ArcanaAiService.save(server);
             GrimoireStore.save(server);
             ArcanaResource.save(server);
