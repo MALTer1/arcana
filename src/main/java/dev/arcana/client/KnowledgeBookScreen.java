@@ -152,9 +152,12 @@ public final class KnowledgeBookScreen extends Screen {
                 context.drawText(textRenderer, "Glyph sequence:", x, top + 78, 0xFF684D36, true);
                 JsonArray ids = spell.getAsJsonArray("components");
                 StringBuilder sequence = new StringBuilder();
+                JsonObject powers = spell.has("powerPercentages") ? spell.getAsJsonObject("powerPercentages") : new JsonObject();
                 for (int i = 0; i < ids.size(); i++) {
                     if (i > 0) sequence.append(" → ");
-                    sequence.append(ids.get(i).getAsString());
+                    String id = ids.get(i).getAsString();
+                    int percent = powers.has(id) ? powers.get(id).getAsInt() : 100;
+                    sequence.append(id).append(" (").append(percent).append("%)");
                 }
                 int y = top + 92;
                 for (var line : textRenderer.wrapLines(Text.literal(sequence.toString()), 215)) {
