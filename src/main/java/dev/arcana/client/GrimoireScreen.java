@@ -423,8 +423,11 @@ public final class GrimoireScreen extends Screen {
                     }
                     JsonArray warnings = spell.has("warnings") ? spell.getAsJsonArray("warnings") : new JsonArray();
                     if (!warnings.isEmpty()) {
-                        String synergy = textRenderer.trimToWidth("Synergy: " + warnings.get(0).getAsString(), 184);
-                        context.drawText(textRenderer, synergy, left + 230, top + 238, 0xFF684D36, true);
+                        context.drawText(textRenderer, "SPELL CHECK / SYNERGY", left + 230, top + 238, 0xFF80551F, true);
+                        java.util.List<net.minecraft.text.OrderedText> checkLines = textRenderer.wrapLines(
+                            Text.literal(warnings.get(0).getAsString()), 184);
+                        for (int line = 0; line < Math.min(2, checkLines.size()); line++)
+                            context.drawText(textRenderer, checkLines.get(line), left + 230, top + 249 + line * 9, 0xFF684D36, true);
                     }
                 }
                 if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 76, 0xFF684D36, true);
