@@ -470,6 +470,12 @@ public final class GrimoireScreen extends Screen {
         }
         super.render(context, mouseX, mouseY, delta);
     }
+    @Override
+    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
+        // The grimoire draws its own opaque parchment interface; skip the vanilla
+        // blurred world background so text and page artwork remain crisp.
+    }
+
     @Override public boolean shouldPause() { return false; }
     @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (descriptionEditorOpen && keyCode == 256) { descriptionEditorOpen = false; rebuild(); return true; }
