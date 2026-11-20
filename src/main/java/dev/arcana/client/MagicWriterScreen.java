@@ -43,6 +43,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private final List<ButtonWidget> componentButtons = new ArrayList<>();
     private TextFieldWidget spellName;
     private TextFieldWidget search;
+    private ButtonWidget browseButton;
     private int scrollRow;
     private boolean legendaryDraft;
     private boolean browseMode;
@@ -78,10 +79,11 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         search.setChangedListener(value -> positionComponentButtons());
         addDrawableChild(search);
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("▦ BROWSE"), b -> {
+        browseButton = ButtonWidget.builder(Text.literal("▦ BROWSE"), b -> {
             browseMode = !browseMode;
             positionComponentButtons();
-        }).dimensions(x + 470, y + 7, 72, 18).build());
+        }).dimensions(x + 470, y + 7, 72, 18).build();
+        addDrawableChild(browseButton);
 
         spellName = new TextFieldWidget(textRenderer, x + 164, y + 59, 146, 20, Text.literal("Spell name"));
         spellName.setMaxLength(32);
@@ -249,6 +251,18 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
         if (browseMode) {
+            // Draw the browser over the entire handled screen, including the
+            // underlying writer slots and inventory, then redraw its controls.
+            context.fill(0, 0, width, height, 0xD9000000);
+            int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
+            context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
+            context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
+            context.fill(panelX + 12, panelY + 65, panelX + panelW - 12, panelY + panelH - 42, 0xFF302438);
+            context.drawCenteredTextWithShadow(textRenderer, "KNOWN COMPONENTS", width / 2, 23, 0xFFFFD98D);
+            context.drawCenteredTextWithShadow(textRenderer, "5 × 4 BROWSER  •  SCROLL TO EXPLORE", width / 2, height - 28, 0xFFB9DDE7);
+            if (search != null) search.render(context, mouseX, mouseY, delta);
+            if (browseButton != null) browseButton.render(context, mouseX, mouseY, delta);
+            for (ButtonWidget button : componentButtons) if (button.visible) button.render(context, mouseX, mouseY, delta);
             List<Choice> filtered = filteredChoices();
             int cols = 5;
             int first = scrollRow * cols;
