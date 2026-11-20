@@ -62,7 +62,7 @@ public final class GrimoireNetwork {
             SpellBookStore.StoredSpell old = GrimoireStore.find(book, tier, spellName);
             if (old == null) message = "That spell is not in this Grimoire.";
             else {
-                if (description.length() > 160) description = description.substring(0, 160);
+                if (description.length() > 300) description = description.substring(0, 300);
                 SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(old.name, old.components,
                     old.behavior, old.legendary, old.legendaryEffect, description);
                 if (GrimoireStore.replace(book, tier, updated)) {
@@ -218,7 +218,8 @@ public final class GrimoireNetwork {
             }
             item.add("effects", effects);
             item.add("effectDescriptions", effectDescriptions);
-            SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(spell.name, spell.components);
+            SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(
+                spell.name, spell.components, spell.customDescription);
             JsonArray warnings = new JsonArray();
             analysis.warnings().forEach(warnings::add);
             item.add("warnings", warnings);
