@@ -114,21 +114,11 @@ public final class ArcanaAiService {
         String userContent = "Relevant saved player memory:\n" + memoryContext
             + "\n\nPlayer request:\n" + safePrompt;
         String submittedPrompt = safePrompt;
-        List<String> providerFailures = new ArrayList<>();
-        return tryGemini(userContent)
-            .exceptionallyCompose(error -> {
-                providerFailures.add(recordProviderFailure("Gemini", error));
-                return tryGroq(userContent);
-            })
-            .exceptionallyCompose(error -> {
-                providerFailures.add(recordProviderFailure("Groq", error));
-                return tryOllama(userContent);
-            })
-            .exceptionallyCompose(error -> {
-                providerFailures.add(recordProviderFailure("Ollama", error));
-                String report = "No AI provider succeeded. " + String.join(" | ", providerFailures);
-                System.err.println("[Arcana AI] Request failed: " + report);
-                return failed(report);
+        return tryOllama(userContent)
+            .exceptionally(error -> {
+                String report = "Local Ollama failed: " + safeErrorMessage(error);
+                System.err.println("[Arcana AI] " + report);
+                throw new java.util.concurrent.CompletionException(new IllegalStateException(report));
             })
             .thenApply(answer -> {
                 remember(player.getUuid(), "Player: " + submittedPrompt);
@@ -140,10 +130,8 @@ public final class ArcanaAiService {
     }
 
     public static synchronized String status() {
-        return "Gemini: " + (hasText(config.geminiApiKey) ? "configured" : "not configured")
-            + " | Groq: " + (hasText(config.groqApiKey) ? "configured" : "not configured")
-            + " | Local Ollama: " + (config.ollamaEnabled ? "enabled (requires Ollama running)" : "disabled")
-            + " | Memory: per-player, saved with this world";
+        return "AI: local Ollama only (" + (config.ollamaEnabled ? "enabled; requires Ollama running" : "disabled")
+            + ") | Cloud providers: removed | Memory: per-player, saved with this world";
     }
 
     public static synchronized void clearMemory(UUID playerId, MinecraftServer server) {
@@ -171,65 +159,8 @@ public final class ArcanaAiService {
         String detail = cause.getMessage();
         if (!hasText(detail)) detail = cause.getClass().getSimpleName();
         detail = detail.replaceAll("[\\r\\n\\t]+", " ").trim();
-        synchronized (ArcanaAiService.class) {
-            if (hasText(config.geminiApiKey)) detail = detail.replace(config.geminiApiKey, "[REDACTED]");
-            if (hasText(config.groqApiKey)) detail = detail.replace(config.groqApiKey, "[REDACTED]");
-        }
         if (detail.length() > 220) detail = detail.substring(0, 220) + "...";
         return detail;
-    }
-
-    private static CompletableFuture<String> tryGemini(String prompt) {
-        String key;
-        String model;
-        synchronized (ArcanaAiService.class) {
-            key = config.geminiApiKey;
-            model = config.geminiModel;
-        }
-        if (!hasText(key)) return failed("Gemini API key is not configured.");
-        JsonObject body = new JsonObject();
-        JsonArray contents = new JsonArray();
-        JsonObject content = new JsonObject();
-        JsonArray parts = new JsonArray();
-        JsonObject part = new JsonObject();
-        part.addProperty("text", SYSTEM_PROMPT + "\n\n" + prompt);
-        parts.add(part);
-        content.add("parts", parts);
-        contents.add(content);
-        body.add("contents", contents);
-        JsonObject generation = new JsonObject();
-        generation.addProperty("temperature", 0.35);
-        generation.addProperty("maxOutputTokens", 600);
-        body.add("generationConfig", generation);
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/"
-            + model + ":generateContent?key=" + URLEncoder.encode(key, StandardCharsets.UTF_8);
-        return post(url, body, null).thenApply(response -> {
-            JsonArray candidates = response.getAsJsonArray("candidates");
-            if (candidates == null || candidates.isEmpty()) throw new IllegalStateException("Gemini returned no candidates.");
-            return candidates.get(0).getAsJsonObject().getAsJsonObject("content")
-                .getAsJsonArray("parts").get(0).getAsJsonObject().get("text").getAsString();
-        });
-    }
-
-    private static CompletableFuture<String> tryGroq(String prompt) {
-        String key;
-        String model;
-        synchronized (ArcanaAiService.class) {
-            key = config.groqApiKey;
-            model = config.groqModel;
-        }
-        if (!hasText(key)) return failed("Groq API key is not configured.");
-        JsonObject body = new JsonObject();
-        body.addProperty("model", model);
-        body.addProperty("temperature", 0.35);
-        body.addProperty("max_tokens", 600);
-        JsonArray messages = new JsonArray();
-        messages.add(message("system", SYSTEM_PROMPT));
-        messages.add(message("user", prompt));
-        body.add("messages", messages);
-        return post("https://api.groq.com/openai/v1/chat/completions", body, "Bearer " + key)
-            .thenApply(response -> response.getAsJsonArray("choices").get(0).getAsJsonObject()
-                .getAsJsonObject("message").get("content").getAsString());
     }
 
     private static CompletableFuture<String> tryOllama(String prompt) {
@@ -370,21 +301,13 @@ public final class ArcanaAiService {
     }
 
     private static final class Config {
-        String geminiApiKey = "";
-        String geminiModel = "gemini-2.5-flash";
-        String groqApiKey = "";
-        String groqModel = "openai/gpt-oss-20b";
         boolean ollamaEnabled = true;
         String ollamaBaseUrl = "http://127.0.0.1:11434";
         String ollamaModel = "qwen3.5:4b";
 
         void normalize() {
-            if (!hasText(geminiModel)) geminiModel = "gemini-2.5-flash";
-            if (!hasText(groqModel)) groqModel = "openai/gpt-oss-20b";
             if (!hasText(ollamaBaseUrl)) ollamaBaseUrl = "http://127.0.0.1:11434";
             if (!hasText(ollamaModel) || "gemma3:4b".equals(ollamaModel)) ollamaModel = "qwen3.5:4b";
-            if (geminiApiKey == null) geminiApiKey = "";
-            if (groqApiKey == null) groqApiKey = "";
         }
     }
 
