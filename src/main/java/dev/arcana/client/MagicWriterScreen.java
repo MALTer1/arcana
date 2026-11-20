@@ -143,6 +143,10 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             search.setPosition(browseMode ? (width - 340) / 2 : x + 330, browseMode ? 42 : y + 43);
             search.setWidth(browseMode ? 340 : 212);
         }
+        if (browseButton != null) {
+            browseButton.setPosition(browseMode ? width - 96 : x + 470, browseMode ? 24 : y + 7);
+            browseButton.setMessage(Text.literal(browseMode ? "CLOSE" : "▦ BROWSE"));
+        }
     }
 
     private int componentLimit() {
