@@ -29,10 +29,33 @@ public final class MagicWriterNetwork {
         public Id<? extends CustomPayload> getId() { return ID; }
     }
 
+    public record RequestKnownPayload() implements CustomPayload {
+        public static final Id<RequestKnownPayload> ID = new Id<>(Identifier.of("arcana", "writer_known_request"));
+        public static final PacketCodec<RegistryByteBuf, RequestKnownPayload> CODEC =
+            PacketCodec.unit(new RequestKnownPayload());
+        @Override public Id<? extends CustomPayload> getId() { return ID; }
+    }
+    public record KnownComponentsPayload(String ids) implements CustomPayload {
+        public static final Id<KnownComponentsPayload> ID = new Id<>(Identifier.of("arcana", "writer_known_components"));
+        public static final PacketCodec<RegistryByteBuf, KnownComponentsPayload> CODEC =
+            PacketCodec.tuple(PacketCodecs.STRING, KnownComponentsPayload::ids, KnownComponentsPayload::new);
+        @Override public Id<? extends CustomPayload> getId() { return ID; }
+    }
+
     private MagicWriterNetwork() {}
 
     public static void register() {
         PayloadTypeRegistry.playC2S().register(EngravePayload.ID, EngravePayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RequestKnownPayload.ID, RequestKnownPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(KnownComponentsPayload.ID, KnownComponentsPayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(RequestKnownPayload.ID, (payload, context) ->
+            context.server().execute(() -> {
+                ServerPlayerEntity player = context.player();
+                if (player.currentScreenHandler instanceof MagicWriterScreenHandler handler && handler.canUse(player)) {
+                    String ids = String.join(",", ComponentKnowledgeStore.get(player.getUuid()));
+                    ServerPlayNetworking.send(player, new KnownComponentsPayload(ids));
+                }
+            }));
         ServerPlayNetworking.registerGlobalReceiver(EngravePayload.ID,
             (payload, context) -> context.server().execute(() -> engrave(context.player(), payload)));
     }
@@ -54,6 +77,10 @@ public final class MagicWriterNetwork {
                 if (id.isBlank() || ids.contains(id)) continue;
                 if (ComponentRegistry.get(id) == null) {
                     player.sendMessage(Text.literal("Unknown component: " + id), false);
+                    return;
+                }
+                if (!ComponentKnowledgeStore.knows(player.getUuid(), id)) {
+                    player.sendMessage(Text.literal("You have not learned the component: " + id), false);
                     return;
                 }
                 ids.add(id);
