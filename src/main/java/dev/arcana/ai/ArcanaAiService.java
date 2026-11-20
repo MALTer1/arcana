@@ -71,6 +71,11 @@ public final class ArcanaAiService {
             System.err.println("[Arcana AI] Could not load config: " + exception.getMessage());
         }
         config.normalize();
+        try {
+            saveConfig();
+        } catch (Exception exception) {
+            System.err.println("[Arcana AI] Could not save normalized config: " + exception.getMessage());
+        }
     }
 
     public static synchronized void load(MinecraftServer server) {
@@ -279,13 +284,13 @@ public final class ArcanaAiService {
         String groqModel = "openai/gpt-oss-20b";
         boolean ollamaEnabled = true;
         String ollamaBaseUrl = "http://127.0.0.1:11434";
-        String ollamaModel = "gemma3:4b";
+        String ollamaModel = "qwen3.5:4b";
 
         void normalize() {
             if (!hasText(geminiModel)) geminiModel = "gemini-2.5-flash";
             if (!hasText(groqModel)) groqModel = "openai/gpt-oss-20b";
             if (!hasText(ollamaBaseUrl)) ollamaBaseUrl = "http://127.0.0.1:11434";
-            if (!hasText(ollamaModel)) ollamaModel = "gemma3:4b";
+            if (!hasText(ollamaModel) || "gemma3:4b".equals(ollamaModel)) ollamaModel = "qwen3.5:4b";
             if (geminiApiKey == null) geminiApiKey = "";
             if (groqApiKey == null) groqApiKey = "";
         }
