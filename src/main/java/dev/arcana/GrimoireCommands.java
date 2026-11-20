@@ -4,6 +4,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.spell.GrimoireStore;
+import dev.arcana.spell.ComponentKnowledgeStore;
+import dev.arcana.spell.ComponentRegistry;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellCaster;
 import dev.arcana.spell.SpellPageStore;
@@ -62,7 +64,39 @@ public final class GrimoireCommands {
                             player.sendMessage(Text.literal(result.message()), false);
                             return result.success() ? 1 : 0;
                         })))
-                )));
+                )
+                .then(com.mojang.brigadier.builder.LiteralArgumentBuilder.<net.minecraft.server.command.ServerCommandSource>literal("learn")
+                    .then(com.mojang.brigadier.builder.LiteralArgumentBuilder.<net.minecraft.server.command.ServerCommandSource>literal("all").executes(ctx -> {
+                        ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+                        int learned = ComponentKnowledgeStore.learnAll(player.getUuid());
+                        ComponentKnowledgeStore.save(player.getServer());
+                        player.sendMessage(Text.literal("Learned " + learned + " new components. You now know " + ComponentKnowledgeStore.get(player.getUuid()).size() + "/" + ComponentRegistry.all().size() + "."), false);
+                        return learned;
+                    }))
+                    .then(com.mojang.brigadier.builder.RequiredArgumentBuilder.<net.minecraft.server.command.ServerCommandSource, String>argument("component", StringArgumentType.word())
+                        .suggests((ctx, builder) -> {
+                            ComponentRegistry.all().forEach(component -> builder.suggest(component.id()));
+                            return builder.buildFuture();
+                        })
+                        .executes(ctx -> {
+                            ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+                            String id = ctx.getArgument("component", String.class);
+                            if (ComponentRegistry.get(id) == null) {
+                                player.sendMessage(Text.literal("Unknown component: " + id), false);
+                                return 0;
+                            }
+                            boolean learned = ComponentKnowledgeStore.learn(player.getUuid(), id);
+                            ComponentKnowledgeStore.save(player.getServer());
+                            player.sendMessage(Text.literal(learned ? "You learned " + id + "." : "You already know " + id + "."), false);
+                            return learned ? 1 : 0;
+                        })))
+                .then(com.mojang.brigadier.builder.LiteralArgumentBuilder.<net.minecraft.server.command.ServerCommandSource>literal("learned").executes(ctx -> {
+                    ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
+                    var known = ComponentKnowledgeStore.get(player.getUuid());
+                    player.sendMessage(Text.literal("Known components (" + known.size() + "/" + ComponentRegistry.all().size() + "): " + String.join(", ", known)), false);
+                    return known.size();
+                }))
+                ));
     }
 
     private static ItemStack activeBook(ServerPlayerEntity player) {
