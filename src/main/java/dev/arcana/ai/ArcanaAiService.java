@@ -113,9 +113,22 @@ public final class ArcanaAiService {
         String userContent = "Relevant saved player memory:\n" + memoryContext
             + "\n\nPlayer request:\n" + safePrompt;
         String submittedPrompt = safePrompt;
+        List<String> providerFailures = new ArrayList<>();
         return tryGemini(userContent)
-            .exceptionallyCompose(first -> tryGroq(userContent))
-            .exceptionallyCompose(second -> tryOllama(userContent))
+            .exceptionallyCompose(error -> {
+                providerFailures.add(recordProviderFailure("Gemini", error));
+                return tryGroq(userContent);
+            })
+            .exceptionallyCompose(error -> {
+                providerFailures.add(recordProviderFailure("Groq", error));
+                return tryOllama(userContent);
+            })
+            .exceptionallyCompose(error -> {
+                providerFailures.add(recordProviderFailure("Ollama", error));
+                String report = "No AI provider succeeded. " + String.join(" | ", providerFailures);
+                System.err.println("[Arcana AI] Request failed: " + report);
+                return failed(report);
+            })
             .thenApply(answer -> {
                 remember(player.getUuid(), "Player: " + submittedPrompt);
                 remember(player.getUuid(), "Arcana AI: " + answer);
@@ -135,6 +148,34 @@ public final class ArcanaAiService {
     public static synchronized void clearMemory(UUID playerId, MinecraftServer server) {
         MEMORY.remove(playerId.toString());
         save(server);
+    }
+
+    public static String failureMessage(Throwable error) {
+        return safeErrorMessage(error);
+    }
+
+    private static String recordProviderFailure(String provider, Throwable error) {
+        String detail = safeErrorMessage(error);
+        String report = provider + ": " + detail;
+        System.err.println("[Arcana AI] " + report);
+        return report;
+    }
+
+    private static String safeErrorMessage(Throwable error) {
+        Throwable cause = error;
+        while ((cause instanceof java.util.concurrent.CompletionException
+            || cause instanceof java.util.concurrent.ExecutionException) && cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        String detail = cause.getMessage();
+        if (!hasText(detail)) detail = cause.getClass().getSimpleName();
+        detail = detail.replaceAll("[\\r\\n\\t]+", " ").trim();
+        synchronized (ArcanaAiService.class) {
+            if (hasText(config.geminiApiKey)) detail = detail.replace(config.geminiApiKey, "[REDACTED]");
+            if (hasText(config.groqApiKey)) detail = detail.replace(config.groqApiKey, "[REDACTED]");
+        }
+        if (detail.length() > 220) detail = detail.substring(0, 220) + "...";
+        return detail;
     }
 
     private static CompletableFuture<String> tryGemini(String prompt) {
@@ -207,7 +248,7 @@ public final class ArcanaAiService {
         messages.add(message("system", SYSTEM_PROMPT));
         messages.add(message("user", prompt));
         body.add("messages", messages);
-        return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(90))
+        return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(300))
             .thenApply(response -> response.getAsJsonObject("message").get("content").getAsString());
     }
 
@@ -232,7 +273,10 @@ public final class ArcanaAiService {
             return HTTP.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                        throw new IllegalStateException("Provider returned HTTP " + response.statusCode());
+                        String errorBody = response.body() == null ? "" : response.body().replaceAll("[\\r\\n\\t]+", " ").trim();
+                        if (errorBody.length() > 400) errorBody = errorBody.substring(0, 400) + "...";
+                        throw new IllegalStateException("HTTP " + response.statusCode()
+                            + (errorBody.isEmpty() ? "" : " — " + errorBody));
                     }
                     return JsonParser.parseString(response.body()).getAsJsonObject();
                 });
