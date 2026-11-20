@@ -263,7 +263,7 @@ public final class ArcanaMod implements ModInitializer {
         while (!remaining.isEmpty()) {
             int end = Math.min(240, remaining.length());
             if (end < remaining.length()) {
-                int boundary = Math.max(remaining.lastIndexOf(' ', end), remaining.lastIndexOf('\\n', end));
+                int boundary = Math.max(remaining.lastIndexOf(' ', end), remaining.lastIndexOf('\n', end));
                 if (boundary > 100) end = boundary;
             }
             String part = remaining.substring(0, end).trim();
