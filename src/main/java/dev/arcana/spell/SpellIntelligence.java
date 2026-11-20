@@ -28,6 +28,11 @@ public final class SpellIntelligence {
     }
 
     public static Analysis analyze(String spellName, List<String> componentIds) {
+        return analyze(spellName, componentIds, "");
+    }
+
+    /** Checks a player's written intent against the actual glyphs; text never grants missing abilities. */
+    public static Analysis analyze(String spellName, List<String> componentIds, String writtenIntent) {
         List<SpellComponent> components = new ArrayList<>();
         List<String> issues = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
@@ -109,10 +114,34 @@ public final class SpellIntelligence {
         }
 
         checkNameIntent(spellName, selected, warnings);
+        checkWrittenIntent(writtenIntent, selected, warnings);
 
         String summary = buildSummary(components, reactions, composition);
         return new Analysis(summary, List.copyOf(issues), List.copyOf(warnings),
             Map.copyOf(counts), reactions);
+    }
+
+    private static void checkWrittenIntent(String intent, Set<String> selected, List<String> warnings) {
+        if (intent == null || intent.isBlank()) return;
+        String text = intent.toLowerCase(java.util.Locale.ROOT);
+        checkIntentHint(text, selected, warnings, new String[]{"heal", "healing", "restore", "mend", "cure"}, "healing", "Your description says this spell should restore health, but it has no Healing glyph. Add Healing if that is intended.");
+        checkIntentHint(text, selected, warnings, new String[]{"burn", "burning", "flame", "fire", "ignite"}, "fire", "Your description mentions burning or fire, but it has no Fire element.");
+        checkIntentHint(text, selected, warnings, new String[]{"freeze", "frost", "ice", "cold"}, "ice", "Your description mentions freezing or cold, but it has no Ice element.");
+        checkIntentHint(text, selected, warnings, new String[]{"lightning", "electric", "shock", "thunder"}, "lightning", "Your description mentions electricity, but it has no Lightning element.");
+        checkIntentHint(text, selected, warnings, new String[]{"teleport", "blink", "warp"}, "teleportation", "Your description says the spell should move a target instantly, but it has no Teleportation effect.");
+        checkIntentHint(text, selected, warnings, new String[]{"summon", "summoning", "call forth"}, "summoning", "Your description says the spell should summon something, but it has no Summoning effect.");
+        checkIntentHint(text, selected, warnings, new String[]{"protect", "shield", "defend", "barrier"}, "barrier", "Your description promises protection, but the spell has no Barrier or Ward component.");
+        checkIntentHint(text, selected, warnings, new String[]{"track", "reveal", "locate", "find"}, "tracking", "Your description mentions locating a target, but it has no Tracking or Reveal component.");
+    }
+
+    private static void checkIntentHint(String text, Set<String> selected, List<String> warnings,
+                                        String[] words, String required, String warning) {
+        for (String word : words) {
+            if (text.contains(word) && !selected.contains(required)) {
+                warnings.add(warning + " The written description does not add this ability.");
+                return;
+            }
+        }
     }
 
     private static void checkNameIntent(String name, Set<String> selected, List<String> warnings) {
