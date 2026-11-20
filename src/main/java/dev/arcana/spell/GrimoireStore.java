@@ -20,12 +20,15 @@ public final class GrimoireStore {
         List<SpellBookStore.StoredSpell> spells = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             NbtCompound tag = list.getCompound(i);
+            NbtCompound powerTags = tag.getCompound("PowerPercentages");
+            java.util.Map<String, Integer> powerPercentages = new java.util.HashMap<>();
+            for (String key : powerTags.getKeys()) powerPercentages.put(key, powerTags.getInt(key));
             NbtList componentTags = tag.getList("Components", NbtElement.STRING_TYPE);
             List<String> components = new ArrayList<>();
             for (int j = 0; j < componentTags.size(); j++) components.add(componentTags.getString(j));
             spells.add(new SpellBookStore.StoredSpell(tag.getString("Name"), components,
                 tag.getString("Behavior"), tag.getBoolean("Legendary"), tag.getString("LegendaryEffect"),
-                tag.getString("CustomDescription")));
+                tag.getString("CustomDescription"), powerPercentages));
         }
         return List.copyOf(spells);
     }
@@ -93,6 +96,9 @@ public final class GrimoireStore {
             tag.putBoolean("Legendary", spell.legendary);
             tag.putString("LegendaryEffect", spell.legendaryEffect == null ? "" : spell.legendaryEffect);
             tag.putString("CustomDescription", spell.customDescription == null ? "" : spell.customDescription);
+            NbtCompound powerTags = new NbtCompound();
+            if (spell.componentPowerPercentages != null) spell.componentPowerPercentages.forEach(powerTags::putInt);
+            tag.put("PowerPercentages", powerTags);
             NbtList components = new NbtList();
             if (spell.components != null) spell.components.forEach(value -> components.add(NbtString.of(value)));
             tag.put("Components", components);
