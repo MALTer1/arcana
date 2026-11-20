@@ -171,8 +171,20 @@ public final class KnowledgeBookScreen extends Screen {
                     if (descY > top + 238) break;
                     context.drawText(textRenderer, line, x, descY, 0xFF4A3020, true); descY += 10;
                 }
+                if (spell.has("analysis") && spell.getAsJsonArray("analysis").size() > 0) {
+                    context.drawText(textRenderer, "SPELL INTELLIGENCE:", x, Math.min(descY + 2, top + 238), 0xFF80551F, true);
+                    int analysisY = Math.min(descY + 14, top + 250);
+                    JsonArray checks = spell.getAsJsonArray("analysis");
+                    for (int i = 0; i < Math.min(2, checks.size()) && analysisY < top + 258; i++) {
+                        for (var line : textRenderer.wrapLines(Text.literal(checks.get(i).getAsString()), 215)) {
+                            if (analysisY >= top + 258) break;
+                            context.drawText(textRenderer, line, x, analysisY, 0xFF684D36, true);
+                            analysisY += 9;
+                        }
+                    }
+                }
                 if (spell.has("legendary") && spell.get("legendary").getAsBoolean())
-                    context.drawText(textRenderer, "LEGENDARY: " + spell.get("legendaryEffect").getAsString(), x, top + 258, 0xFF986000, true);
+                    context.drawText(textRenderer, "LEGENDARY: " + spell.get("legendaryEffect").getAsString(), x, top + 278, 0xFF986000, true);
             }
         }
         super.render(context, mouseX, mouseY, delta);
