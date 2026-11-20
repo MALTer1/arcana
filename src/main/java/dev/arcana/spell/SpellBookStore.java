@@ -30,18 +30,24 @@ public final class SpellBookStore {
         public String behavior;
         public boolean legendary;
         public String legendaryEffect;
+        public String customDescription;
 
         public StoredSpell() {}
         public StoredSpell(String name, List<String> components, String behavior) {
-            this(name, components, behavior, false, "");
+            this(name, components, behavior, false, "", "");
         }
         public StoredSpell(String name, List<String> components, String behavior,
                            boolean legendary, String legendaryEffect) {
+            this(name, components, behavior, legendary, legendaryEffect, "");
+        }
+        public StoredSpell(String name, List<String> components, String behavior,
+                           boolean legendary, String legendaryEffect, String customDescription) {
             this.name = name;
             this.components = new ArrayList<>(components == null ? List.of() : components);
             this.behavior = behavior == null ? "" : behavior;
             this.legendary = legendary;
             this.legendaryEffect = legendaryEffect == null ? "" : legendaryEffect;
+            this.customDescription = customDescription == null ? "" : customDescription;
         }
         public int arcanaCost() {
             return SpellCostCalculator.calculate(components, legendary).total();
