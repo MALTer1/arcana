@@ -42,6 +42,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private final Set<String> selected = new LinkedHashSet<>();
     private final List<ButtonWidget> componentButtons = new ArrayList<>();
     private TextFieldWidget spellName;
+    private TextFieldWidget spellDescription;
     private TextFieldWidget search;
     private ButtonWidget browseButton;
     private ButtonWidget engraveButton;
@@ -98,6 +99,13 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             selected.addAll(existing.components);
         }
         addDrawableChild(spellName);
+        spellDescription = new TextFieldWidget(textRenderer, x + 164, y + 139, 146, 18, Text.literal("Spell description"));
+        spellDescription.setMaxLength(180);
+        spellDescription.setPlaceholder(Text.literal("Describe its effect/appearance"));
+        if (existing != null && existing.customDescription != null) {
+            spellDescription.setText(existing.customDescription);
+        }
+        addDrawableChild(spellDescription);
         engraveButton = ButtonWidget.builder(Text.literal("✦ ENGRAVE"), b -> engrave())
             .dimensions(x + 164, y + 91, 72, 20).build();
         addDrawableChild(engraveButton);
@@ -189,7 +197,9 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         return super.mouseScrolled(mouseX, mouseY, horizontalAmount, verticalAmount);
     }
     private void engrave() {
-        ClientPlayNetworking.send(new MagicWriterNetwork.EngravePayload(handler.syncId, spellName.getText(), String.join(",", selected)));
+        ClientPlayNetworking.send(new MagicWriterNetwork.EngravePayload(
+            handler.syncId, spellName.getText(), String.join(",", selected),
+            spellDescription == null ? "" : spellDescription.getText()));
     }
 
     @Override protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
@@ -254,6 +264,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             330, 28, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), legendaryDraft).total(),
             164, 119, 0xFFB9DDE7);
+        context.drawTextWithShadow(textRenderer, "DESCRIPTION", 164, 128, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
 
