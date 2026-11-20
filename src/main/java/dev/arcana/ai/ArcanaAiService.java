@@ -29,8 +29,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Server-side AI gateway. Provider credentials never leave the server and are
- * kept in the local config directory, while player memory is saved per-world.
+ * Server-side local AI gateway. Ollama runs on the Minecraft host; player memory
+ * is saved per-world. No cloud credentials are stored by this service.
  */
 public final class ArcanaAiService {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -177,17 +177,24 @@ public final class ArcanaAiService {
         body.addProperty("model", model);
         body.addProperty("stream", false);
         body.addProperty("think", false);
-        body.addProperty("keep_alive", "10m");
+        body.addProperty("keep_alive", "30m");
         JsonObject options = new JsonObject();
-        options.addProperty("num_predict", 600);
+        options.addProperty("num_predict", 900);
         options.addProperty("num_ctx", 4096);
         body.add("options", options);
         JsonArray messages = new JsonArray();
-        messages.add(message("system", SYSTEM_PROMPT));
+        messages.add(message("system", SYSTEM_PROMPT + "\\nGive a complete answer. If the answer is long, organize it into short sections and finish the final sentence. Do not stop mid-sentence."));
         messages.add(message("user", prompt));
         body.add("messages", messages);
         return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(300))
-            .thenApply(response -> response.getAsJsonObject("message").get("content").getAsString());
+            .thenApply(response -> {
+                JsonObject message = response.has("message") && response.get("message").isJsonObject()
+                    ? response.getAsJsonObject("message") : null;
+                String content = message != null && message.has("content") && !message.get("content").isJsonNull()
+                    ? message.get("content").getAsString() : "";
+                if (!hasText(content)) throw new IllegalStateException("Ollama returned an empty response.");
+                return content.trim();
+            });
     }
 
     /**
