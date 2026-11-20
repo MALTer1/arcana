@@ -66,6 +66,8 @@ public final class GrimoireNetwork {
                 SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(old.name, old.components,
                     old.behavior, old.legendary, old.legendaryEffect, description);
                 if (GrimoireStore.replace(book, tier, updated)) {
+                    SpellBookStore.update(player.getUuid(), updated);
+                    SpellBookStore.save(player.getServer());
                     player.getInventory().markDirty();
                     message = "Saved the description for " + old.name + ".";
                 } else message = "Could not save that spell description.";
@@ -119,6 +121,8 @@ public final class GrimoireNetwork {
                             old.name, ids, analysis.summary(), old.legendary,
                             old.legendary ? LegendarySpellEngine.describe(ids) : "", old.customDescription);
                         if (GrimoireStore.replace(book, tier, updated)) {
+                            SpellBookStore.update(player.getUuid(), updated);
+                            SpellBookStore.save(player.getServer());
                             player.getInventory().markDirty();
                             message = "Updated " + old.name + ". New Arcana cost: " + updated.arcanaCost() + ".";
                         } else message = "The Grimoire rejected the edited page.";
@@ -135,6 +139,8 @@ public final class GrimoireNetwork {
                 SpellBookStore.StoredSpell upgraded = new SpellBookStore.StoredSpell(old.name, old.components,
                     old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription);
                 if (GrimoireStore.replace(book, tier, upgraded)) {
+                    SpellBookStore.update(player.getUuid(), upgraded);
+                    SpellBookStore.save(player.getServer());
                     player.getInventory().markDirty();
                     message = old.name + " has become LEGENDARY! " + upgraded.legendaryEffect;
                 } else message = "The Master Grimoire could not store this Legendary page.";
