@@ -64,7 +64,7 @@ public final class GrimoireNetwork {
             else {
                 if (description.length() > 300) description = description.substring(0, 300);
                 SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(old.name, old.components,
-                    old.behavior, old.legendary, old.legendaryEffect, description);
+                    old.behavior, old.legendary, old.legendaryEffect, description, old.componentPowerPercentages);
                 if (GrimoireStore.replace(book, tier, updated)) {
                     SpellBookStore.update(player.getUuid(), updated);
                     SpellBookStore.save(player.getServer());
@@ -119,7 +119,7 @@ public final class GrimoireNetwork {
                     else {
                         SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(
                             old.name, ids, analysis.summary(), old.legendary,
-                            old.legendary ? LegendarySpellEngine.describe(ids) : "", old.customDescription);
+                            old.legendary ? LegendarySpellEngine.describe(ids) : "", old.customDescription, old.componentPowerPercentages);
                         if (GrimoireStore.replace(book, tier, updated)) {
                             SpellBookStore.update(player.getUuid(), updated);
                             SpellBookStore.save(player.getServer());
@@ -129,6 +129,29 @@ public final class GrimoireNetwork {
                     }
                 }
             }
+        } else if ("power_adjust".equals(action)) {
+            String[] parts = value.split("\\|", 3);
+            String spellName = parts.length > 0 ? parts[0] : "";
+            String glyphId = parts.length > 1 ? parts[1] : "";
+            int delta = 0;
+            try { if (parts.length > 2) delta = Integer.parseInt(parts[2]); } catch (NumberFormatException ignored) {}
+            SpellBookStore.StoredSpell old = GrimoireStore.find(book, tier, spellName);
+            if (old == null || old.components == null || !old.components.contains(glyphId) || Math.abs(delta) != 25) {
+                message = "That glyph power adjustment is invalid.";
+            } else {
+                java.util.Map<String, Integer> powers = new java.util.HashMap<>(
+                    old.componentPowerPercentages == null ? java.util.Map.of() : old.componentPowerPercentages);
+                int next = Math.max(25, Math.min(300, old.powerPercent(glyphId) + delta));
+                powers.put(glyphId, next);
+                SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(old.name, old.components,
+                    old.behavior, old.legendary, old.legendaryEffect, old.customDescription, powers);
+                if (GrimoireStore.replace(book, tier, updated)) {
+                    SpellBookStore.update(player.getUuid(), updated);
+                    SpellBookStore.save(player.getServer());
+                    player.getInventory().markDirty();
+                    message = glyphId + " power set to " + next + "% on " + old.name + ".";
+                } else message = "Could not save that glyph adjustment.";
+            }
         } else if ("legendary".equals(action)) {
             SpellBookStore.StoredSpell old = GrimoireStore.find(book, tier, value);
             if (tier != GrimoireTier.MASTER) message = "Only a Master Grimoire can hold Legendary spells.";
@@ -137,7 +160,7 @@ public final class GrimoireNetwork {
             else if (!consumeScroll(player)) message = "You need a Legendary Scroll in your inventory.";
             else {
                 SpellBookStore.StoredSpell upgraded = new SpellBookStore.StoredSpell(old.name, old.components,
-                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription);
+                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription, old.componentPowerPercentages);
                 if (GrimoireStore.replace(book, tier, upgraded)) {
                     SpellBookStore.update(player.getUuid(), upgraded);
                     SpellBookStore.save(player.getServer());
@@ -213,6 +236,9 @@ public final class GrimoireNetwork {
             JsonArray components = new JsonArray();
             if (spell.components != null) spell.components.forEach(components::add);
             item.add("components", components);
+            JsonObject powers = new JsonObject();
+            if (spell.components != null) for (String id : spell.components) powers.addProperty(id, spell.powerPercent(id));
+            item.add("powerPercentages", powers);
             JsonArray effects = new JsonArray();
             JsonArray effectDescriptions = new JsonArray();
             if (spell.components != null) for (String id : spell.components) {
