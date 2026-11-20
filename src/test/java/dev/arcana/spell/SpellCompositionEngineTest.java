@@ -37,10 +37,11 @@ class SpellCompositionEngineTest {
     }
 
     @Test
-    void spellProgramRequiresAFormAndAtLeastOneEffect() {
+    void spellProgramRequiresAFormButAllowsFormOnlySpells() {
         ComponentRegistry.bootstrap();
         assertFalse(SpellProgram.compile(List.of("fire", "healing")).valid());
-        assertFalse(SpellProgram.compile(List.of("projectile", "fire")).valid());
+        assertTrue(SpellProgram.compile(List.of("projectile")).valid());
+        assertTrue(SpellProgram.compile(List.of("projectile", "fire")).valid());
         assertTrue(SpellProgram.compile(List.of("projectile", "fire", "healing")).valid());
     }
 
