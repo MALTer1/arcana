@@ -46,6 +46,15 @@ class SpellCompositionEngineTest {
     }
 
     @Test
+    void aSingleFormIsAValidSpellDraft() {
+        ComponentRegistry.bootstrap();
+        SpellDraft draft = new SpellDraft();
+        assertTrue(draft.add("projectile").success());
+        assertTrue(draft.isValid(), () -> String.join("; ", draft.validationIssues()));
+        assertTrue(SpellIntelligence.analyze("Simple Projectile", List.of("projectile")).isValid());
+    }
+
+    @Test
     void draftRetainsThePlayersGlyphOrder() {
         ComponentRegistry.bootstrap();
         SpellDraft draft = new SpellDraft();
