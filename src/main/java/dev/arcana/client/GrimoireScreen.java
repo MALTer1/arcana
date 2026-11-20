@@ -21,7 +21,8 @@ public final class GrimoireScreen extends Screen {
     private int glyphPage = 0;
     private boolean removeMode = false;
     private boolean editMode = false;
-    private TextFieldWidget descriptionField;
+    private boolean descriptionEditorOpen = false;
+    private final TextFieldWidget[] descriptionLines = new TextFieldWidget[3];
     private String notice = "Opening your grimoire...";
 
     public GrimoireScreen() {
@@ -70,17 +71,35 @@ public final class GrimoireScreen extends Screen {
             if (!spells.isEmpty() && selected < spells.size()) {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
-                descriptionField = new TextFieldWidget(textRenderer, left + 230, top + 30, 144, 20, Text.literal("Spell description"));
-                descriptionField.setMaxLength(160);
-                descriptionField.setPlaceholder(Text.literal("Write a description..."));
-                descriptionField.setText(spell.has("description") ? spell.get("description").getAsString() : "");
-                addDrawableChild(descriptionField);
-                addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "EDIT"), b -> {
+                addDrawableChild(ButtonWidget.builder(Text.literal("WRITE DESCRIPTION"), b -> {
+                    descriptionEditorOpen = true;
+                    rebuild();
+                }).dimensions(left + 230, top + 30, 176, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "ADJUST GLYPHS"), b -> {
                     editMode = !editMode; glyphPage = 0; rebuild();
-                }).dimensions(left + 378, top + 30, 42, 20).build());
-                addDrawableChild(ButtonWidget.builder(Text.literal("SAVE"), b -> {
-                    send("description", name + "\n" + descriptionField.getText());
-                }).dimensions(left + 378, top + 53, 42, 18).build());
+                }).dimensions(left + 230, top + 53, 176, 20).build());
+                if (descriptionEditorOpen) {
+                    String[] savedLines = (spell.has("description") ? spell.get("description").getAsString() : "").split("\\n", -1);
+                    for (int line = 0; line < 3; line++) {
+                        descriptionLines[line] = new TextFieldWidget(textRenderer, left + 35, top + 112 + line * 30,
+                            360, 20, Text.literal("Description line " + (line + 1)));
+                        descriptionLines[line].setMaxLength(100);
+                        descriptionLines[line].setPlaceholder(Text.literal("Continue your description..."));
+                        descriptionLines[line].setText(line < savedLines.length ? savedLines[line] : "");
+                        addDrawableChild(descriptionLines[line]);
+                    }
+                    addDrawableChild(ButtonWidget.builder(Text.literal("SAVE DESCRIPTION"), b -> {
+                        String value = String.join("\\n", java.util.Arrays.stream(descriptionLines)
+                            .map(TextFieldWidget::getText).toList());
+                        if (value.length() > 300) value = value.substring(0, 300);
+                        send("description", name + "\\n" + value);
+                        descriptionEditorOpen = false;
+                        rebuild();
+                    }).dimensions(left + 230, top + 220, 110, 20).build());
+                    addDrawableChild(ButtonWidget.builder(Text.literal("CANCEL"), b -> {
+                        descriptionEditorOpen = false; rebuild();
+                    }).dimensions(left + 346, top + 220, 60, 20).build());
+                }
                 if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
                 }).dimensions(left + 230, top + 250, 72, 18).build());
@@ -315,7 +334,7 @@ public final class GrimoireScreen extends Screen {
         }
         return id;
     }
-    private void changeTab(int next) { tab = next; selected = 0; listPage = 0; editMode = false; rebuild(); }
+    private void changeTab(int next) { tab = next; selected = 0; listPage = 0; editMode = false; descriptionEditorOpen = false; rebuild(); }
     private void rebuild() { if (client != null) { clearChildren(); init(); } }
     private JsonArray array(String key) { return state.has(key) && state.get(key).isJsonArray() ? state.getAsJsonArray(key) : new JsonArray(); }
     private void send(String action, String name) {
@@ -393,7 +412,7 @@ public final class GrimoireScreen extends Screen {
                         context.drawText(textRenderer, synergy, left + 230, top + 238, 0xFF684D36, true);
                     }
                 }
-                if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 72, 0xFF684D36, true);
+                if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 76, 0xFF684D36, true);
             }
         } else if (tab == 1) {
             context.drawText(textRenderer, "Engraved Magic Paper in your inventory", left + 24, top + 55, 0xFF5A3D28, true);
@@ -414,8 +433,18 @@ public final class GrimoireScreen extends Screen {
             context.drawText(textRenderer, "Legendary pages: up to 8 glyphs; Master Grimoire only.", left + 28, top + 132, 0xFF5A3D28, true);
         }
         context.drawText(textRenderer, textRenderer.trimToWidth(notice, 195), left + 14, top + 270, 0xFFEEE0C4, true);
+        if (descriptionEditorOpen) {
+            context.fill(left + 20, top + 82, left + 410, top + 252, 0xFF2B1D2E);
+            context.fill(left + 24, top + 86, left + 406, top + 248, 0xFFF4E6C8);
+            context.drawCenteredTextWithShadow(textRenderer, "WRITE YOUR SPELL DESCRIPTION", left + 215, top + 94, 0xFF4A3020);
+            context.drawText(textRenderer, "Describe what the spell is meant to do (up to 300 characters).", left + 36, top + 101, 0xFF684D36, true);
+        }
         super.render(context, mouseX, mouseY, delta);
     }
     @Override public boolean shouldPause() { return false; }
+    @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (descriptionEditorOpen && keyCode == 256) { descriptionEditorOpen = false; rebuild(); return true; }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
     @Override public void close() { if (active == this) active = null; super.close(); }
 }
