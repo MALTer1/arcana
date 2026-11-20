@@ -224,7 +224,7 @@ public final class ArcanaMod implements ModInitializer {
                                 if (server == null) return;
                                 server.execute(() -> {
                                     String result = error == null ? answer
-                                        : "All configured AI providers are unavailable. Check /arcana ai status and the server log.";
+                                        : "Request failed — " + ArcanaAiService.failureMessage(error);
                                     player.sendMessage(Text.literal("[Arcana AI] " + result), false);
                                 });
                             });
