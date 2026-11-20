@@ -94,6 +94,17 @@ public final class SpellBookStore {
         List<StoredSpell> spells = BOOKS.get(playerId.toString());
         return spells != null && spells.removeIf(spell -> spell.name.equalsIgnoreCase(name));
     }
+    public static synchronized boolean update(UUID playerId, StoredSpell updated) {
+        List<StoredSpell> spells = BOOKS.get(playerId.toString());
+        if (spells == null) return false;
+        for (int i = 0; i < spells.size(); i++) {
+            if (spells.get(i).name.equalsIgnoreCase(updated.name)) {
+                spells.set(i, updated);
+                return true;
+            }
+        }
+        return false;
+    }
     private static StoredSpell find(List<StoredSpell> spells, String name) {
         return spells.stream().filter(spell -> spell.name.equalsIgnoreCase(name)).findFirst().orElse(null);
     }
