@@ -55,6 +55,21 @@ public final class GrimoireNetwork {
             SpellBookStore.StoredSpell spell = GrimoireStore.find(book, tier, value);
             if (spell == null) message = "That spell is not in this Grimoire.";
             else message = SpellCaster.cast(player, spell).message();
+        } else if ("description".equals(action)) {
+            int split = value.indexOf('\\n');
+            String spellName = split < 0 ? "" : value.substring(0, split);
+            String description = split < 0 ? "" : value.substring(split + 1);
+            SpellBookStore.StoredSpell old = GrimoireStore.find(book, tier, spellName);
+            if (old == null) message = "That spell is not in this Grimoire.";
+            else {
+                if (description.length() > 160) description = description.substring(0, 160);
+                SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(old.name, old.components,
+                    old.behavior, old.legendary, old.legendaryEffect, description);
+                if (GrimoireStore.replace(book, tier, updated)) {
+                    player.getInventory().markDirty();
+                    message = "Saved the description for " + old.name + ".";
+                } else message = "Could not save that spell description.";
+            }
         } else if ("remove".equals(action)) {
             SpellBookStore.StoredSpell spell = GrimoireStore.remove(book, tier, value);
             if (spell == null) message = "That page is not in this Grimoire.";
@@ -102,7 +117,7 @@ public final class GrimoireNetwork {
                     else {
                         SpellBookStore.StoredSpell updated = new SpellBookStore.StoredSpell(
                             old.name, ids, analysis.summary(), old.legendary,
-                            old.legendary ? LegendarySpellEngine.describe(ids) : "");
+                            old.legendary ? LegendarySpellEngine.describe(ids) : "", old.customDescription);
                         if (GrimoireStore.replace(book, tier, updated)) {
                             player.getInventory().markDirty();
                             message = "Updated " + old.name + ". New Arcana cost: " + updated.arcanaCost() + ".";
@@ -118,7 +133,7 @@ public final class GrimoireNetwork {
             else if (!consumeScroll(player)) message = "You need a Legendary Scroll in your inventory.";
             else {
                 SpellBookStore.StoredSpell upgraded = new SpellBookStore.StoredSpell(old.name, old.components,
-                    old.behavior, true, LegendarySpellEngine.describe(old.components));
+                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription);
                 if (GrimoireStore.replace(book, tier, upgraded)) {
                     player.getInventory().markDirty();
                     message = old.name + " has become LEGENDARY! " + upgraded.legendaryEffect;
@@ -181,6 +196,7 @@ public final class GrimoireNetwork {
             JsonObject item = new JsonObject();
             item.addProperty("name", spell.name);
             item.addProperty("behavior", spell.behavior == null ? "" : spell.behavior);
+            item.addProperty("description", spell.customDescription == null ? "" : spell.customDescription);
             item.addProperty("legendary", spell.legendary);
             item.addProperty("legendaryEffect", spell.legendaryEffect == null ? "" : spell.legendaryEffect);
             SpellCostCalculator.Cost cost = SpellCostCalculator.calculate(spell.components, spell.legendary);
