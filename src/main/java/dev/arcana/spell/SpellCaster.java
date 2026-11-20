@@ -93,6 +93,7 @@ public final class SpellCaster {
             applyElements(player, target, parts, reactions,
                 enhancedDurationScale(spell, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
             double effectScale = enhancedDurationScale(spell, targetComposition.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+            applyFormDefault(player, target, spell, effectScale);
             applyProgramEffects(player, target, spell, effectScale);
             LegendarySpellEngine.apply(player, target, spell);
             applyCompositionInteractions(player, target, targetComposition);
@@ -148,6 +149,7 @@ public final class SpellCaster {
         applyElements(caster, target, parts, reactions,
             enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
         double effectScale = enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
+        applyFormDefault(caster, target, spell, effectScale);
         applyProgramEffects(caster, target, spell, effectScale);
         LegendarySpellEngine.apply(caster, target, spell);
         if (parts.contains("split")) {
@@ -158,6 +160,7 @@ public final class SpellCaster {
             for (LivingEntity extra : nearby.stream().limit(3).toList()) {
                 applyElements(caster, extra, parts, reactions,
                     enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
+                applyFormDefault(caster, extra, spell, effectScale);
                 applyProgramEffects(caster, extra, spell, effectScale);
                 LegendarySpellEngine.apply(caster, extra, spell);
                 applyCompositionInteractions(caster, extra, plan);
@@ -522,6 +525,73 @@ public final class SpellCaster {
         if (plan.slowTicks() > 0 && plan.stunTicks() == 0) {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
                 plan.slowTicks(), 2));
+        }
+    }
+
+    /**
+     * Every delivery Form has a small, predictable baseline behavior.
+     * Effect glyphs remain optional and layer additional behavior on top.
+     */
+    private static void applyFormDefault(ServerPlayerEntity caster, LivingEntity target,
+                                         SpellBookStore.StoredSpell spell, double durationScale) {
+        String form = spell.components.stream()
+            .filter(id -> {
+                SpellComponent component = ComponentRegistry.get(id);
+                return component != null && component.category() == ComponentCategory.DELIVERY;
+            })
+            .findFirst().orElse("");
+        float power = (float) Math.max(0.5, Math.min(2.5,
+            spell.components.stream().mapToInt(spell::powerPercent).average().orElse(100.0) / 100.0));
+        boolean friendly = target == caster || target.isTeammate(caster);
+        Vec3d away = target.getPos().subtract(caster.getPos()).normalize();
+
+        switch (form) {
+            case "projectile", "arc", "beam", "chain" -> {
+                if (!friendly) target.damage(caster.getDamageSources().indirectMagic(caster, caster), 4.0F * power);
+            }
+            case "wave" -> {
+                if (!friendly) target.damage(caster.getDamageSources().indirectMagic(caster, caster), 2.0F * power);
+                target.addVelocity(away.x * 0.75, 0.25, away.z * 0.75);
+                target.velocityModified = true;
+            }
+            case "cone" -> {
+                if (!friendly) target.damage(caster.getDamageSources().indirectMagic(caster, caster), 2.5F * power);
+                target.addVelocity(away.x * 0.45, 0.12, away.z * 0.45);
+                target.velocityModified = true;
+            }
+            case "ring", "pulse" -> {
+                target.addVelocity(away.x * 0.9, 0.18, away.z * 0.9);
+                target.velocityModified = true;
+            }
+            case "barrier", "wall" -> {
+                if (friendly) {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE,
+                        scaledTicks(100, durationScale), 0));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION,
+                        scaledTicks(80, durationScale), 0));
+                } else {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                        scaledTicks(40, durationScale), 0));
+                }
+            }
+            case "field" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                scaledTicks(40, durationScale), 0));
+            case "orbit" -> {
+                if (friendly) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE,
+                    scaledTicks(80, durationScale), 0));
+                else target.damage(caster.getDamageSources().indirectMagic(caster, caster), 2.0F * power);
+            }
+            case "tether" -> {
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS,
+                    scaledTicks(80, durationScale), 1));
+                target.addStatusEffect(new StatusEffectInstance(StatusEffects.WEAKNESS,
+                    scaledTicks(60, durationScale), 0));
+            }
+            case "rune" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING,
+                scaledTicks(120, durationScale), 0));
+            case "column" -> target.addStatusEffect(new StatusEffectInstance(StatusEffects.LEVITATION,
+                scaledTicks(30, durationScale), 0));
+            default -> { }
         }
     }
 
