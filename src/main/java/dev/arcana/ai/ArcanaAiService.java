@@ -207,7 +207,7 @@ public final class ArcanaAiService {
         messages.add(message("system", SYSTEM_PROMPT));
         messages.add(message("user", prompt));
         body.add("messages", messages);
-        return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null)
+        return post(baseUrl.replaceAll("/+$", "") + "/api/chat", body, null, Duration.ofSeconds(90))
             .thenApply(response -> response.getAsJsonObject("message").get("content").getAsString());
     }
 
@@ -219,9 +219,13 @@ public final class ArcanaAiService {
     }
 
     private static CompletableFuture<JsonObject> post(String url, JsonObject body, String authorization) {
+        return post(url, body, authorization, Duration.ofSeconds(22));
+    }
+
+    private static CompletableFuture<JsonObject> post(String url, JsonObject body, String authorization, Duration timeout) {
         try {
             HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url))
-                .timeout(Duration.ofSeconds(22))
+                .timeout(timeout)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(GSON.toJson(body)));
             if (authorization != null) builder.header("Authorization", authorization);
