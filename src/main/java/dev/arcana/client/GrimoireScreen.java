@@ -21,6 +21,7 @@ public final class GrimoireScreen extends Screen {
     private int glyphPage = 0;
     private boolean removeMode = false;
     private boolean editMode = false;
+    private boolean powerAdjustMode = false;
     private boolean descriptionEditorOpen = false;
     private final TextFieldWidget[] descriptionLines = new TextFieldWidget[3];
     private String notice = "Opening your grimoire...";
@@ -75,9 +76,12 @@ public final class GrimoireScreen extends Screen {
                     descriptionEditorOpen = true;
                     rebuild();
                 }).dimensions(left + 230, top + 30, 176, 20).build());
-                addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "ADJUST GLYPHS"), b -> {
-                    editMode = !editMode; glyphPage = 0; rebuild();
-                }).dimensions(left + 230, top + 53, 176, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("GLYPHS"), b -> {
+                    editMode = !editMode; powerAdjustMode = false; glyphPage = 0; rebuild();
+                }).dimensions(left + 230, top + 53, 84, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("POWER %"), b -> {
+                    powerAdjustMode = !powerAdjustMode; editMode = false; rebuild();
+                }).dimensions(left + 320, top + 53, 86, 20).build());
                 if (descriptionEditorOpen) {
                     String[] savedLines = (spell.has("description") ? spell.get("description").getAsString() : "").split("\\n", -1);
                     for (int line = 0; line < 3; line++) {
@@ -100,14 +104,14 @@ public final class GrimoireScreen extends Screen {
                         descriptionEditorOpen = false; rebuild();
                     }).dimensions(left + 346, top + 220, 60, 20).build());
                 }
-                if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
+                if (!editMode && !powerAdjustMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
                 }).dimensions(left + 230, top + 250, 72, 18).build());
                 if (!editMode && spell.has("legendary") && !spell.get("legendary").getAsBoolean()) {
                     addDrawableChild(ButtonWidget.builder(Text.literal("LEGENDARY SCROLL"), b -> send("legendary", name))
                         .dimensions(left + 306, top + 250, 100, 18).build());
                 }
-                if (editMode) buildEditor(left, top, name, spell);
+                if (editMode || powerAdjustMode) buildEditor(left, top, name, spell);
                 if (removeMode) {
                     // In removal mode the selected page is returned as engraved Magic Paper.
                     addDrawableChild(ButtonWidget.builder(Text.literal("CONFIRM REMOVE"), b -> send("remove", name))
@@ -127,12 +131,23 @@ public final class GrimoireScreen extends Screen {
             addDrawableChild(ButtonWidget.builder(Text.literal("Refresh Arcana"), b -> send("refresh", ""))
                 .dimensions(left + 250, top + 198, 156, 20).build());
         }
-        if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal("Close book"), b -> close())
+        if (!editMode && !powerAdjustMode) addDrawableChild(ButtonWidget.builder(Text.literal("Close book"), b -> close())
             .dimensions(left + 300, top + 8, 108, 20).build());
     }
 
     private void buildEditor(int left, int top, String spellName, JsonObject spell) {
         JsonArray components = spell.has("components") ? spell.getAsJsonArray("components") : new JsonArray();
+        if (powerAdjustMode) {
+            for (int i = 0; i < components.size(); i++) {
+                String id = components.get(i).getAsString();
+                int y = top + 91 + i * 17;
+                addDrawableChild(ButtonWidget.builder(Text.literal("−25"), b -> send("power_adjust", spellName + "|" + id + "|-25"))
+                    .dimensions(left + 352, y, 26, 15).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("+25"), b -> send("power_adjust", spellName + "|" + id + "|25"))
+                    .dimensions(left + 380, y, 26, 15).build());
+            }
+            return;
+        }
         for (int i = 0; i < Math.min(8, components.size()); i++) {
             String id = components.get(i).getAsString();
             final String name = spellName;
@@ -334,7 +349,7 @@ public final class GrimoireScreen extends Screen {
         }
         return id;
     }
-    private void changeTab(int next) { tab = next; selected = 0; listPage = 0; editMode = false; descriptionEditorOpen = false; rebuild(); }
+    private void changeTab(int next) { tab = next; selected = 0; listPage = 0; editMode = false; powerAdjustMode = false; descriptionEditorOpen = false; rebuild(); }
     private void rebuild() { if (client != null) { clearChildren(); init(); } }
     private JsonArray array(String key) { return state.has(key) && state.get(key).isJsonArray() ? state.getAsJsonArray(key) : new JsonArray(); }
     private void send(String action, String name) {
@@ -413,6 +428,17 @@ public final class GrimoireScreen extends Screen {
                     }
                 }
                 if (editMode) context.drawText(textRenderer, "EDIT: add/remove/reorder glyphs", left + 230, top + 76, 0xFF684D36, true);
+                if (powerAdjustMode) {
+                    context.drawText(textRenderer, "POWER: 25%–300% (100% normal)", left + 230, top + 76, 0xFF684D36, true);
+                    JsonObject powers = spell.has("powerPercentages") ? spell.getAsJsonObject("powerPercentages") : new JsonObject();
+                    for (int i = 0; i < orderedGlyphs.size(); i++) {
+                        String id = orderedGlyphs.get(i).getAsString();
+                        int y = top + 94 + i * 17;
+                        int percent = powers.has(id) ? powers.get(id).getAsInt() : 100;
+                        context.drawText(textRenderer, textRenderer.trimToWidth(shortName(id), 82), left + 230, y, 0xFF4A3020, true);
+                        context.drawText(textRenderer, percent + "%", left + 316, y, 0xFF684D36, true);
+                    }
+                }
             }
         } else if (tab == 1) {
             context.drawText(textRenderer, "Engraved Magic Paper in your inventory", left + 24, top + 55, 0xFF5A3D28, true);
@@ -444,6 +470,7 @@ public final class GrimoireScreen extends Screen {
     @Override public boolean shouldPause() { return false; }
     @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (descriptionEditorOpen && keyCode == 256) { descriptionEditorOpen = false; rebuild(); return true; }
+        if (powerAdjustMode && keyCode == 256) { powerAdjustMode = false; rebuild(); return true; }
         return super.keyPressed(keyCode, scanCode, modifiers);
     }
     @Override public void close() { if (active == this) active = null; super.close(); }
