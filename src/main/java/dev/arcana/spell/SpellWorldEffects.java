@@ -14,6 +14,7 @@ import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.registry.tag.FluidTags;
 
 /**
  * World- and inventory-facing spell actions.
@@ -32,6 +33,12 @@ public final class SpellWorldEffects {
         BlockPos center = raycastBlock(caster, 12.0);
         int changed = 0;
 
+        if (components.contains("weather")) {
+            changed += changeWeather(world, components);
+        }
+        if (components.contains("water_walking")) {
+            changed += freezeWaterSurface(world, caster);
+        }
         if (components.contains("growth")) {
             changed += growCrops(world, center);
         }
@@ -58,6 +65,31 @@ public final class SpellWorldEffects {
             changed += deflectProjectiles(world, caster);
         }
         return changed;
+    }
+
+    private static int changeWeather(ServerWorld world, java.util.List<String> components) {
+        boolean thunder = components.contains("lightning");
+        boolean rain = thunder || components.contains("water") || components.contains("ice");
+        world.setWeather(rain ? 0 : 6000, rain ? 6000 : 0, rain, thunder);
+        return 1;
+    }
+
+    /** Briefly freezes nearby water using vanilla frosted-ice melting behavior. */
+    private static int freezeWaterSurface(ServerWorld world, ServerPlayerEntity caster) {
+        BlockPos center = caster.getBlockPos();
+        int frozen = 0;
+        for (int x = -2; x <= 2; x++) {
+            for (int z = -2; z <= 2; z++) {
+                BlockPos waterPos = center.add(x, -1, z);
+                if (!world.getFluidState(waterPos).isIn(FluidTags.WATER)
+                    || !world.getBlockState(waterPos.up()).isAir()) continue;
+                if (world.setBlockState(waterPos, Blocks.FROSTED_ICE.getDefaultState(), Block.NOTIFY_ALL)) {
+                    world.scheduleBlockTick(waterPos, Blocks.FROSTED_ICE, 20);
+                    frozen++;
+                }
+            }
+        }
+        return frozen;
     }
 
     private static BlockPos raycastBlock(ServerPlayerEntity caster, double range) {
