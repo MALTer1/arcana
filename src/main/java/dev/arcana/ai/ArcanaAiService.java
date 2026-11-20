@@ -244,6 +244,12 @@ public final class ArcanaAiService {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
         body.addProperty("stream", false);
+        body.addProperty("think", false);
+        body.addProperty("keep_alive", "10m");
+        JsonObject options = new JsonObject();
+        options.addProperty("num_predict", 256);
+        options.addProperty("num_ctx", 4096);
+        body.add("options", options);
         JsonArray messages = new JsonArray();
         messages.add(message("system", SYSTEM_PROMPT));
         messages.add(message("user", prompt));
