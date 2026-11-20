@@ -83,6 +83,9 @@ public final class KnowledgeBookNetwork {
             JsonArray ids = new JsonArray();
             if (spell.components != null) spell.components.forEach(ids::add);
             item.add("components", ids);
+            JsonObject powers = new JsonObject();
+            if (spell.components != null) for (String id : spell.components) powers.addProperty(id, spell.powerPercent(id));
+            item.add("powerPercentages", powers);
             SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(
                 spell.name, spell.components, spell.customDescription);
             JsonArray warnings = new JsonArray();
