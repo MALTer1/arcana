@@ -6,6 +6,7 @@ import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.network.GrimoireNetwork;
+import dev.arcana.network.KnowledgeBookNetwork;
 import dev.arcana.spell.GrimoireStore;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -43,6 +44,8 @@ public final class ArcanaClient implements ClientModInitializer {
         EntityRendererRegistry.register(ArcanaEntities.MAGIC_FIELD, MagicFieldRenderer::new);
         ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID,
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
+        ClientPlayNetworking.registerGlobalReceiver(KnowledgeBookNetwork.StatePayload.ID,
+            (payload, context) -> context.client().execute(() -> KnowledgeBookScreen.receiveState(payload.json())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             if (stack.isOf(ArcanaItems.LEGENDARY_SCROLL)) {
@@ -90,8 +93,18 @@ public final class ArcanaClient implements ClientModInitializer {
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
-            if (!world.isClient || GrimoireTier.fromItem(player.getStackInHand(hand).getItem()) == null)
-                return TypedActionResult.pass(player.getStackInHand(hand));
+            var held = player.getStackInHand(hand);
+            if (world.isClient && held.isOf(ArcanaItems.BOOK_OF_KNOWLEDGE)) {
+                MinecraftClient.getInstance().setScreen(new KnowledgeBookScreen());
+                ClientPlayNetworking.send(new KnowledgeBookNetwork.RequestPayload("open"));
+                return TypedActionResult.success(held, true);
+            }
+            if (world.isClient && held.isOf(ArcanaItems.BOOK_OF_SIN)) {
+                MinecraftClient.getInstance().setScreen(new SinBookScreen());
+                return TypedActionResult.success(held, true);
+            }
+            if (!world.isClient || GrimoireTier.fromItem(held.getItem()) == null)
+                return TypedActionResult.pass(held);
             if (player.isSneaking()) {
                 GrimoireHud.castSelected();
             } else {
