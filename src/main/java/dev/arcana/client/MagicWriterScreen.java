@@ -200,6 +200,21 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.fill(x + 154, y + 24, x + 318, y + 158, 0xFF302438);
         context.fill(x + 324, y + 24, x + 552, y + 158, 0xFF35283D);
         context.fill(x + 10, y + 166, x + 552, y + 278, 0xFF2B2133);
+        // Draw every slot plate here as well as in drawSlot. This guarantees
+        // empty slots have a visible frame before an item is placed in them.
+        for (Slot slot : handler.slots) {
+            int sx = x + slot.x;
+            int sy = y + slot.y;
+            boolean writerSlot = slot.id < 3;
+            int slotBorder = writerSlot ? (slot.id == 1 ? 0xFF9BC7D2 : 0xFFE6C477) : 0xFF9A805C;
+            int slotFill = writerSlot ? (slot.id == 1 ? 0xFF263C4A : 0xFF49304F) : 0xFF3B3040;
+            context.fill(sx - 2, sy - 2, sx + 18, sy + 18, 0xFF100B17);
+            context.fill(sx - 1, sy - 1, sx + 17, sy + 17, slotBorder);
+            context.fill(sx, sy, sx + 16, sy + 16, slotFill);
+            context.fill(sx + 1, sy + 1, sx + 15, sy + 15, 0xFF211A2A);
+        }
+        context.fill(x + 162, y + 57, x + 312, y + 81, 0xFF17121F);
+        context.fill(x + 163, y + 58, x + 311, y + 80, 0xFF302438);
         context.fill(x + 3, y + 3, x + 557, y + 5, 0xFFE1B76C);
         context.fill(x + 3, y + 281, x + 557, y + 283, 0xFFE1B76C);
         context.fill(x + 3, y + 3, x + 5, y + 283, 0xFFE1B76C);
