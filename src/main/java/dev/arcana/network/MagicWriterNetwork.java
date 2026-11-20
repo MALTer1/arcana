@@ -131,6 +131,7 @@ public final class MagicWriterNetwork {
             writer.consumeInput();
             writer.markDirty();
             player.sendMessage(Text.literal("Engraved '" + name + "' onto Magic Paper."), false);
+            player.sendMessage(Text.literal("Spell Intelligence: " + analysis.summary()), false);
             analysis.warnings().forEach(warning ->
                 player.sendMessage(Text.literal("Spell Intelligence: " + warning), false));
             return;
@@ -153,6 +154,7 @@ public final class MagicWriterNetwork {
         writer.markDirty();
         player.getInventory().markDirty();
         player.sendMessage(Text.literal("Engraved '" + name + "' into this " + tier.displayName() + "."), false);
+        player.sendMessage(Text.literal("Spell Intelligence: " + analysis.summary()), false);
         analysis.warnings().forEach(warning ->
             player.sendMessage(Text.literal("Spell Intelligence: " + warning), false));
     }
