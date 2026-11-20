@@ -43,6 +43,7 @@ public final class ArcanaClient implements ClientModInitializer {
         BlockEntityRendererFactories.register(ArcanaBlocks.MAGIC_WRITER_ENTITY, MagicWriterBlockEntityRenderer::new);
         EntityRendererRegistry.register(ArcanaEntities.MAGIC_PROJECTILE, MagicProjectileRenderer::new);
         EntityRendererRegistry.register(ArcanaEntities.MAGIC_FIELD, MagicFieldRenderer::new);
+        EntityRendererRegistry.register(ArcanaEntities.MAGIC_EFFECT, MagicEffectRenderer::new);
         ClientPlayNetworking.registerGlobalReceiver(GrimoireNetwork.StatePayload.ID,
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
         ClientPlayNetworking.registerGlobalReceiver(KnowledgeBookNetwork.StatePayload.ID,
