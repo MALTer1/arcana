@@ -33,7 +33,7 @@ public final class SpellProgram {
         List<Step> steps = new ArrayList<>();
         List<String> issues = new ArrayList<>();
         if (orderedIds == null || orderedIds.isEmpty()) {
-            return new Compilation(steps, List.of("Add a Form, then at least one Effect."));
+            return new Compilation(steps, List.of("Add a Form to define how the spell is delivered."));
         }
 
         int formIndex = -1;
@@ -77,8 +77,6 @@ public final class SpellProgram {
         }
 
         if (formIndex < 0) issues.add("Choose a Form first (for example, Projectile, Beam, or Field).");
-        if (steps.stream().noneMatch(step -> step.role() == Role.EFFECT))
-            issues.add("Add at least one Effect glyph to define what the spell does.");
 
         return new Compilation(steps, issues);
     }
