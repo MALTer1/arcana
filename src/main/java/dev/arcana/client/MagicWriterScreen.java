@@ -50,6 +50,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     public MagicWriterScreen(MagicWriterScreenHandler handler, PlayerInventory inventory, Text title) {
         super(handler, inventory, title);
         active = this;
+        ClientPlayNetworking.send(new MagicWriterNetwork.RequestKnownPayload());
         backgroundWidth = 560;
         backgroundHeight = 286;
         playerInventoryTitleX = 199;
@@ -63,8 +64,11 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         componentButtons.clear();
         List<Choice> choices = choices();
         for (Choice choice : choices) {
-            ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> toggle(choice))
-                .dimensions(x + 330, y + 68, 70, 18).build();
+            final int buttonIndex = componentButtons.size();
+            ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> {
+                List<Choice> current = filteredChoices();
+                if (buttonIndex < current.size()) toggle(current.get(buttonIndex));
+            }).dimensions(x + 330, y + 68, 70, 18).build();
             componentButtons.add(button);
             addDrawableChild(button);
         }
@@ -77,7 +81,6 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         addDrawableChild(ButtonWidget.builder(Text.literal("▦ BROWSE"), b -> {
             browseMode = !browseMode;
             positionComponentButtons();
-            if (search != null) search.setPosition(browseMode ? 34 : x + 330, browseMode ? 38 : x + 330);
         }).dimensions(x + 470, y + 7, 72, 18).build());
 
         spellName = new TextFieldWidget(textRenderer, x + 164, y + 59, 146, 20, Text.literal("Spell name"));
