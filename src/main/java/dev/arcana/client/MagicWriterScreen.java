@@ -44,6 +44,8 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private TextFieldWidget spellName;
     private TextFieldWidget search;
     private ButtonWidget browseButton;
+    private ButtonWidget engraveButton;
+    private ButtonWidget clearButton;
     private int scrollRow;
     private boolean legendaryDraft;
     private boolean browseMode;
@@ -96,11 +98,13 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             selected.addAll(existing.components);
         }
         addDrawableChild(spellName);
-        addDrawableChild(ButtonWidget.builder(Text.literal("✦ ENGRAVE"), b -> engrave())
-            .dimensions(x + 164, y + 91, 72, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("CLEAR"), b -> {
+        engraveButton = ButtonWidget.builder(Text.literal("✦ ENGRAVE"), b -> engrave())
+            .dimensions(x + 164, y + 91, 72, 20).build();
+        addDrawableChild(engraveButton);
+        clearButton = ButtonWidget.builder(Text.literal("CLEAR"), b -> {
             selected.clear(); refreshButtons();
-        }).dimensions(x + 242, y + 91, 68, 20).build());
+        }).dimensions(x + 242, y + 91, 68, 20).build();
+        addDrawableChild(clearButton);
         positionComponentButtons();
     }
 
@@ -201,7 +205,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.fill(x + 3, y + 3, x + 5, y + 283, 0xFFE1B76C);
         context.fill(x + 555, y + 3, x + 557, y + 283, 0xFFE1B76C);
         if (browseMode) {
-            context.fill(0, 0, width, height, 0xD9000000);
+            context.fill(0, 0, width, height, 0xFF100D18);
             int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
@@ -238,6 +242,30 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
 
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!browseMode) return super.mouseClicked(mouseX, mouseY, button);
+        if (search != null && search.mouseClicked(mouseX, mouseY, button)) return true;
+        if (browseButton != null && browseButton.mouseClicked(mouseX, mouseY, button)) return true;
+        for (ButtonWidget componentButton : componentButtons) {
+            if (componentButton.visible && componentButton.mouseClicked(mouseX, mouseY, button)) return true;
+        }
+        // Consume clicks on the overlay so hidden writer slots and inventory
+        // cannot receive input through the browser.
+        return true;
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (!browseMode) return super.mouseReleased(mouseX, mouseY, button);
+        if (search != null) search.mouseReleased(mouseX, mouseY, button);
+        if (browseButton != null) browseButton.mouseReleased(mouseX, mouseY, button);
+        for (ButtonWidget componentButton : componentButtons) {
+            if (componentButton.visible) componentButton.mouseReleased(mouseX, mouseY, button);
+        }
+        return true;
+    }
+
     @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (search != null && search.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) { search.setFocused(false); return true; }
@@ -257,7 +285,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         if (browseMode) {
             // Draw the browser over the entire handled screen, including the
             // underlying writer slots and inventory, then redraw its controls.
-            context.fill(0, 0, width, height, 0xD9000000);
+            context.fill(0, 0, width, height, 0xFF100D18);
             int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
@@ -282,7 +310,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
                 }
             }
         }
-        drawMouseoverTooltip(context, mouseX, mouseY);
+        if (!browseMode) drawMouseoverTooltip(context, mouseX, mouseY);
     }
     @Override public void close() { if (active == this) active = null; super.close(); }
     @Override public boolean shouldPause() { return false; }
