@@ -53,7 +53,7 @@ public final class SpellIntelligence {
             counts.merge(component.category(), 1, Integer::sum);
         }
 
-        if (components.size() < 2) issues.add("Choose at least two glyphs.");
+        if (components.isEmpty()) issues.add("Choose a Form to define how the spell is delivered.");
 
         SpellProgram.Compilation program = SpellProgram.compile(
             components.stream().map(SpellComponent::id).toList());
