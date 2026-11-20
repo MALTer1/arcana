@@ -89,7 +89,7 @@ public final class GrimoireCommands {
                             ComponentKnowledgeStore.save(player.getServer());
                             player.sendMessage(Text.literal(learned ? "You learned " + id + "." : "You already know " + id + "."), false);
                             return learned ? 1 : 0;
-                        })))
+                        }))))
                 .then(com.mojang.brigadier.builder.LiteralArgumentBuilder.<net.minecraft.server.command.ServerCommandSource>literal("learned").executes(ctx -> {
                     ServerPlayerEntity player = ctx.getSource().getPlayerOrThrow();
                     var known = ComponentKnowledgeStore.get(player.getUuid());
