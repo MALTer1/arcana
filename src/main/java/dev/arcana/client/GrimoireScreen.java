@@ -79,7 +79,7 @@ public final class GrimoireScreen extends Screen {
                     editMode = !editMode; glyphPage = 0; rebuild();
                 }).dimensions(left + 378, top + 30, 42, 20).build());
                 addDrawableChild(ButtonWidget.builder(Text.literal("SAVE"), b -> {
-                    send("description", name + "\\n" + descriptionField.getText());
+                    send("description", name + "\n" + descriptionField.getText());
                 }).dimensions(left + 378, top + 53, 42, 18).build());
                 if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
