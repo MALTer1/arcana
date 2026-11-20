@@ -23,7 +23,7 @@ public final class SpellPageStore {
         String name = tag.getString("Name");
         if (name.isBlank() || ids.isEmpty()) return null;
         return new SpellBookStore.StoredSpell(name, ids, tag.getString("Behavior"),
-            tag.getBoolean("Legendary"), tag.getString("LegendaryEffect"));
+            tag.getBoolean("Legendary"), tag.getString("LegendaryEffect"), tag.getString("CustomDescription"));
     }
 
     public static void set(ItemStack stack, SpellBookStore.StoredSpell spell) {
@@ -33,6 +33,7 @@ public final class SpellPageStore {
         tag.putString("Behavior", spell.behavior == null ? "" : spell.behavior);
         tag.putBoolean("Legendary", spell.legendary);
         tag.putString("LegendaryEffect", spell.legendaryEffect == null ? "" : spell.legendaryEffect);
+        tag.putString("CustomDescription", spell.customDescription == null ? "" : spell.customDescription);
         NbtList ids = new NbtList();
         if (spell.components != null) spell.components.forEach(id -> ids.add(NbtString.of(id)));
         tag.put("Components", ids);
