@@ -56,7 +56,7 @@ public final class GrimoireNetwork {
             if (spell == null) message = "That spell is not in this Grimoire.";
             else message = SpellCaster.cast(player, spell).message();
         } else if ("description".equals(action)) {
-            int split = value.indexOf('\\n');
+            int split = value.indexOf('\n');
             String spellName = split < 0 ? "" : value.substring(0, split);
             String description = split < 0 ? "" : value.substring(split + 1);
             SpellBookStore.StoredSpell old = GrimoireStore.find(book, tier, spellName);
@@ -147,7 +147,7 @@ public final class GrimoireNetwork {
             else if (!consumeScroll(player)) message = "You need a Legendary Scroll in your inventory.";
             else {
                 SpellPageStore.set(pageStack, new SpellBookStore.StoredSpell(old.name, old.components,
-                    old.behavior, true, LegendarySpellEngine.describe(old.components)));
+                    old.behavior, true, LegendarySpellEngine.describe(old.components), old.customDescription));
                 player.getInventory().markDirty();
                 message = old.name + " page awakened as Legendary. It can now only be inserted into a Master Grimoire.";
             }
