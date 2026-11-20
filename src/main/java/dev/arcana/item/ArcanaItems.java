@@ -16,6 +16,8 @@ public final class ArcanaItems {
     public static final Item APPRENTICE_GRIMOIRE = register("apprentice_grimoire", new Item(new Item.Settings().maxCount(1)));
     public static final Item ADEPT_GRIMOIRE = register("adept_grimoire", new Item(new Item.Settings().maxCount(1)));
     public static final Item MASTER_GRIMOIRE = register("master_grimoire", new Item(new Item.Settings().maxCount(1)));
+    public static final Item BOOK_OF_KNOWLEDGE = register("book_of_knowledge", new Item(new Item.Settings().maxCount(1)));
+    public static final Item BOOK_OF_SIN = register("book_of_sin", new Item(new Item.Settings().maxCount(1)));
 
     private ArcanaItems() {}
     private static Item register(String path, Item item) {
@@ -32,6 +34,8 @@ public final class ArcanaItems {
             entries.add(APPRENTICE_GRIMOIRE);
             entries.add(ADEPT_GRIMOIRE);
             entries.add(MASTER_GRIMOIRE);
+            entries.add(BOOK_OF_KNOWLEDGE);
+            entries.add(BOOK_OF_SIN);
         });
     }
 }
