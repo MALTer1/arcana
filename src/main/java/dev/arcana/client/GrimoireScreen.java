@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 public final class GrimoireScreen extends Screen {
@@ -20,6 +21,7 @@ public final class GrimoireScreen extends Screen {
     private int glyphPage = 0;
     private boolean removeMode = false;
     private boolean editMode = false;
+    private TextFieldWidget descriptionField;
     private String notice = "Opening your grimoire...";
 
     public GrimoireScreen() {
@@ -68,11 +70,17 @@ public final class GrimoireScreen extends Screen {
             if (!spells.isEmpty() && selected < spells.size()) {
                 JsonObject spell = spells.get(selected).getAsJsonObject();
                 String name = spell.get("name").getAsString();
-                addDrawableChild(ButtonWidget.builder(Text.literal("CAST"), b -> send("cast", name))
-                    .dimensions(left + 230, top + 30, 66, 20).build());
-                addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "ADJUST"), b -> {
+                descriptionField = new TextFieldWidget(textRenderer, left + 230, top + 30, 144, 20, Text.literal("Spell description"));
+                descriptionField.setMaxLength(160);
+                descriptionField.setPlaceholder(Text.literal("Write a description..."));
+                descriptionField.setText(spell.has("description") ? spell.get("description").getAsString() : "");
+                addDrawableChild(descriptionField);
+                addDrawableChild(ButtonWidget.builder(Text.literal(editMode ? "DONE" : "EDIT"), b -> {
                     editMode = !editMode; glyphPage = 0; rebuild();
-                }).dimensions(left + 302, top + 30, 72, 20).build());
+                }).dimensions(left + 378, top + 30, 42, 20).build());
+                addDrawableChild(ButtonWidget.builder(Text.literal("SAVE"), b -> {
+                    send("description", name + "\\n" + descriptionField.getText());
+                }).dimensions(left + 378, top + 53, 42, 18).build());
                 if (!editMode) addDrawableChild(ButtonWidget.builder(Text.literal(removeMode ? "REMOVE: ON" : "REMOVE PAGE"), b -> {
                     removeMode = !removeMode; notice = removeMode ? "Select a spell page to remove." : "Removal mode off."; rebuild();
                 }).dimensions(left + 230, top + 250, 72, 18).build());
@@ -350,8 +358,11 @@ public final class GrimoireScreen extends Screen {
                 drawPreviewAnimation(context, left, top, spell, legendary);
                 context.drawCenteredTextWithShadow(textRenderer, "SPELL PREVIEW", left + 320, top + 145, 0xFF684D36);
                 context.drawCenteredTextWithShadow(textRenderer, name, left + 320, top + 58, 0xFF4A3020);
+                String visibleDescription = spell.has("description") && !spell.get("description").getAsString().isBlank()
+                    ? spell.get("description").getAsString()
+                    : (spell.has("behavior") ? spell.get("behavior").getAsString() : "");
                 java.util.List<net.minecraft.text.OrderedText> behaviorLines = textRenderer.wrapLines(
-                    Text.literal(spell.has("behavior") ? spell.get("behavior").getAsString() : ""), 184);
+                    Text.literal(visibleDescription), 184);
                 for (int i = 0; i < Math.min(2, behaviorLines.size()); i++)
                     context.drawText(textRenderer, behaviorLines.get(i), left + 230, top + 170 + i * 10, 0xFF4A3020, true);
                 String costLine = "Arcana cost: " + (spell.has("cost") ? spell.get("cost").getAsInt() : 0);
