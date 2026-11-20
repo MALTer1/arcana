@@ -4,6 +4,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import dev.arcana.entity.ArcanaProjectileEntity;
 import dev.arcana.entity.ArcanaFieldEntity;
+import dev.arcana.entity.ArcanaEffectEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -342,6 +343,9 @@ public final class SpellCaster {
     private static void applyElements(ServerPlayerEntity caster, LivingEntity target, List<String> parts,
                                       List<ElementalReactionEngine.Reaction> reactions, double durationScale) {
         java.util.Set<String> consumed = ElementalReactionEngine.consumedElements(reactions);
+        for (ElementalReactionEngine.Reaction reaction : reactions) {
+            ArcanaEffectEntity.spawnReaction(caster, reaction.id(), target.getBoundingBox().getCenter(), 1.0);
+        }
         for (ElementalReactionEngine.Reaction reaction : reactions) {
             switch (reaction.id()) {
                 case "storm_steam" -> {
