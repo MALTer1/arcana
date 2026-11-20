@@ -257,7 +257,7 @@ public final class SpellCaster {
 
     private static boolean hasWorldUtility(List<String> parts) {
         return parts.stream().anyMatch(id -> List.of("growth", "harvest", "repair", "magnetism",
-            "repulsion", "storage", "transmutation", "projectile_target").contains(id));
+            "repulsion", "storage", "transmutation", "projectile_target", "weather", "water_walking").contains(id));
     }
 
     private static boolean hasSelfUtility(List<String> parts) {
@@ -699,12 +699,10 @@ public final class SpellCaster {
             target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, scaledTicks(300, durationScale), 0));
         if (parts.contains("anchor")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.RESISTANCE, scaledTicks(160, durationScale), 0));
         if (parts.contains("float") || parts.contains("glide")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(300, durationScale), 0));
-        if (parts.contains("water_walking")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, scaledTicks(300, durationScale), 0));
         if (parts.contains("climb")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, scaledTicks(240, durationScale), 1));
         if (parts.contains("jump")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.JUMP_BOOST, scaledTicks(240, durationScale), 2));
         if (parts.contains("sprint")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, scaledTicks(240, durationScale), 2));
         if (parts.contains("temperature")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, scaledTicks(240, durationScale), 0));
-        if (parts.contains("weather")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOW_FALLING, scaledTicks(240, durationScale), 0));
         if (parts.contains("growth")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, scaledTicks(160, durationScale), 1));
         if (parts.contains("harvest")) target.addStatusEffect(new StatusEffectInstance(StatusEffects.SATURATION, scaledTicks(1, durationScale), 0));
         if (parts.contains("repair")) target.heal(10.0F * powerScale);
