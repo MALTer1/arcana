@@ -7,6 +7,7 @@ import dev.arcana.item.ArcanaItems;
 import dev.arcana.spell.SpellPageStore;
 import dev.arcana.network.GrimoireNetwork;
 import dev.arcana.network.KnowledgeBookNetwork;
+import dev.arcana.network.MagicWriterNetwork;
 import dev.arcana.spell.GrimoireStore;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -46,6 +47,8 @@ public final class ArcanaClient implements ClientModInitializer {
             (payload, context) -> context.client().execute(() -> GrimoireHud.receiveState(payload.json())));
         ClientPlayNetworking.registerGlobalReceiver(KnowledgeBookNetwork.StatePayload.ID,
             (payload, context) -> context.client().execute(() -> KnowledgeBookScreen.receiveState(payload.json())));
+        ClientPlayNetworking.registerGlobalReceiver(MagicWriterNetwork.KnownComponentsPayload.ID,
+            (payload, context) -> context.client().execute(() -> MagicWriterScreen.receiveKnownComponents(payload.ids())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             if (stack.isOf(ArcanaItems.LEGENDARY_SCROLL)) {
