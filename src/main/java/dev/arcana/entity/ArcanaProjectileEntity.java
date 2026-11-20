@@ -90,6 +90,25 @@ public final class ArcanaProjectileEntity extends Entity {
 
         List<String> activeIds = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
             .filter(id -> !id.isBlank()).toList();
+        if (lifetime % 2 == 0 && getWorld() instanceof ServerWorld visualWorld) {
+            double spread = 0.06;
+            if (activeIds.contains("fire") || activeIds.contains("magma") || activeIds.contains("sun")) {
+                visualWorld.spawnParticles(ParticleTypes.FLAME, getX(), getY(), getZ(), 3, spread, spread, spread, 0.01);
+            } else if (activeIds.contains("ice")) {
+                visualWorld.spawnParticles(ParticleTypes.SNOWFLAKE, getX(), getY(), getZ(), 3, spread, spread, spread, 0.005);
+            } else if (activeIds.contains("water")) {
+                visualWorld.spawnParticles(ParticleTypes.BUBBLE, getX(), getY(), getZ(), 3, spread, spread, spread, 0.01);
+            } else if (activeIds.contains("lightning")) {
+                visualWorld.spawnParticles(ParticleTypes.ELECTRIC_SPARK, getX(), getY(), getZ(), 3, spread, spread, spread, 0.02);
+            } else if (activeIds.contains("smoke")) {
+                visualWorld.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(), 2, spread, spread, spread, 0.005);
+            } else if (activeIds.contains("wind")) {
+                visualWorld.spawnParticles(ParticleTypes.CLOUD, getX(), getY(), getZ(), 2, spread, spread, spread, 0.01);
+            } else {
+                visualWorld.spawnParticles(ParticleTypes.END_ROD, getX(), getY(), getZ(), 2, spread, spread, spread, 0.005);
+            }
+        }
+
         if (activeIds.contains("homing") || (activeIds.contains("ricochet") && !hitEntityIds.isEmpty())) {
             LivingEntity guidedTarget = getWorld().getEntitiesByClass(LivingEntity.class,
                 getBoundingBox().expand(16.0), candidate -> candidate.isAlive()
