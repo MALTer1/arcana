@@ -9,6 +9,7 @@ import dev.arcana.spell.ComponentCategory;
 import dev.arcana.spell.SpellBookStore;
 import dev.arcana.spell.SpellComponent;
 import dev.arcana.spell.SpellIntelligence;
+import dev.arcana.spell.ComponentKnowledgeStore;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.item.ItemStack;
@@ -53,11 +54,8 @@ public final class KnowledgeBookNetwork {
 
     private static JsonObject buildState(ServerPlayerEntity player) {
         JsonObject root = new JsonObject();
-        Set<String> known = new HashSet<>();
+        Set<String> known = new HashSet<>(ComponentKnowledgeStore.get(player.getUuid()));
         var savedSpells = SpellBookStore.get(player.getUuid());
-        for (SpellBookStore.StoredSpell spell : savedSpells) {
-            if (spell.components != null) known.addAll(spell.components);
-        }
 
         JsonArray components = new JsonArray();
         for (SpellComponent component : ComponentRegistry.all()) {
