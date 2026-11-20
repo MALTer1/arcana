@@ -43,12 +43,23 @@ public final class SpellBookStore {
         }
         public StoredSpell(String name, List<String> components, String behavior,
                            boolean legendary, String legendaryEffect, String customDescription) {
+            this(name, components, behavior, legendary, legendaryEffect, customDescription, Map.of());
+        }
+        public StoredSpell(String name, List<String> components, String behavior,
+                           boolean legendary, String legendaryEffect, String customDescription,
+                           Map<String, Integer> componentPowerPercentages) {
             this.name = name;
             this.components = new ArrayList<>(components == null ? List.of() : components);
             this.behavior = behavior == null ? "" : behavior;
             this.legendary = legendary;
             this.legendaryEffect = legendaryEffect == null ? "" : legendaryEffect;
-            this(name, components, behavior, legendary, legendaryEffect, customDescription, Map.of());
+            this.customDescription = customDescription == null ? "" : customDescription;
+            this.componentPowerPercentages = new HashMap<>();
+            if (componentPowerPercentages != null) this.componentPowerPercentages.putAll(componentPowerPercentages);
+        }
+        public int powerPercent(String componentId) {
+            if (componentPowerPercentages == null) componentPowerPercentages = new HashMap<>();
+            return Math.max(25, Math.min(300, componentPowerPercentages.getOrDefault(componentId, 100)));
         }
         public StoredSpell(String name, List<String> components, String behavior,
                            boolean legendary, String legendaryEffect, String customDescription,
