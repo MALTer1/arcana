@@ -18,12 +18,13 @@ import net.minecraft.util.Identifier;
 import java.util.*;
 
 public final class MagicWriterNetwork {
-    public record EngravePayload(int syncId, String name, String components) implements CustomPayload {
+    public record EngravePayload(int syncId, String name, String components, String description) implements CustomPayload {
         public static final Id<EngravePayload> ID = new Id<>(Identifier.of("arcana", "writer_engrave"));
         public static final PacketCodec<RegistryByteBuf, EngravePayload> CODEC = PacketCodec.tuple(
             PacketCodecs.VAR_INT, EngravePayload::syncId,
             PacketCodecs.STRING, EngravePayload::name,
             PacketCodecs.STRING, EngravePayload::components,
+            PacketCodecs.STRING, EngravePayload::description,
             EngravePayload::new
         );
         public Id<? extends CustomPayload> getId() { return ID; }
@@ -68,6 +69,12 @@ public final class MagicWriterNetwork {
         String name = payload.name().trim().replaceAll("\\s+", " ");
         if (name.isEmpty() || name.length() > 32) {
             player.sendMessage(Text.literal("Spell names must contain 1–32 characters."), false);
+            return;
+        }
+
+        String description = payload.description() == null ? "" : payload.description().trim();
+        if (description.length() > 180) {
+            player.sendMessage(Text.literal("Spell descriptions must be 180 characters or fewer."), false);
             return;
         }
 
@@ -126,7 +133,7 @@ public final class MagicWriterNetwork {
         }
         SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell(
             name, draft.selectedIds(), draft.behavior(), keepLegendary,
-            keepLegendary ? LegendarySpellEngine.describe(draft.selectedIds()) : "");
+            keepLegendary ? LegendarySpellEngine.describe(draft.selectedIds()) : "", description);
 
         if (tier == null) {
             // The spell is written onto the same item type the player inserted.
