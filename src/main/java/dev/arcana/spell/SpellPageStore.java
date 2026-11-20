@@ -20,10 +20,13 @@ public final class SpellPageStore {
         NbtList list = tag.getList("Components", NbtElement.STRING_TYPE);
         List<String> ids = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) ids.add(list.getString(i));
+        NbtCompound powerTags = tag.getCompound("PowerPercentages");
+        java.util.Map<String, Integer> powerPercentages = new java.util.HashMap<>();
+        for (String key : powerTags.getKeys()) powerPercentages.put(key, powerTags.getInt(key));
         String name = tag.getString("Name");
         if (name.isBlank() || ids.isEmpty()) return null;
         return new SpellBookStore.StoredSpell(name, ids, tag.getString("Behavior"),
-            tag.getBoolean("Legendary"), tag.getString("LegendaryEffect"), tag.getString("CustomDescription"));
+            tag.getBoolean("Legendary"), tag.getString("LegendaryEffect"), tag.getString("CustomDescription"), powerPercentages);
     }
 
     public static void set(ItemStack stack, SpellBookStore.StoredSpell spell) {
@@ -34,6 +37,9 @@ public final class SpellPageStore {
         tag.putBoolean("Legendary", spell.legendary);
         tag.putString("LegendaryEffect", spell.legendaryEffect == null ? "" : spell.legendaryEffect);
         tag.putString("CustomDescription", spell.customDescription == null ? "" : spell.customDescription);
+        NbtCompound powerTags = new NbtCompound();
+        if (spell.componentPowerPercentages != null) spell.componentPowerPercentages.forEach(powerTags::putInt);
+        tag.put("PowerPercentages", powerTags);
         NbtList ids = new NbtList();
         if (spell.components != null) spell.components.forEach(id -> ids.add(NbtString.of(id)));
         tag.put("Components", ids);
