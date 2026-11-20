@@ -1,6 +1,7 @@
 package dev.arcana;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import dev.arcana.ai.ArcanaAiService;
 import dev.arcana.block.ArcanaBlocks;
 import dev.arcana.entity.ArcanaEntities;
 import dev.arcana.item.ArcanaItems;
@@ -37,6 +38,7 @@ public final class ArcanaMod implements ModInitializer {
     @Override
     public void onInitialize() {
         ComponentRegistry.bootstrap();
+        ArcanaAiService.initialize();
         ArcanaEntities.register();
         GrimoireNetwork.initialize();
         KnowledgeBookNetwork.initialize();
@@ -58,11 +60,13 @@ public final class ArcanaMod implements ModInitializer {
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             SpellBookStore.load(server);
+            ArcanaAiService.load(server);
             GrimoireStore.load(server);
             ArcanaResource.load(server);
         });
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
             SpellBookStore.save(server);
+            ArcanaAiService.save(server);
             GrimoireStore.save(server);
             ArcanaResource.save(server);
         });
@@ -204,6 +208,33 @@ public final class ArcanaMod implements ModInitializer {
                         SpellCaster.CastResult result = SpellCaster.cast(player, spell);
                         player.sendMessage(Text.literal(result.message()), false);
                         return result.success() ? 1 : 0;
+                    })))
+                .then(CommandManager.literal("ai")
+                    .then(CommandManager.literal("status").executes(context -> {
+                        context.getSource().sendFeedback(() -> Text.literal("[Arcana AI] " + ArcanaAiService.status()), false);
+                        return 1;
+                    }))
+                    .then(CommandManager.literal("ask")
+                        .then(CommandManager.argument("question", StringArgumentType.greedyString()).executes(context -> {
+                            ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                            String question = StringArgumentType.getString(context, "question");
+                            player.sendMessage(Text.literal("[Arcana AI] Thinking..."), false);
+                            ArcanaAiService.ask(player, question).whenComplete((answer, error) -> {
+                                var server = player.getServer();
+                                if (server == null) return;
+                                server.execute(() -> {
+                                    String result = error == null ? answer
+                                        : "All configured AI providers are unavailable. Check /arcana ai status and the server log.";
+                                    player.sendMessage(Text.literal("[Arcana AI] " + result), false);
+                                });
+                            });
+                            return 1;
+                        })))
+                    .then(CommandManager.literal("clear-memory").executes(context -> {
+                        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+                        ArcanaAiService.clearMemory(player.getUuid(), player.getServer());
+                        player.sendMessage(Text.literal("[Arcana AI] Your saved memory for this world has been cleared."), false);
+                        return 1;
                     })))
                 .then(CommandManager.literal("status").executes(context -> {
                     ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
