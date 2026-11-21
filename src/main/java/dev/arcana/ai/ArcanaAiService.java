@@ -141,19 +141,26 @@ public final class ArcanaAiService {
         String safeIdea = idea == null ? "" : idea.trim();
         if (safeIdea.length() > 180) safeIdea = safeIdea.substring(0, 180);
         String prompt = """
-            Design a Minecraft Arcana spell using ONLY the learned component IDs listed below.
-            Return ONLY one JSON object with exactly these fields:
-            {"description":"player-facing description, max 180 characters","components":["component_id"]}
+            You are a spell compiler for Minecraft Arcana, not a freeform storyteller.
+            Convert the player's requested behavior into a real spell by selecting ONLY
+            component IDs from the learned list. Component IDs are the executable behavior;
+            the description is explanatory text and never grants an ability by itself.
+            Return exactly one JSON object, with no markdown or surrounding prose:
+            {"description":"short accurate summary, max 180 characters","components":["projectile","fire"]}
             Spell name: %s
-            Player's idea: %s
-            Components already selected: %s
+            Requested behavior: %s
+            Existing selections (optional suggestions): %s
             Learned component IDs allowed: %s
-            Rules:
-            - Select only IDs from the learned list; never invent component IDs.
-            - Prefer the player's selected components when they fit the idea.
-            - Select a valid, minimal combination that SpellDraft can accept.
-            - The description must describe only what those selected components actually do.
-            - Do not claim unsupported custom mechanics or invent new effects.
+            Component rules:
+            - The first component MUST be a delivery Form. Prefer projectile for a moving spell,
+              beam for a focused ray, wave for a travelling area, or field for a persistent area.
+            - Add one or more matching learned elements/effects to implement the requested behavior.
+            - Select a target glyph only when the request specifies a target type.
+            - Use only IDs in the learned list, with exact spelling and lowercase.
+            - Never return an empty component array. If the idea is vague, make a simple valid
+              spell using the best available Form and one compatible learned effect or element.
+            - Never invent mechanics that are not represented by the selected components.
+            - The description must accurately summarize the behavior those components implement.
             - Keep the description under 180 characters.
             """.formatted(safeName, safeIdea, String.join(", ", selectedIds), String.join(", ", knownIds));
         return tryOllama(prompt).thenApply(response -> {
