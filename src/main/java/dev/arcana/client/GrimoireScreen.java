@@ -83,7 +83,7 @@ public final class GrimoireScreen extends Screen {
                     powerAdjustMode = !powerAdjustMode; editMode = false; rebuild();
                 }).dimensions(left + 320, top + 53, 86, 20).build());
                 if (descriptionEditorOpen) {
-                    String[] savedLines = (spell.has("description") ? spell.get("description").getAsString() : "").split("\\n", -1);
+                    String[] savedLines = (spell.has("description") ? spell.get("description").getAsString() : "").split("\n", -1);
                     for (int line = 0; line < 3; line++) {
                         descriptionLines[line] = new TextFieldWidget(textRenderer, left + 35, top + 112 + line * 30,
                             360, 20, Text.literal("Description line " + (line + 1)));
@@ -93,10 +93,10 @@ public final class GrimoireScreen extends Screen {
                         addDrawableChild(descriptionLines[line]);
                     }
                     addDrawableChild(ButtonWidget.builder(Text.literal("SAVE DESCRIPTION"), b -> {
-                        String value = String.join("\\n", java.util.Arrays.stream(descriptionLines)
+                        String value = String.join("\n", java.util.Arrays.stream(descriptionLines)
                             .map(TextFieldWidget::getText).toList());
                         if (value.length() > 300) value = value.substring(0, 300);
-                        send("description", name + "\\n" + value);
+                        send("description", name + "\n" + value);
                         descriptionEditorOpen = false;
                         rebuild();
                     }).dimensions(left + 230, top + 220, 110, 20).build());
