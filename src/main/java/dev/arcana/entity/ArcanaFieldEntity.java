@@ -128,16 +128,15 @@ public final class ArcanaFieldEntity extends Entity {
 
         if (lifetime % 5 != 0) return;
         float radius = dataTracker.get(RADIUS);
-        world.spawnParticles(shape.equals("barrier") ? ParticleTypes.END_ROD : ParticleTypes.ENCHANT,
-            getX(), getY() + 0.25, getZ(), 5, radius * 0.35, 0.15, radius * 0.35, 0.015);
+        var ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
+            .filter(id -> !id.isBlank()).toList();
+        spawnShapeVisuals(world, owner, shape, radius, ids);
 
         if (owner != null) {
             Box search = searchBox(owner, shape, radius);
             for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class, search,
                 entity -> entity.isAlive() && !affectedTargets.contains(entity.getUuid()))) {
                 if (!containsTarget(owner, target, shape, radius)) continue;
-                var ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
-                    .filter(id -> !id.isBlank()).toList();
                 SpellCaster.impactDelivery(owner,
                     new SpellBookStore.StoredSpell("Persistent Arcana", ids, "",
                         dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
@@ -184,6 +183,61 @@ public final class ArcanaFieldEntity extends Entity {
             return Math.abs(horizontal - 2.4) <= 1.4 && Math.abs(point.y - owner.getY()) <= 2.5;
         }
         return point.squaredDistanceTo(getPos()) <= radius * radius;
+    }
+
+    private void spawnShapeVisuals(ServerWorld world, ServerPlayerEntity owner, String shape,
+                                    float radius, java.util.List<String> ids) {
+        if (shape.equals("tether") && owner != null) {
+            Vec3d start = owner.getEyePos();
+            Vec3d delta = getPos().subtract(start);
+            for (int i = 0; i <= 20; i++) spawnElementParticle(world, ids, start.add(delta.multiply(i / 20.0)));
+            return;
+        }
+        if (shape.equals("wall")) {
+            double yaw = Math.toRadians(dataTracker.get(FACING_YAW));
+            Vec3d across = new Vec3d(Math.cos(yaw), 0.0, Math.sin(yaw));
+            for (int i = 0; i <= 20; i++) {
+                double offset = (i / 10.0 - 1.0) * radius;
+                for (int y = -2; y <= 2; y += 2)
+                    spawnElementParticle(world, ids, getPos().add(across.multiply(offset)).add(0.0, y, 0.0));
+            }
+            return;
+        }
+        double ringRadius = shape.equals("orbit") ? 2.4 : Math.max(1.0, radius);
+        Vec3d center = shape.equals("barrier") && owner != null
+            ? owner.getPos().add(0.0, 0.8, 0.0) : getPos();
+        for (int i = 0; i < 32; i++) {
+            double angle = Math.PI * 2.0 * i / 32.0;
+            Vec3d point = center.add(Math.cos(angle) * ringRadius, shape.equals("barrier") ? 0.0 : 0.08,
+                Math.sin(angle) * ringRadius);
+            spawnElementParticle(world, ids, point);
+            if (shape.equals("barrier")) {
+                spawnElementParticle(world, ids, point.add(0.0, 1.5, 0.0));
+                spawnElementParticle(world, ids, point.add(0.0, -0.5, 0.0));
+            }
+        }
+        if (shape.equals("field") || shape.equals("rune")) {
+            world.spawnParticles(ParticleTypes.ENCHANT, center.x, center.y + 0.15, center.z,
+                4, radius * 0.35, 0.08, radius * 0.35, 0.01);
+        }
+    }
+
+    private static void spawnElementParticle(ServerWorld world, java.util.List<String> ids, Vec3d pos) {
+        if (ids.contains("lightning") || ids.contains("metal")) {
+            world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, pos.x, pos.y, pos.z, 1, 0, 0, 0, 0.01);
+        } else if (ids.contains("fire") || ids.contains("magma") || ids.contains("sun")) {
+            world.spawnParticles(ParticleTypes.FLAME, pos.x, pos.y, pos.z, 1, 0, 0, 0, 0.005);
+        } else if (ids.contains("ice")) {
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, pos.x, pos.y, pos.z, 1, 0.01, 0.01, 0.01, 0.002);
+        } else if (ids.contains("water")) {
+            world.spawnParticles(ParticleTypes.BUBBLE, pos.x, pos.y, pos.z, 1, 0.01, 0.01, 0.01, 0.002);
+        } else if (ids.contains("smoke") || ids.contains("shadow")) {
+            world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, pos.x, pos.y, pos.z, 1, 0.01, 0.01, 0.01, 0.002);
+        } else if (ids.contains("wind")) {
+            world.spawnParticles(ParticleTypes.CLOUD, pos.x, pos.y, pos.z, 1, 0.01, 0.01, 0.01, 0.002);
+        } else {
+            world.spawnParticles(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 1, 0.005, 0.005, 0.005, 0.002);
+        }
     }
 
     private void deflectProjectiles(ServerWorld world, float radius) {
