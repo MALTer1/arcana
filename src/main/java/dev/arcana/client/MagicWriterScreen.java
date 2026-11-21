@@ -1,6 +1,7 @@
 package dev.arcana.client;
 
 import dev.arcana.network.MagicWriterNetwork;
+import dev.arcana.network.MagicWriterNetwork.AiDesignResultPayload;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.spell.*;
@@ -47,6 +48,8 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private ButtonWidget browseButton;
     private ButtonWidget engraveButton;
     private ButtonWidget clearButton;
+    private ButtonWidget aiDesignButton;
+    private String aiNotice = "";
     private int scrollRow;
     private boolean legendaryDraft;
     private boolean browseMode;
@@ -68,9 +71,11 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         componentButtons.clear();
         List<Choice> choices = choices();
         for (Choice choice : choices) {
-            Choice displayedChoice = choice;
-            ButtonWidget button = ButtonWidget.builder(buttonText(displayedChoice), b -> toggle(displayedChoice))
-                .dimensions(x + 330, y + 68, 70, 18).build();
+            final int buttonIndex = componentButtons.size();
+            ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> {
+                List<Choice> current = filteredChoices();
+                if (buttonIndex < current.size()) toggle(current.get(buttonIndex));
+            }).dimensions(x + 330, y + 68, 70, 18).build();
             componentButtons.add(button);
             addDrawableChild(button);
         }
@@ -85,6 +90,13 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             positionComponentButtons();
         }).dimensions(x + 470, y + 7, 72, 18).build();
         addDrawableChild(browseButton);
+        aiDesignButton = ButtonWidget.builder(Text.literal("AI DESIGN"), b -> {
+            aiNotice = "AI is designing...";
+            ClientPlayNetworking.send(new MagicWriterNetwork.AiDesignPayload(
+                handler.syncId, spellName == null ? "" : spellName.getText(),
+                String.join(",", selected), spellDescription == null ? "" : spellDescription.getText()));
+        }).dimensions(x + 390, y + 7, 72, 18).build();
+        addDrawableChild(aiDesignButton);
 
         spellName = new TextFieldWidget(textRenderer, x + 164, y + 59, 146, 20, Text.literal("Spell name"));
         spellName.setMaxLength(32);
@@ -112,6 +124,22 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         }).dimensions(x + 242, y + 91, 68, 20).build();
         addDrawableChild(clearButton);
         positionComponentButtons();
+    }
+
+    public static void receiveAiDesign(int syncId, String description, String components, String message) {
+        MagicWriterScreen screen = active;
+        if (screen == null || screen.handler.syncId != syncId) return;
+        if (description != null && !description.isBlank() && screen.spellDescription != null) {
+            screen.spellDescription.setText(description);
+        }
+        if (components != null) {
+            screen.selected.clear();
+            if (!components.isBlank()) for (String id : components.split(",")) {
+                if (ComponentRegistry.get(id) != null && knownIds.contains(id)) screen.selected.add(id);
+            }
+        }
+        screen.aiNotice = message == null ? "" : message;
+        screen.refreshButtons();
     }
 
     private List<Choice> filteredChoices() {
@@ -156,6 +184,10 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         if (browseButton != null) {
             browseButton.setPosition(browseMode ? width - 96 : x + 470, browseMode ? 24 : y + 7);
             browseButton.setMessage(Text.literal(browseMode ? "CLOSE" : "▦ BROWSE"));
+        }
+        if (aiDesignButton != null) {
+            aiDesignButton.visible = !browseMode;
+            aiDesignButton.active = !browseMode;
         }
     }
 
@@ -265,6 +297,8 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), legendaryDraft).total(),
             164, 119, 0xFFB9DDE7);
         context.drawTextWithShadow(textRenderer, "DESCRIPTION", 164, 128, 0xFFFFD98D);
+        if (!aiNotice.isBlank()) context.drawTextWithShadow(textRenderer,
+            textRenderer.trimToWidth(aiNotice, 210), 330, 51, 0xFFB9DDE7);
         context.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
 
