@@ -138,14 +138,19 @@ public final class MagicWriterNetwork {
                 // Keep a valid delivery Form at the front. AI output is never
                 // trusted to bypass learned-component or spell-composition checks.
                 generated.removeIf(id -> !known.contains(id) || ComponentRegistry.get(id) == null);
-                SpellDraft draft = new SpellDraft();
-                boolean valid = true;
-                for (String id : generated) {
-                    if (!draft.add(id).success()) { valid = false; break; }
+                generated.sort(Comparator.comparingInt(id ->
+                    ComponentRegistry.get(id).category() == ComponentCategory.DELIVERY ? 0 : 1));
+                SpellDraft draft = buildDraft(generated);
+                if (!draft.isValid()) {
+                    generated = fallbackDesign(idea, known);
+                    draft = buildDraft(generated);
                 }
-                if (!valid || !draft.isValid()) {
+                if (!draft.isValid()) {
                     generated = new ArrayList<>(selected);
-                    String message = "AI description generated; component suggestion was invalid, so your selected glyphs were kept.";
+                    draft = buildDraft(generated);
+                }
+                if (!draft.isValid()) {
+                    String message = "AI could not build a valid spell from your learned glyphs. Learn a Form and compatible Effect or Element first.";
                     ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), description,
                         String.join(",", generated), message));
                     return;
@@ -153,6 +158,14 @@ public final class MagicWriterNetwork {
                 ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), description,
                     String.join(",", generated), "AI designed the spell description and selected compatible learned glyphs. Review before engraving."));
             }));
+    }
+
+    private static SpellDraft buildDraft(List<String> ids) {
+        SpellDraft draft = new SpellDraft();
+        for (String id : ids) {
+            if (!draft.add(id).success()) return new SpellDraft();
+        }
+        return draft;
     }
 
     private static List<String> fallbackDesign(String idea, List<String> known) {
