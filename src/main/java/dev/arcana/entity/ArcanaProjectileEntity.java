@@ -198,28 +198,12 @@ public final class ArcanaProjectileEntity extends Entity {
         if (!(owner instanceof ServerPlayerEntity player)) return;
         List<String> ids = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
             .filter(id -> !id.isBlank()).toList();
-        // A projectile striking terrain still releases its payload at the impact point.
-        // This prevents ordinary block contact from silently cancelling the spell.
-        double radius = ids.contains("expand") || ids.contains("area") ? 4.0 : 2.0;
-        List<LivingEntity> nearbyTargets = world.getEntitiesByClass(LivingEntity.class,
-            getBoundingBox().expand(radius), entity -> entity.isAlive()
-                && entity.getBoundingBox().getCenter().squaredDistanceTo(getPos()) <= radius * radius);
-        for (LivingEntity target : nearbyTargets) {
-            SpellCaster.impactProjectile(player,
-                new SpellBookStore.StoredSpell("Arcane Impact", ids, "",
-                    dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
-                        ? dev.arcana.spell.LegendarySpellEngine.describe(ids) : ""), target);
-        }
-        // Environmental reactions also form when the projectile hits terrain,
-        // even when no creature happens to be standing at the impact point.
-        if (nearbyTargets.isEmpty()) {
-            for (var reaction : dev.arcana.spell.ElementalReactionEngine.resolve(ids)) {
-                ArcanaEffectEntity.spawnReaction(player, reaction.id(), getPos(), 1.0);
-            }
-            if (ids.contains("fire") || ids.contains("magma") || ids.contains("sun")) {
-                ArcanaEffectEntity.igniteNearbyAshClouds(player, getPos());
-            }
-        }
+        SpellBookStore.StoredSpell spell = new SpellBookStore.StoredSpell("Arcane Impact", ids, "",
+            dataTracker.get(LEGENDARY), dataTracker.get(LEGENDARY)
+                ? dev.arcana.spell.LegendarySpellEngine.describe(ids) : "");
+        // Always resolve at the collision point. The position handler applies
+        // the payload to nearby entities AND creates terrain-side reactions.
+        SpellCaster.impactPosition(player, spell, getPos());
     }
 
     private void impact(Entity hit) {
