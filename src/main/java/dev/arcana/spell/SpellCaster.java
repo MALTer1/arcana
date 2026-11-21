@@ -92,6 +92,7 @@ public final class SpellCaster {
         if (parts.contains("beam")) renderBeam(player, targets, parts);
         for (LivingEntity target : targets) {
             if (target.isRemoved()) continue;
+            spawnWorldReactions(player, target, parts, reactions);
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
                 new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
             applyElements(player, target, parts, reactions,
@@ -150,7 +151,8 @@ public final class SpellCaster {
         SpellCompositionEngine.Plan plan = SpellCompositionEngine.compose(parts,
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
-        applyElements(caster, target, parts, reactions,
+        spawnWorldReactions(caster, target, parts, reactions);
+        applyElements(caster, target, parts,
             enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
         double effectScale = enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
         applyFormDefault(caster, target, spell, effectScale);
@@ -178,6 +180,18 @@ public final class SpellCaster {
         if (executeWorldActions && parts.stream().anyMatch(id ->
             List.of("field", "rune", "barrier", "wall", "orbit", "tether").contains(id))) {
             ArcanaFieldEntity.launchAt(caster, spell, target.getPos());
+        }
+    }
+
+    private static void spawnWorldReactions(ServerPlayerEntity caster, LivingEntity target,
+                                            List<String> parts,
+                                            List<ElementalReactionEngine.Reaction> reactions) {
+        if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
+            ArcanaEffectEntity.igniteNearbyAshClouds(caster, target.getBoundingBox().getCenter());
+        }
+        for (ElementalReactionEngine.Reaction reaction : reactions) {
+            ArcanaEffectEntity.spawnReaction(caster, reaction.id(),
+                target.getBoundingBox().getCenter(), 1.0);
         }
     }
 
