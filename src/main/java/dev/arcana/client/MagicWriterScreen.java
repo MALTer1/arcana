@@ -292,13 +292,16 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         context.drawTextWithShadow(textRenderer, "OUTPUT", 88, 58, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "SPELL DETAILS", 164, 34, 0xFFFFD98D);
         context.drawTextWithShadow(textRenderer, "SPELL NAME", 164, 49, 0xFFFFD98D);
-        context.drawTextWithShadow(textRenderer, "KNOWN " + choices().size() + "  •  SELECTED " + selected.size() + "/" + componentLimit(),
-            330, 28, 0xFFFFD98D);
+        if (aiNotice.isBlank()) {
+            context.drawTextWithShadow(textRenderer, "KNOWN " + choices().size() + "  •  SELECTED " + selected.size() + "/" + componentLimit(),
+                330, 28, 0xFFFFD98D);
+        } else {
+            context.drawTextWithShadow(textRenderer, textRenderer.trimToWidth(aiNotice, 212),
+                330, 28, 0xFFB9DDE7);
+        }
         context.drawTextWithShadow(textRenderer, "ESTIMATED ARCANA: " + SpellCostCalculator.calculate(new ArrayList<>(selected), legendaryDraft).total(),
             164, 119, 0xFFB9DDE7);
         context.drawTextWithShadow(textRenderer, "DESCRIPTION", 164, 128, 0xFFFFD98D);
-        if (!aiNotice.isBlank()) context.drawTextWithShadow(textRenderer,
-            textRenderer.trimToWidth(aiNotice, 210), 330, 51, 0xFFB9DDE7);
         context.drawTextWithShadow(textRenderer, "INVENTORY", 199, 171, 0xFFD8C4A4);
     }
 
