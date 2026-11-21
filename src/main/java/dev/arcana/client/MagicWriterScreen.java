@@ -185,9 +185,25 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             browseButton.setPosition(browseMode ? width - 96 : x + 470, browseMode ? 24 : y + 7);
             browseButton.setMessage(Text.literal(browseMode ? "CLOSE" : "▦ BROWSE"));
         }
+        // The browser is a full-screen overlay: hide every writer-only control
+        // so text fields and action buttons cannot bleed through the catalogue.
+        if (spellName != null) spellName.visible = !browseMode;
+        if (spellDescription != null) spellDescription.visible = !browseMode;
+        if (engraveButton != null) {
+            engraveButton.visible = !browseMode;
+            engraveButton.active = !browseMode;
+        }
+        if (clearButton != null) {
+            clearButton.visible = !browseMode;
+            clearButton.active = !browseMode;
+        }
         if (aiDesignButton != null) {
             aiDesignButton.visible = !browseMode;
             aiDesignButton.active = !browseMode;
+        }
+        if (browseButton != null) {
+            browseButton.visible = true;
+            browseButton.active = true;
         }
     }
 
