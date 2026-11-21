@@ -50,6 +50,9 @@ public final class ArcanaClient implements ClientModInitializer {
             (payload, context) -> context.client().execute(() -> KnowledgeBookScreen.receiveState(payload.json())));
         ClientPlayNetworking.registerGlobalReceiver(MagicWriterNetwork.KnownComponentsPayload.ID,
             (payload, context) -> context.client().execute(() -> MagicWriterScreen.receiveKnownComponents(payload.ids())));
+        ClientPlayNetworking.registerGlobalReceiver(MagicWriterNetwork.AiDesignResultPayload.ID,
+            (payload, context) -> context.client().execute(() -> MagicWriterScreen.receiveAiDesign(
+                payload.syncId(), payload.description(), payload.components(), payload.message())));
 
         ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
             if (stack.isOf(ArcanaItems.LEGENDARY_SCROLL)) {
