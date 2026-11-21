@@ -1,6 +1,9 @@
 package dev.arcana.network;
 
 import dev.arcana.block.entity.MagicWriterBlockEntity;
+import dev.arcana.ai.ArcanaAiService;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import dev.arcana.item.ArcanaItems;
 import dev.arcana.item.GrimoireTier;
 import dev.arcana.screen.MagicWriterScreenHandler;
@@ -43,12 +46,38 @@ public final class MagicWriterNetwork {
         @Override public Id<? extends CustomPayload> getId() { return ID; }
     }
 
+    public record AiDesignPayload(int syncId, String name, String components, String idea) implements CustomPayload {
+        public static final Id<AiDesignPayload> ID = new Id<>(Identifier.of("arcana", "writer_ai_design"));
+        public static final PacketCodec<RegistryByteBuf, AiDesignPayload> CODEC = PacketCodec.tuple(
+            PacketCodecs.VAR_INT, AiDesignPayload::syncId,
+            PacketCodecs.STRING, AiDesignPayload::name,
+            PacketCodecs.STRING, AiDesignPayload::components,
+            PacketCodecs.STRING, AiDesignPayload::idea,
+            AiDesignPayload::new
+        );
+        @Override public Id<? extends CustomPayload> getId() { return ID; }
+    }
+
+    public record AiDesignResultPayload(int syncId, String description, String components, String message) implements CustomPayload {
+        public static final Id<AiDesignResultPayload> ID = new Id<>(Identifier.of("arcana", "writer_ai_result"));
+        public static final PacketCodec<RegistryByteBuf, AiDesignResultPayload> CODEC = PacketCodec.tuple(
+            PacketCodecs.VAR_INT, AiDesignResultPayload::syncId,
+            PacketCodecs.STRING, AiDesignResultPayload::description,
+            PacketCodecs.STRING, AiDesignResultPayload::components,
+            PacketCodecs.STRING, AiDesignResultPayload::message,
+            AiDesignResultPayload::new
+        );
+        @Override public Id<? extends CustomPayload> getId() { return ID; }
+    }
+
     private MagicWriterNetwork() {}
 
     public static void register() {
         PayloadTypeRegistry.playC2S().register(EngravePayload.ID, EngravePayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RequestKnownPayload.ID, RequestKnownPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(AiDesignPayload.ID, AiDesignPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(KnownComponentsPayload.ID, KnownComponentsPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(AiDesignResultPayload.ID, AiDesignResultPayload.CODEC);
         ServerPlayNetworking.registerGlobalReceiver(RequestKnownPayload.ID, (payload, context) ->
             context.server().execute(() -> {
                 ServerPlayerEntity player = context.player();
@@ -59,6 +88,67 @@ public final class MagicWriterNetwork {
             }));
         ServerPlayNetworking.registerGlobalReceiver(EngravePayload.ID,
             (payload, context) -> context.server().execute(() -> engrave(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(AiDesignPayload.ID,
+            (payload, context) -> context.server().execute(() -> design(context.player(), payload)));
+    }
+
+    private static void design(ServerPlayerEntity player, AiDesignPayload payload) {
+        if (!(player.currentScreenHandler instanceof MagicWriterScreenHandler handler)
+            || handler.syncId != payload.syncId() || !handler.canUse(player)) return;
+        List<String> known = new ArrayList<>(ComponentKnowledgeStore.get(player.getUuid()));
+        List<String> selected = new ArrayList<>();
+        if (payload.components() != null && !payload.components().isBlank()) {
+            for (String id : payload.components().split(",")) {
+                if (known.contains(id) && ComponentRegistry.get(id) != null && !selected.contains(id)) selected.add(id);
+            }
+        }
+        String name = payload.name() == null ? "" : payload.name().trim();
+        String idea = payload.idea() == null ? "" : payload.idea().trim();
+        if (idea.isBlank()) {
+            ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), "",
+                String.join(",", selected), "Describe the spell idea first."));
+            return;
+        }
+        ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), "",
+            String.join(",", selected), "Arcana AI is designing your spell..."));
+        ArcanaAiService.designSpell(name, idea, selected, known).whenComplete((result, error) ->
+            player.getServer().execute(() -> {
+                if (!(player.currentScreenHandler instanceof MagicWriterScreenHandler current)
+                    || current.syncId != payload.syncId() || !current.canUse(player)) return;
+                if (error != null || result == null) {
+                    String detail = error == null ? "Unknown AI error." : ArcanaAiService.failureMessage(error);
+                    ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), "",
+                        String.join(",", selected), "AI design failed: " + detail));
+                    return;
+                }
+                String description = result.has("description") && !result.get("description").isJsonNull()
+                    ? result.get("description").getAsString().trim() : "";
+                if (description.length() > 180) description = description.substring(0, 180);
+                List<String> generated = new ArrayList<>();
+                if (result.has("components") && result.get("components").isJsonArray()) {
+                    JsonArray array = result.getAsJsonArray("components");
+                    for (int i = 0; i < array.size() && generated.size() < SpellDraft.MAX_NORMAL_COMPONENTS; i++) {
+                        if (!array.get(i).isJsonPrimitive()) continue;
+                        String id = array.get(i).getAsString();
+                        if (known.contains(id) && ComponentRegistry.get(id) != null && !generated.contains(id)) generated.add(id);
+                    }
+                }
+                if (generated.isEmpty()) generated.addAll(selected);
+                SpellDraft draft = new SpellDraft();
+                boolean valid = true;
+                for (String id : generated) {
+                    if (!draft.add(id).success()) { valid = false; break; }
+                }
+                if (!valid || !draft.isValid()) {
+                    generated = new ArrayList<>(selected);
+                    String message = "AI description generated; component suggestion was invalid, so your selected glyphs were kept.";
+                    ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), description,
+                        String.join(",", generated), message));
+                    return;
+                }
+                ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), description,
+                    String.join(",", generated), "AI designed the spell description and selected compatible learned glyphs. Review before engraving."));
+            }));
     }
 
     private static void engrave(ServerPlayerEntity player, EngravePayload payload) {
