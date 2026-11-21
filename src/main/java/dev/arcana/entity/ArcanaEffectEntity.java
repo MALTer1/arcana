@@ -57,9 +57,47 @@ public final class ArcanaEffectEntity extends Entity {
         return world.spawnEntity(effect);
     }
 
+    public boolean isReaction(String id) {
+        return id != null && id.equals(dataTracker.get(REACTION));
+    }
+
+    /**
+     * Fire spells ignite nearby persistent ash clouds. The cloud owns its
+     * lifetime and position, so this also works after the original spell ends.
+     */
+    public static int igniteNearbyAshClouds(ServerPlayerEntity caster, Vec3d position) {
+        if (!(caster.getWorld() instanceof ServerWorld world)) return 0;
+        Box search = new Box(position.x - 5, position.y - 4, position.z - 5,
+            position.x + 5, position.y + 4, position.z + 5);
+        var clouds = world.getEntitiesByClass(ArcanaEffectEntity.class, search,
+            entity -> entity.isAlive() && entity.isReaction("ash_cloud"));
+        int ignited = 0;
+        for (ArcanaEffectEntity cloud : clouds) {
+            Vec3d center = cloud.getPos();
+            double radius = Math.max(2.5, cloud.dataTracker.get(RADIUS) + 1.0);
+            world.spawnParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 2, 0.25, 0.2, 0.25, 0.0);
+            world.spawnParticles(ParticleTypes.FLAME, center.x, center.y + 0.4, center.z, 36,
+                radius * 0.45, 0.45, radius * 0.45, 0.08);
+            world.spawnParticles(ParticleTypes.SMOKE, center.x, center.y + 0.3, center.z, 22,
+                radius * 0.4, 0.35, radius * 0.4, 0.035);
+            Box blast = new Box(center.x - radius, center.y - radius, center.z - radius,
+                center.x + radius, center.y + radius, center.z + radius);
+            for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class, blast,
+                entity -> entity.isAlive() && entity.getId() != cloud.dataTracker.get(OWNER_ID))) {
+                if (target.getBoundingBox().getCenter().squaredDistanceTo(center) <= radius * radius) {
+                    target.damage(world.getDamageSources().magic(), 6.0F);
+                    target.setOnFireFor(3);
+                }
+            }
+            cloud.discard();
+            ignited++;
+        }
+        return ignited;
+    }
+
     private static boolean isSupportedReaction(String id) {
         return switch (id) {
-            case "storm_steam", "steam", "charged_water", "magma", "frozen_water",
+            case "storm_steam", "steam", "ash_cloud", "charged_water", "magma", "frozen_water",
                  "sandstorm", "wildfire", "lunar_tide", "solar_flare", "blizzard",
                  "mist", "mud", "thermal_shock", "eclipse", "resonance",
                  "verdant_surge", "magnetic_arc", "solar_eclipse" -> true;
@@ -70,7 +108,9 @@ public final class ArcanaEffectEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        if (++lifetime > 80) {
+        String activeReaction = dataTracker.get(REACTION);
+        int maxLifetime = activeReaction.equals("ash_cloud") ? 160 : 80;
+        if (++lifetime > maxLifetime) {
             discard();
             return;
         }
@@ -90,14 +130,18 @@ public final class ArcanaEffectEntity extends Entity {
         spawnVisuals(world, reaction, pos, radius);
 
         if (lifetime % 10 == 0 && (reaction.equals("steam") || reaction.equals("storm_steam")
-            || reaction.equals("mist") || reaction.equals("sandstorm"))) {
+            || reaction.equals("mist") || reaction.equals("sandstorm") || reaction.equals("ash_cloud"))) {
             int ownerId = dataTracker.get(OWNER_ID);
             Box area = new Box(pos.x - radius, pos.y - radius * 0.5, pos.z - radius,
                 pos.x + radius, pos.y + radius * 0.5 + 1.0, pos.z + radius);
             for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class, area,
                 entity -> entity.isAlive() && entity.getId() != ownerId)) {
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 30, 0, true, false));
-                target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0, true, false));
+                if (!reaction.equals("ash_cloud")) {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 30, 0, true, false));
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0, true, false));
+                } else {
+                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 1, true, false));
+                }
                 if (reaction.equals("storm_steam")) {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 30, 0, true, false));
                 }
@@ -111,6 +155,12 @@ public final class ArcanaEffectEntity extends Entity {
 
     private static void spawnVisuals(ServerWorld world, String reaction, Vec3d pos, double radius) {
         switch (reaction) {
+            case "ash_cloud" -> {
+                world.spawnParticles(ParticleTypes.WHITE_ASH, pos.x, pos.y + 0.4, pos.z,
+                    12, radius * 0.55, 0.35, radius * 0.55, 0.008);
+                world.spawnParticles(ParticleTypes.SMOKE, pos.x, pos.y + 0.3, pos.z,
+                    6, radius * 0.4, 0.25, radius * 0.4, 0.006);
+            }
             case "steam", "storm_steam" -> {
                 world.spawnParticles(ParticleTypes.CLOUD, pos.x, pos.y + 0.4, pos.z,
                     7, radius * 0.45, 0.35, radius * 0.45, 0.012);
