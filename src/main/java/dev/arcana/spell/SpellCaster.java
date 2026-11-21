@@ -184,6 +184,49 @@ public final class SpellCaster {
         }
     }
 
+    /** Resolves a projectile impact at a world position, even when no entity was hit. */
+    public static int impactPosition(ServerPlayerEntity caster, SpellBookStore.StoredSpell spell, Vec3d position) {
+        if (caster == null || spell == null || position == null || !(caster.getWorld() instanceof ServerWorld world)) return 0;
+        List<String> parts = spell.components == null ? List.of() : spell.components;
+        List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
+        double radius = parts.contains("expand") || parts.contains("area") || parts.contains("explosion") ? 4.0 : 2.5;
+        Box bounds = new Box(position.x - radius, position.y - radius, position.z - radius,
+            position.x + radius, position.y + radius, position.z + radius);
+        List<LivingEntity> targets = world.getEntitiesByClass(LivingEntity.class, bounds,
+            entity -> entity.isAlive() && entity.getId() != caster.getId()
+                && entity.getBoundingBox().getCenter().squaredDistanceTo(position) <= radius * radius
+                && (!parts.contains("hostile") || isHostileTarget(entity, caster))
+                && (!parts.contains("ally") || entity.isTeammate(caster)));
+        for (ElementalReactionEngine.Reaction reaction : reactions) {
+            ArcanaEffectEntity.spawnReaction(caster, reaction.id(), position, 1.25);
+        }
+        if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
+            ArcanaEffectEntity.igniteNearbyAshClouds(caster, position);
+        }
+        if (parts.contains("explosion")) {
+            world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, position.x, position.y, position.z, 1, 0, 0, 0, 0);
+            world.spawnParticles(ParticleTypes.FLAME, position.x, position.y + 0.2, position.z,
+                42, 1.35, 0.8, 1.35, 0.08);
+            world.spawnParticles(ParticleTypes.SMOKE, position.x, position.y + 0.3, position.z,
+                34, 1.2, 0.65, 1.2, 0.045);
+            world.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(position),
+                net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE,
+                net.minecraft.sound.SoundCategory.PLAYERS, 1.0F, 0.9F);
+        }
+        for (LivingEntity target : targets) {
+            SpellBookStore.StoredSpell impactSpell = new SpellBookStore.StoredSpell(
+                spell.name, parts, spell.behavior, spell.legendary, spell.legendaryEffect,
+                spell.customDescription, spell.componentPowerPercentages);
+            impactDelivery(caster, impactSpell, target);
+        }
+        // A world-position cast is a real result even when the area is empty.
+        if (targets.isEmpty() && parts.contains("explosion")) {
+            world.spawnParticles(ParticleTypes.POOF, position.x, position.y + 0.2, position.z,
+                20, 0.8, 0.45, 0.8, 0.04);
+        }
+        return targets.size() + reactions.size() + (parts.contains("explosion") ? 1 : 0);
+    }
+
     private static void spawnWorldReactions(ServerPlayerEntity caster, LivingEntity target,
                                             List<String> parts,
                                             List<ElementalReactionEngine.Reaction> reactions) {
