@@ -251,7 +251,7 @@ public final class MagicWriterNetwork {
             draft.validationIssues().forEach(issue -> player.sendMessage(Text.literal("• " + issue), false));
             return;
         }
-        SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(name, draft.selectedIds());
+        SpellIntelligence.Analysis analysis = SpellIntelligence.analyze(name, draft.selectedIds(), description);
 
         ItemStack book = writer.getStack(0);
         ItemStack input = writer.getStack(1);
