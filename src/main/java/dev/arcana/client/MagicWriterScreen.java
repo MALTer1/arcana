@@ -42,6 +42,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     private static final int BASE_COLUMNS = 3, BASE_ROWS = 4;
     private final Set<String> selected = new LinkedHashSet<>();
     private final List<ButtonWidget> componentButtons = new ArrayList<>();
+    private final List<Choice> buttonChoices = new ArrayList<>();
     private TextFieldWidget spellName;
     private TextFieldWidget spellDescription;
     private TextFieldWidget search;
@@ -69,12 +70,15 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     @Override protected void init() {
         super.init();
         componentButtons.clear();
+        buttonChoices.clear();
         List<Choice> choices = choices();
         for (Choice choice : choices) {
             final int buttonIndex = componentButtons.size();
             ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> {
-                List<Choice> current = filteredChoices();
-                if (buttonIndex < current.size()) toggle(current.get(buttonIndex));
+                if (buttonIndex < buttonChoices.size()) {
+                    Choice current = buttonChoices.get(buttonIndex);
+                    if (current != null) toggle(current);
+                }
             }).dimensions(x + 330, y + 68, 70, 18).build();
             componentButtons.add(button);
             addDrawableChild(button);
@@ -164,11 +168,14 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         int buttonW = browseMode ? gapX - 7 : 70;
         for (int i = 0; i < componentButtons.size(); i++) {
             ButtonWidget button = componentButtons.get(i);
+            while (buttonChoices.size() <= i) buttonChoices.add(null);
             if (i >= filtered.size()) {
+                buttonChoices.set(i, null);
                 button.visible = false;
                 button.active = false;
                 continue;
             }
+            buttonChoices.set(i, filtered.get(i));
             int row = i / columns - scrollRow;
             int col = i % columns;
             button.setPosition(startX + col * gapX, startY + row * gapY);
@@ -222,10 +229,6 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         refreshButtons();
     }
     private void refreshButtons() {
-        for (ButtonWidget button : componentButtons) {
-            // Labels are refreshed from the currently filtered list in positionComponentButtons.
-            button.setMessage(button.getMessage());
-        }
         positionComponentButtons();
     }
     private void scrollComponents(int amount) {
