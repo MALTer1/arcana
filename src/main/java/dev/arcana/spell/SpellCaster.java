@@ -9,6 +9,8 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.particle.ParticleTypes;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.world.RaycastContext;
@@ -87,6 +89,7 @@ public final class SpellCaster {
         int affected = 0;
         boolean didSummon = false;
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
+        if (parts.contains("beam")) renderBeam(player, targets, parts);
         for (LivingEntity target : targets) {
             if (target.isRemoved()) continue;
             SpellCompositionEngine.Plan targetComposition = SpellCompositionEngine.compose(parts,
@@ -175,6 +178,31 @@ public final class SpellCaster {
         if (executeWorldActions && parts.stream().anyMatch(id ->
             List.of("field", "rune", "barrier", "wall", "orbit", "tether").contains(id))) {
             ArcanaFieldEntity.launchAt(caster, spell, target.getPos());
+        }
+    }
+
+    /** Renders a server-synchronized beam along the exact line to each selected target. */
+    private static void renderBeam(ServerPlayerEntity caster, List<LivingEntity> targets, List<String> parts) {
+        if (!(caster.getWorld() instanceof ServerWorld world) || targets.isEmpty()) return;
+        for (LivingEntity target : targets) {
+            Vec3d start = caster.getEyePos();
+            Vec3d end = target.getBoundingBox().getCenter();
+            Vec3d line = end.subtract(start);
+            int steps = Math.max(2, (int) Math.ceil(line.length() * 3.0));
+            for (int i = 0; i <= steps; i++) {
+                Vec3d point = start.add(line.multiply((double) i / steps));
+                if (parts.contains("lightning")) {
+                    world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+                } else if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
+                    world.spawnParticles(ParticleTypes.FLAME, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+                } else if (parts.contains("ice")) {
+                    world.spawnParticles(ParticleTypes.SNOWFLAKE, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+                } else if (parts.contains("water") || parts.contains("wind")) {
+                    world.spawnParticles(ParticleTypes.CLOUD, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+                } else {
+                    world.spawnParticles(ParticleTypes.END_ROD, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+                }
+            }
         }
     }
 
