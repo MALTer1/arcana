@@ -135,7 +135,7 @@ public final class ArcanaEffectEntity extends Entity {
             Box area = new Box(pos.x - radius, pos.y - radius * 0.65, pos.z - radius,
                 pos.x + radius, pos.y + radius * 0.65 + 1.0, pos.z + radius);
             for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class, area,
-                entity -> entity.isAlive() && entity.getId() != ownerId)) {
+                entity -> entity.isAlive() && (entity.getId() != ownerId || reaction.equals("verdant_surge")))) {
                 switch (reaction) {
                     case "steam", "storm_steam", "mist", "sandstorm", "ash_cloud", "eclipse", "solar_eclipse" -> {
                         target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0, true, false));
