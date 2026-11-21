@@ -89,7 +89,7 @@ public final class SpellCaster {
         int affected = 0;
         boolean didSummon = false;
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
-        if (parts.contains("beam")) renderBeam(player, targets, parts);
+        renderDeliveryVisuals(player, targets, parts);
         for (LivingEntity target : targets) {
             if (target.isRemoved()) continue;
             spawnWorldReactions(player, target, parts, reactions);
@@ -195,28 +195,78 @@ public final class SpellCaster {
         }
     }
 
-    /** Renders a server-synchronized beam along the exact line to each selected target. */
-    private static void renderBeam(ServerPlayerEntity caster, List<LivingEntity> targets, List<String> parts) {
+    /** Render the selected delivery form along its real cast-to-impact path. */
+    private static void renderDeliveryVisuals(ServerPlayerEntity caster, List<LivingEntity> targets,
+                                              List<String> parts) {
         if (!(caster.getWorld() instanceof ServerWorld world) || targets.isEmpty()) return;
+        String form = parts.stream().filter(id -> {
+            SpellComponent component = ComponentRegistry.get(id);
+            return component != null && component.category() == ComponentCategory.DELIVERY;
+        }).findFirst().orElse("");
         for (LivingEntity target : targets) {
             Vec3d start = caster.getEyePos();
             Vec3d end = target.getBoundingBox().getCenter();
             Vec3d line = end.subtract(start);
-            int steps = Math.max(2, (int) Math.ceil(line.length() * 3.0));
-            for (int i = 0; i <= steps; i++) {
-                Vec3d point = start.add(line.multiply((double) i / steps));
-                if (parts.contains("lightning")) {
-                    world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-                } else if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
-                    world.spawnParticles(ParticleTypes.FLAME, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-                } else if (parts.contains("ice")) {
-                    world.spawnParticles(ParticleTypes.SNOWFLAKE, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-                } else if (parts.contains("water") || parts.contains("wind")) {
-                    world.spawnParticles(ParticleTypes.CLOUD, point.x, point.y, point.z, 1, 0, 0, 0, 0);
-                } else {
-                    world.spawnParticles(ParticleTypes.END_ROD, point.x, point.y, point.z, 1, 0, 0, 0, 0);
+            double length = Math.max(0.1, line.length());
+            Vec3d direction = line.normalize();
+            Vec3d side = new Vec3d(-direction.z, 0.0, direction.x).normalize();
+            switch (form) {
+                case "beam", "tether" -> {
+                    int steps = Math.max(3, (int) (length * 3.0));
+                    for (int i = 0; i <= steps; i++)
+                        spawnElementParticle(world, parts, start.add(line.multiply((double) i / steps)));
                 }
+                case "chain", "wave" -> {
+                    int steps = Math.max(8, (int) (length * 2.0));
+                    for (int i = 0; i <= steps; i++) {
+                        double t = (double) i / steps;
+                        Vec3d point = start.add(line.multiply(t))
+                            .add(side.multiply(Math.sin(t * Math.PI * 5.0) * (form.equals("wave") ? 0.7 : 0.25)));
+                        spawnElementParticle(world, parts, point);
+                    }
+                }
+                case "cone" -> {
+                    for (int step = 1; step <= 10; step++) {
+                        double t = step / 10.0;
+                        double spread = t * 1.8;
+                        for (int lane = -2; lane <= 2; lane++) {
+                            Vec3d point = start.add(line.multiply(t)).add(side.multiply(spread * lane / 2.0));
+                            spawnElementParticle(world, parts, point);
+                        }
+                    }
+                }
+                case "ring", "pulse" -> {
+                    double radius = form.equals("pulse") ? 2.0 : 1.35;
+                    for (int i = 0; i < 32; i++) {
+                        double angle = Math.PI * 2.0 * i / 32.0;
+                        spawnElementParticle(world, parts, end.add(Math.cos(angle) * radius, 0.05,
+                            Math.sin(angle) * radius));
+                    }
+                }
+                case "column" -> {
+                    for (int i = 0; i < 18; i++)
+                        spawnElementParticle(world, parts, end.add(0.0, -1.0 + i * 0.22, 0.0));
+                }
+                default -> spawnElementParticle(world, parts, end);
             }
+        }
+    }
+
+    private static void spawnElementParticle(ServerWorld world, List<String> parts, Vec3d pos) {
+        if (parts.contains("lightning") || parts.contains("metal")) {
+            world.spawnParticles(ParticleTypes.ELECTRIC_SPARK, pos.x, pos.y, pos.z, 1, 0.015, 0.015, 0.015, 0.01);
+        } else if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
+            world.spawnParticles(ParticleTypes.FLAME, pos.x, pos.y, pos.z, 1, 0.02, 0.02, 0.02, 0.005);
+        } else if (parts.contains("ice") || parts.contains("snow")) {
+            world.spawnParticles(ParticleTypes.SNOWFLAKE, pos.x, pos.y, pos.z, 1, 0.025, 0.025, 0.025, 0.002);
+        } else if (parts.contains("water")) {
+            world.spawnParticles(ParticleTypes.BUBBLE, pos.x, pos.y, pos.z, 1, 0.025, 0.025, 0.025, 0.004);
+        } else if (parts.contains("smoke") || parts.contains("shadow")) {
+            world.spawnParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, pos.x, pos.y, pos.z, 1, 0.025, 0.025, 0.025, 0.002);
+        } else if (parts.contains("wind")) {
+            world.spawnParticles(ParticleTypes.CLOUD, pos.x, pos.y, pos.z, 1, 0.025, 0.025, 0.025, 0.002);
+        } else {
+            world.spawnParticles(ParticleTypes.END_ROD, pos.x, pos.y, pos.z, 1, 0.015, 0.015, 0.015, 0.003);
         }
     }
 
