@@ -152,7 +152,7 @@ public final class SpellCaster {
                 22, 0.65, 0.55, 0.65, 0.045);
             impactWorld.spawnParticles(ParticleTypes.SMOKE, center.x, center.y, center.z,
                 18, 0.6, 0.5, 0.6, 0.025);
-            impactWorld.playSound(null, target.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE,
+            impactWorld.playSound(null, target.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
                 net.minecraft.sound.SoundCategory.PLAYERS, 0.8F, 1.05F);
         }
         if (target == caster && !parts.contains("self") && !parts.contains("self_and_nearby")) return;
@@ -222,7 +222,7 @@ public final class SpellCaster {
             world.spawnParticles(ParticleTypes.SMOKE, position.x, position.y + 0.3, position.z,
                 34, 1.2, 0.65, 1.2, 0.045);
             world.playSound(null, net.minecraft.util.math.BlockPos.ofFloored(position),
-                net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE,
+                net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE.value(),
                 net.minecraft.sound.SoundCategory.PLAYERS, 1.0F, 0.9F);
         }
         for (LivingEntity target : targets) {
