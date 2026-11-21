@@ -152,7 +152,7 @@ public final class SpellCaster {
             new SpellCompositionEngine.Context(target.isWet(), target.isOnFire(), !target.isOnGround()));
         List<ElementalReactionEngine.Reaction> reactions = ElementalReactionEngine.resolve(parts);
         spawnWorldReactions(caster, target, parts, reactions);
-        applyElements(caster, target, parts,
+        applyElements(caster, target, parts, reactions,
             enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
         double effectScale = enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0));
         applyFormDefault(caster, target, spell, effectScale);
@@ -164,6 +164,7 @@ public final class SpellCaster {
                     && (!parts.contains("hostile") || isHostileTarget(entity, caster))
                     && (!parts.contains("ally") || entity.isTeammate(caster)));
             for (LivingEntity extra : nearby.stream().limit(3).toList()) {
+                spawnWorldReactions(caster, extra, parts, reactions);
                 applyElements(caster, extra, parts, reactions,
                     enhancedDurationScale(spell, plan.durationMultiplier() * (spell.legendary ? 2.0 : 1.0)));
                 applyFormDefault(caster, extra, spell, effectScale);
