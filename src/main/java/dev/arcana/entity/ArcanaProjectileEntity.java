@@ -90,6 +90,15 @@ public final class ArcanaProjectileEntity extends Entity {
 
         List<String> activeIds = Arrays.stream(dataTracker.get(COMPONENTS).split(","))
             .filter(id -> !id.isBlank()).toList();
+        if ((activeIds.contains("fire") || activeIds.contains("magma") || activeIds.contains("sun"))
+            && getWorld() instanceof ServerWorld reactionWorld) {
+            Entity ownerEntity = reactionWorld.getEntityById(dataTracker.get(OWNER_ID));
+            if (ownerEntity instanceof ServerPlayerEntity caster
+                && ArcanaEffectEntity.igniteNearbyAshClouds(caster, getPos()) > 0) {
+                discard();
+                return;
+            }
+        }
         if (lifetime % 2 == 0 && getWorld() instanceof ServerWorld visualWorld) {
             double spread = 0.06;
             if (activeIds.contains("fire") || activeIds.contains("magma") || activeIds.contains("sun")) {
