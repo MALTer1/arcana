@@ -162,7 +162,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         int maxScroll = Math.max(0, totalRows - rows);
         scrollRow = Math.max(0, Math.min(scrollRow, maxScroll));
         int startX = browseMode ? 44 : x + 330;
-        int startY = browseMode ? 76 : y + 67;
+        int startY = browseMode ? 84 : y + 67;
         int gapX = browseMode ? Math.max(112, Math.min(145, (width - 100) / 5)) : 73;
         int gapY = browseMode ? 34 : 20;
         int buttonW = browseMode ? gapX - 7 : 70;
@@ -237,7 +237,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     }
     @Override public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         boolean overGrid = browseMode
-            ? mouseX >= 25 && mouseX <= width - 25 && mouseY >= 70 && mouseY <= height - 40
+            ? mouseX >= 25 && mouseX <= width - 25 && mouseY >= 80 && mouseY <= height - 40
             : mouseX >= x + 324 && mouseX <= x + 552 && mouseY >= y + 60 && mouseY <= y + 155;
         if (overGrid && verticalAmount != 0) {
             scrollComponents(verticalAmount < 0 ? 1 : -1);
@@ -388,6 +388,11 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
             context.fill(panelX + 8, panelY + 8, panelX + panelW - 8, panelY + panelH - 8, 0xFF211A2A);
+            context.drawTextWithShadow(textRenderer, "KNOWN COMPONENTS", 32, 25, 0xFFFFD98D);
+            context.drawTextWithShadow(textRenderer,
+                "Select a glyph to add or remove it. Hover for its description.  SELECTED " +
+                    selected.size() + "/" + componentLimit(),
+                32, 64, 0xFFB9DDE7);
             if (search != null) search.render(context, mouseX, mouseY, delta);
             if (browseButton != null) browseButton.render(context, mouseX, mouseY, delta);
             for (ButtonWidget button : componentButtons) if (button.visible) button.render(context, mouseX, mouseY, delta);
@@ -399,7 +404,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
                 int col = (i - first) % cols;
                 int row = (i - first) / cols;
                 int cellX = 44 + col * Math.max(112, Math.min(145, (width - 100) / 5));
-                int cellY = 76 + row * 34;
+                int cellY = 84 + row * 34;
                 if (mouseX >= cellX && mouseX <= cellX + 100 && mouseY >= cellY && mouseY <= cellY + 28) {
                     context.drawTooltip(textRenderer, Text.literal(choice.label() + "\n" + choice.description()), mouseX, mouseY);
                     break;
