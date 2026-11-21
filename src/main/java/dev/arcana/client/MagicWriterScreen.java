@@ -268,7 +268,6 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
-            context.fill(panelX + 8, panelY + 8, panelX + panelW - 8, panelY + panelH - 8, 0xFF211A2A);
         }
     }
 
