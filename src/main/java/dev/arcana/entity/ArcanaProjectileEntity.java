@@ -147,8 +147,14 @@ public final class ArcanaProjectileEntity extends Entity {
                     && candidate.getId() != dataTracker.get(OWNER_ID)
                     && !hitEntityIds.contains(candidate.getId()))
             .stream()
-            .filter(candidate -> distanceSquaredToSegment(
-                candidate.getBoundingBox().getCenter(), start, end) <= 1.0)
+            .filter(candidate -> {
+                // Use the target's collision volume, not only its center. A
+                // projectile can cross a mob's edge while its center remains
+                // more than one block from the flight segment.
+                double hitRadius = Math.max(0.85, candidate.getBoundingBox().getAverageSideLength() * 0.7);
+                return distanceSquaredToSegment(
+                    candidate.getBoundingBox().getCenter(), start, end) <= hitRadius * hitRadius;
+            })
             .min(java.util.Comparator.comparingDouble(candidate ->
                 distanceAlongSegment(candidate.getBoundingBox().getCenter(), start, end)))
             .orElse(null);
