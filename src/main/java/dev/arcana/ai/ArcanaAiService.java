@@ -129,6 +129,42 @@ public final class ArcanaAiService {
             });
     }
 
+    /**
+     * Ask the local model to turn a player's spell idea into a short description
+     * and a list of already-learned component IDs. The caller must validate both
+     * fields against the live registry before applying them.
+     */
+    public static CompletableFuture<JsonObject> designSpell(String spellName, String idea,
+                                                              List<String> selectedIds,
+                                                              List<String> knownIds) {
+        String safeName = spellName == null ? "Unnamed spell" : spellName.trim();
+        String safeIdea = idea == null ? "" : idea.trim();
+        if (safeIdea.length() > 180) safeIdea = safeIdea.substring(0, 180);
+        String prompt = """
+            Design a Minecraft Arcana spell using ONLY the learned component IDs listed below.
+            Return ONLY one JSON object with exactly these fields:
+            {"description":"player-facing description, max 180 characters","components":["component_id"]}
+            Spell name: %s
+            Player's idea: %s
+            Components already selected: %s
+            Learned component IDs allowed: %s
+            Rules:
+            - Select only IDs from the learned list; never invent component IDs.
+            - Prefer the player's selected components when they fit the idea.
+            - Select a valid, minimal combination that SpellDraft can accept.
+            - The description must describe only what those selected components actually do.
+            - Do not claim unsupported custom mechanics or invent new effects.
+            - Keep the description under 180 characters.
+            """.formatted(safeName, safeIdea, String.join(", ", selectedIds), String.join(", ", knownIds));
+        return tryOllama(prompt).thenApply(response -> {
+            String trimmed = response.trim();
+            int first = trimmed.indexOf('{');
+            int last = trimmed.lastIndexOf('}');
+            if (first < 0 || last <= first) throw new IllegalStateException("AI did not return a JSON spell design.");
+            return JsonParser.parseString(trimmed.substring(first, last + 1)).getAsJsonObject();
+        });
+    }
+
     public static synchronized String status() {
         return "AI: local Ollama only (" + (config.ollamaEnabled ? "enabled; requires Ollama running" : "disabled")
             + ") | Cloud providers: removed | Memory: per-player, saved with this world";
