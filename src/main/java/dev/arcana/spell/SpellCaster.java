@@ -145,6 +145,16 @@ public final class SpellCaster {
                                             LivingEntity target, boolean executeWorldActions) {
         if (caster == null || target == null || target.isRemoved() || !target.isAlive()) return;
         List<String> parts = spell.components;
+        if (parts.contains("explosion") && caster.getWorld() instanceof ServerWorld impactWorld) {
+            Vec3d center = target.getBoundingBox().getCenter();
+            impactWorld.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y, center.z, 1, 0, 0, 0, 0);
+            impactWorld.spawnParticles(ParticleTypes.FLAME, center.x, center.y, center.z,
+                22, 0.65, 0.55, 0.65, 0.045);
+            impactWorld.spawnParticles(ParticleTypes.SMOKE, center.x, center.y, center.z,
+                18, 0.6, 0.5, 0.6, 0.025);
+            impactWorld.playSound(null, target.getBlockPos(), net.minecraft.sound.SoundEvents.ENTITY_GENERIC_EXPLODE,
+                net.minecraft.sound.SoundCategory.PLAYERS, 0.8F, 1.05F);
+        }
         if (target == caster && !parts.contains("self") && !parts.contains("self_and_nearby")) return;
         if (parts.contains("ally") && target != caster && !target.isTeammate(caster)) return;
         if (parts.contains("hostile") && !isHostileTarget(target, caster)) return;
@@ -197,8 +207,10 @@ public final class SpellCaster {
                 && entity.getBoundingBox().getCenter().squaredDistanceTo(position) <= radius * radius
                 && (!parts.contains("hostile") || isHostileTarget(entity, caster))
                 && (!parts.contains("ally") || entity.isTeammate(caster)));
-        for (ElementalReactionEngine.Reaction reaction : reactions) {
-            ArcanaEffectEntity.spawnReaction(caster, reaction.id(), position, 1.25);
+        if (targets.isEmpty()) {
+            for (ElementalReactionEngine.Reaction reaction : reactions) {
+                ArcanaEffectEntity.spawnReaction(caster, reaction.id(), position, 1.25);
+            }
         }
         if (parts.contains("fire") || parts.contains("magma") || parts.contains("sun")) {
             ArcanaEffectEntity.igniteNearbyAshClouds(caster, position);
