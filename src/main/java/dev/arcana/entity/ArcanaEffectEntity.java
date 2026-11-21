@@ -51,6 +51,9 @@ public final class ArcanaEffectEntity extends Entity {
         effect.dataTracker.set(REACTION, reactionId);
         effect.dataTracker.set(OWNER_ID, owner.getId());
         effect.dataTracker.set(RADIUS, (float) Math.max(1.0, Math.min(5.0, 2.5 * scale)));
+        if (reactionId.equals("steam") || reactionId.equals("storm_steam") || reactionId.equals("mist")) {
+            effect.setVelocity(owner.getRotationVec(1.0F).multiply(0.025).add(0.0, 0.012, 0.0));
+        }
         return world.spawnEntity(effect);
     }
 
@@ -71,7 +74,15 @@ public final class ArcanaEffectEntity extends Entity {
             discard();
             return;
         }
-        if (!(getWorld() instanceof ServerWorld world) || lifetime % 2 != 0) return;
+        if (!(getWorld() instanceof ServerWorld world)) return;
+
+        // Clouds drift after impact instead of leaving every particle at the original hit point.
+        Vec3d drift = getVelocity();
+        if (drift.lengthSquared() > 1.0E-5) {
+            setPosition(getPos().add(drift));
+            setVelocity(drift.multiply(0.96).add(0.0, 0.003, 0.0));
+        }
+        if (lifetime % 2 != 0) return;
 
         String reaction = dataTracker.get(REACTION);
         double radius = dataTracker.get(RADIUS);
@@ -89,6 +100,10 @@ public final class ArcanaEffectEntity extends Entity {
                 target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0, true, false));
                 if (reaction.equals("storm_steam")) {
                     target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 30, 0, true, false));
+                }
+                // Steam remains an active hazard while an entity stays inside it.
+                if ((reaction.equals("steam") || reaction.equals("storm_steam")) && lifetime % 20 == 0) {
+                    target.damage(world.getDamageSources().magic(), 1.0F);
                 }
             }
         }
