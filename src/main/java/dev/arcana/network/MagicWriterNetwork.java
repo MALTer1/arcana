@@ -134,6 +134,10 @@ public final class MagicWriterNetwork {
                     }
                 }
                 if (generated.isEmpty()) generated.addAll(selected);
+                if (generated.isEmpty()) generated.addAll(fallbackDesign(idea, known));
+                // Keep a valid delivery Form at the front. AI output is never
+                // trusted to bypass learned-component or spell-composition checks.
+                generated.removeIf(id -> !known.contains(id) || ComponentRegistry.get(id) == null);
                 SpellDraft draft = new SpellDraft();
                 boolean valid = true;
                 for (String id : generated) {
@@ -149,6 +153,44 @@ public final class MagicWriterNetwork {
                 ServerPlayNetworking.send(player, new AiDesignResultPayload(payload.syncId(), description,
                     String.join(",", generated), "AI designed the spell description and selected compatible learned glyphs. Review before engraving."));
             }));
+    }
+
+    private static List<String> fallbackDesign(String idea, List<String> known) {
+        String text = idea == null ? "" : idea.toLowerCase(Locale.ROOT);
+        List<String> result = new ArrayList<>();
+        String form = known.contains("projectile") ? "projectile"
+            : known.contains("beam") ? "beam"
+            : known.contains("wave") ? "wave"
+            : known.stream().filter(id -> {
+                SpellComponent component = ComponentRegistry.get(id);
+                return component != null && component.category() == ComponentCategory.DELIVERY;
+            }).findFirst().orElse("");
+        if (!form.isBlank()) result.add(form);
+        String[][] hints = {
+            {"heal", "healing"}, {"restore", "healing"}, {"fire", "fire"},
+            {"burn", "fire"}, {"flame", "fire"}, {"freeze", "ice"},
+            {"frost", "ice"}, {"cold", "ice"}, {"lightning", "lightning"},
+            {"electric", "lightning"}, {"shock", "lightning"}, {"ash", "smoke"},
+            {"smoke", "smoke"}, {"earth", "earth"}, {"stone", "earth"},
+            {"water", "water"}, {"wind", "wind"}, {"protect", "barrier"},
+            {"shield", "barrier"}, {"summon", "summoning"},
+            {"teleport", "teleportation"}, {"bind", "binding"},
+            {"slow", "binding"}, {"invisible", "invisibility"},
+            {"dark", "shadow"}, {"light", "light"}
+        };
+        for (String[] hint : hints) {
+            if (text.contains(hint[0]) && known.contains(hint[1]) && !result.contains(hint[1])) {
+                result.add(hint[1]);
+            }
+        }
+        if (result.size() == 1) {
+            String effect = known.stream().filter(id -> {
+                SpellComponent component = ComponentRegistry.get(id);
+                return component != null && component.category() == ComponentCategory.EFFECT;
+            }).findFirst().orElse("");
+            if (!effect.isBlank()) result.add(effect);
+        }
+        return result;
     }
 
     private static void engrave(ServerPlayerEntity player, EngravePayload payload) {
