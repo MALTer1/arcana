@@ -93,7 +93,9 @@ public final class ArcanaClient implements ClientModInitializer {
 
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            if (client.player != null && activeTier(client) != null) GrimoireHud.render(drawContext, client);
+            if (client.player != null && client.currentScreen == null && activeTier(client) != null) {
+                GrimoireHud.render(drawContext, client);
+            }
         });
 
         UseItemCallback.EVENT.register((player, world, hand) -> {
