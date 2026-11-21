@@ -68,11 +68,9 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
         componentButtons.clear();
         List<Choice> choices = choices();
         for (Choice choice : choices) {
-            final int buttonIndex = componentButtons.size();
-            ButtonWidget button = ButtonWidget.builder(buttonText(choice), b -> {
-                List<Choice> current = filteredChoices();
-                if (buttonIndex < current.size()) toggle(current.get(buttonIndex));
-            }).dimensions(x + 330, y + 68, 70, 18).build();
+            Choice displayedChoice = choice;
+            ButtonWidget button = ButtonWidget.builder(buttonText(displayedChoice), b -> toggle(displayedChoice))
+                .dimensions(x + 330, y + 68, 70, 18).build();
             componentButtons.add(button);
             addDrawableChild(button);
         }
@@ -203,6 +201,10 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     }
 
     @Override protected void drawBackground(DrawContext context, float delta, int mouseX, int mouseY) {
+        if (browseMode) {
+            context.fill(0, 0, width, height, 0xFF100D18);
+            return;
+        }
         context.fill(x, y, x + 560, y + 286, 0xFF100D18);
         context.fill(x + 3, y + 3, x + 557, y + 283, 0xFF59402E);
         context.fill(x + 6, y + 6, x + 554, y + 280, 0xFF211A2A);
@@ -234,9 +236,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
-            context.fill(panelX + 12, panelY + 65, panelX + panelW - 12, panelY + panelH - 42, 0xFF302438);
-            context.drawCenteredTextWithShadow(textRenderer, "KNOWN COMPONENTS", width / 2, 23, 0xFFFFD98D);
-            context.drawCenteredTextWithShadow(textRenderer, "5 × 4 BROWSER  •  SCROLL TO EXPLORE", width / 2, height - 28, 0xFFB9DDE7);
+            context.fill(panelX + 8, panelY + 8, panelX + panelW - 8, panelY + panelH - 8, 0xFF211A2A);
         }
     }
 
@@ -293,18 +293,35 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
     }
 
     @Override public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // HandledScreen normally treats the inventory key (E) as a close action.
+        // While editing text, route keys directly to the focused field and consume
+        // everything else so gameplay keybinds cannot close the writer.
         if (search != null && search.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) { search.setFocused(false); return true; }
-            return super.keyPressed(keyCode, scanCode, modifiers);
+            search.keyPressed(keyCode, scanCode, modifiers);
+            return true;
         }
         if (spellName != null && spellName.isFocused()) {
             if (keyCode == GLFW.GLFW_KEY_ESCAPE) { spellName.setFocused(false); return true; }
-            return super.keyPressed(keyCode, scanCode, modifiers);
+            spellName.keyPressed(keyCode, scanCode, modifiers);
+            return true;
+        }
+        if (spellDescription != null && spellDescription.isFocused()) {
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) { spellDescription.setFocused(false); return true; }
+            spellDescription.keyPressed(keyCode, scanCode, modifiers);
+            return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && browseMode) { browseMode = false; positionComponentButtons(); return true; }
         if (keyCode == GLFW.GLFW_KEY_PAGE_DOWN) { scrollComponents(1); return true; }
         if (keyCode == GLFW.GLFW_KEY_PAGE_UP) { scrollComponents(-1); return true; }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override public boolean charTyped(char chr, int modifiers) {
+        if (search != null && search.isFocused()) return search.charTyped(chr, modifiers);
+        if (spellName != null && spellName.isFocused()) return spellName.charTyped(chr, modifiers);
+        if (spellDescription != null && spellDescription.isFocused()) return spellDescription.charTyped(chr, modifiers);
+        return super.charTyped(chr, modifiers);
     }
     @Override public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
@@ -315,9 +332,7 @@ public final class MagicWriterScreen extends HandledScreen<MagicWriterScreenHand
             int panelX = 20, panelY = 18, panelW = width - 40, panelH = height - 36;
             context.fill(panelX, panelY, panelX + panelW, panelY + panelH, 0xFF59402E);
             context.fill(panelX + 3, panelY + 3, panelX + panelW - 3, panelY + panelH - 3, 0xFF211A2A);
-            context.fill(panelX + 12, panelY + 65, panelX + panelW - 12, panelY + panelH - 42, 0xFF302438);
-            context.drawCenteredTextWithShadow(textRenderer, "KNOWN COMPONENTS", width / 2, 23, 0xFFFFD98D);
-            context.drawCenteredTextWithShadow(textRenderer, "5 × 4 BROWSER  •  SCROLL TO EXPLORE", width / 2, height - 28, 0xFFB9DDE7);
+            context.fill(panelX + 8, panelY + 8, panelX + panelW - 8, panelY + panelH - 8, 0xFF211A2A);
             if (search != null) search.render(context, mouseX, mouseY, delta);
             if (browseButton != null) browseButton.render(context, mouseX, mouseY, delta);
             for (ButtonWidget button : componentButtons) if (button.visible) button.render(context, mouseX, mouseY, delta);
