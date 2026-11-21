@@ -75,7 +75,8 @@ public final class ArcanaEffectEntity extends Entity {
         for (ArcanaEffectEntity cloud : clouds) {
             Vec3d center = cloud.getPos();
             double radius = Math.max(2.5, cloud.dataTracker.get(RADIUS) + 1.0);
-            world.spawnParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 2, 0.25, 0.2, 0.25, 0.0);
+            world.spawnParticles(ParticleTypes.EXPLOSION_EMITTER, center.x, center.y + 0.3, center.z, 1, 0, 0, 0, 0);
+            world.spawnParticles(ParticleTypes.EXPLOSION, center.x, center.y + 0.3, center.z, 8, 0.45, 0.35, 0.45, 0.0);
             world.spawnParticles(ParticleTypes.FLAME, center.x, center.y + 0.4, center.z, 36,
                 radius * 0.45, 0.45, radius * 0.45, 0.08);
             world.spawnParticles(ParticleTypes.SMOKE, center.x, center.y + 0.3, center.z, 22,
@@ -109,7 +110,7 @@ public final class ArcanaEffectEntity extends Entity {
     public void tick() {
         super.tick();
         String activeReaction = dataTracker.get(REACTION);
-        int maxLifetime = activeReaction.equals("ash_cloud") ? 160 : 80;
+        int maxLifetime = activeReaction.equals("ash_cloud") ? 240 : 160;
         if (++lifetime > maxLifetime) {
             discard();
             return;
@@ -129,25 +130,35 @@ public final class ArcanaEffectEntity extends Entity {
         Vec3d pos = getPos();
         spawnVisuals(world, reaction, pos, radius);
 
-        if (lifetime % 10 == 0 && (reaction.equals("steam") || reaction.equals("storm_steam")
-            || reaction.equals("mist") || reaction.equals("sandstorm") || reaction.equals("ash_cloud"))) {
+        if (lifetime % 10 == 0) {
             int ownerId = dataTracker.get(OWNER_ID);
-            Box area = new Box(pos.x - radius, pos.y - radius * 0.5, pos.z - radius,
-                pos.x + radius, pos.y + radius * 0.5 + 1.0, pos.z + radius);
+            Box area = new Box(pos.x - radius, pos.y - radius * 0.65, pos.z - radius,
+                pos.x + radius, pos.y + radius * 0.65 + 1.0, pos.z + radius);
             for (LivingEntity target : world.getEntitiesByClass(LivingEntity.class, area,
                 entity -> entity.isAlive() && entity.getId() != ownerId)) {
-                if (!reaction.equals("ash_cloud")) {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 30, 0, true, false));
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 0, true, false));
-                } else {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 30, 1, true, false));
-                }
-                if (reaction.equals("storm_steam")) {
-                    target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 30, 0, true, false));
-                }
-                // Steam remains an active hazard while an entity stays inside it.
-                if ((reaction.equals("steam") || reaction.equals("storm_steam")) && lifetime % 20 == 0) {
-                    target.damage(world.getDamageSources().magic(), 1.0F);
+                switch (reaction) {
+                    case "steam", "storm_steam", "mist", "sandstorm", "ash_cloud", "eclipse", "solar_eclipse" -> {
+                        target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 35, 0, true, false));
+                        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 35,
+                            reaction.equals("ash_cloud") ? 1 : 0, true, false));
+                        if (reaction.equals("storm_steam")) target.addStatusEffect(
+                            new StatusEffectInstance(StatusEffects.GLOWING, 35, 0, true, false));
+                    }
+                    case "charged_water", "magnetic_arc", "resonance" -> {
+                        target.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 45, 0, true, false));
+                        if (lifetime % 20 == 0) target.damage(world.getDamageSources().magic(), 1.0F);
+                    }
+                    case "magma", "wildfire", "solar_flare" -> {
+                        target.setOnFireFor(2);
+                        if (lifetime % 20 == 0) target.damage(world.getDamageSources().magic(), 1.0F);
+                    }
+                    case "frozen_water", "blizzard", "thermal_shock", "mud", "lunar_tide" ->
+                        target.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 45,
+                            reaction.equals("blizzard") || reaction.equals("frozen_water") ? 1 : 0, true, false));
+                    case "verdant_surge" -> {
+                        if (target == world.getEntityById(ownerId)) target.heal(1.0F);
+                    }
+                    default -> { }
                 }
             }
         }
@@ -157,9 +168,9 @@ public final class ArcanaEffectEntity extends Entity {
         switch (reaction) {
             case "ash_cloud" -> {
                 world.spawnParticles(ParticleTypes.WHITE_ASH, pos.x, pos.y + 0.4, pos.z,
-                    12, radius * 0.55, 0.35, radius * 0.55, 0.008);
+                    34, radius * 0.8, 0.7, radius * 0.8, 0.025);
                 world.spawnParticles(ParticleTypes.SMOKE, pos.x, pos.y + 0.3, pos.z,
-                    6, radius * 0.4, 0.25, radius * 0.4, 0.006);
+                    22, radius * 0.7, 0.5, radius * 0.7, 0.018);
             }
             case "steam", "storm_steam" -> {
                 world.spawnParticles(ParticleTypes.CLOUD, pos.x, pos.y + 0.4, pos.z,
